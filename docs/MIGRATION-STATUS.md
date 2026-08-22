@@ -251,7 +251,7 @@ literals in the output.
 | `DataTable` | ✅ | TanStack v9, server-driven. Absorbed `ListToolbar` + `PaginationBar`; `EmptyState` and `ConfirmDialog` moved to `components/feedback/`. |
 | `scripts/check-structure.sh` | ✅ | The gate CLAUDE.md and ARCHITECTURE.md already claimed existed. |
 | Backend concerns | ⬜ | `RendersResourceIndex`, `SortsResourceQuery`, `ResolvesDateRange`, … |
-| `spatie/laravel-data` + TS types | ⬜ | |
+| `spatie/laravel-data` + TS types | ✅ | `#[TypeScript]` DTOs in `app/Data` → `generated.d.ts`; gated by `check:generated-types`. |
 | zod `primitives.ts` (i18n-aware) | ✅ | Both layers read `lang/{locale}/validation.php`. `check:i18n` now fails on an untranslated rule. |
 | Shell redesign + ⌘K palette | ⬜ | Auth/settings screens get their `t()` pass here, once. |
 
@@ -619,6 +619,81 @@ comes back from `data`. They agree on any tenant created normally — both are w
 the same moment — so nothing is visibly wrong today, and it is Phase 1 code rather than
 anything this change introduced. Left alone pending a decision: adding both to
 `getCustomColumns()` is two lines, but it changes how every tenant row is read.
+
+### The data layer: DTOs, and generated types with a gate
+
+`spatie/laravel-data ^4.23` (require) and `spatie/laravel-typescript-transformer ^3.3`
+(require-dev) — the same split and the same versions v1 pins, which happen to be the
+newest of each, so there was no upgrade to bridge.
+
+**No `config/data.php`.** v1 publishes it, but a `diff` against the vendor copy shows
+only import aliases and whitespace — not one value differs. A published config that
+matches the default is a copy of upstream's decisions frozen at today's date; leaving it
+unpublished means the package's defaults stay the package's to improve.
+
+**v3 of the transformer has no config file at all** — the configuration is a service
+provider class. This matters because every tutorial still describes a
+`config/typescript-transformer.php` that v3 deleted, and because
+`spatie/laravel-data` *still ships* a `DataTypeScriptTransformer` extending a
+`DtoTransformer` that v3 removed: registering it, as those guides instruct, is a fatal
+rather than a degradation. `AttributedClassTransformer` + `#[TypeScript]` is the working
+path, and opting in by attribute is also what keeps a DTO with no business on the wire
+off it.
+
+The provider is hand-written rather than published by `typescript:install`, whose stub
+gets three things wrong here: it registers Prettier (Biome replaced it), scans all of
+`app/` (so BetterReflection walks Models, Http and Tenancy every run), and registers
+itself unguarded. It is registered behind `class_exists()` in `bootstrap/providers.php`
+because it extends a **dev** dependency — unguarded, `composer install --no-dev` boots
+into a class-not-found fatal.
+
+**Two DTOs, not one.** `TenantData` carries `created_at`, `ArchivedTenantData` carries
+`deleted_at`. Merging them means both nullable — an always-null `deleted_at` shipped to
+the live list, an unread `created_at` to the archive, and the column accessor's type
+widened from `string` to `string | null` on both screens to describe a case that cannot
+happen.
+
+`slug` is a wire-only name and the reason both classes have a named factory: a
+workspace's primary key IS its slug, so a bare `::from($tenant)` emits `id` — the wrong
+word for something that appears in every URL, and a rename that would have rippled
+through eleven field accesses across the two pages.
+
+**The boundary.** The generated types replace exactly two local aliases — the row shapes.
+`Paginated<T>` stays hand-written: it describes Laravel's paginator envelope, has no PHP
+class behind it, and is a deliberately curated subset (it omits `links`, `path` and the
+four `*_page_url` keys Laravel actually sends). v1 is the proof — it has both packages
+installed and still hand-writes its paginator type. `ResourceFilters` stays hand-written
+too: it is assembled across two controller traits and typed only by a PHPStan array
+shape, so there is nothing to read. Generating it would need a new class *and* a backed
+enum for `'asc'|'desc'`, and would push `sortable` — the `ORDER BY` allow-list this repo
+calls a security control — through a DTO. Explicit non-goal.
+
+**ui-guard lost a rule, and gained a better one.** `generated.d.ts` was listed as
+read-only, blocking modifications. Every *other* path in that list is gitignored, so it
+can never appear as MODIFIED in a commit — the rule could only ever have fired on the one
+file that is supposed to change in commits, and the only way past would have been to skip
+the hook. It is now guarded the way its twin `lang.d.ts` is:
+`bun run check:generated-types` transforms into a temp directory and compares, which
+catches the stale file *and* the hand-edit while letting regeneration through.
+
+The temp directory is not incidental. A staleness check that writes where it is checking
+leaves a modified tree behind when it fails, and the next run then reports staleness for
+a reason unrelated to the change under test — the mistake the i18n gate already made
+once. `config/typescript-transformer.php` exists solely to make the output directory
+overridable; PHPStan rejected reading it from `env()` in the provider, correctly.
+
+**Proved rather than assumed.** The gate was broken deliberately both ways — a property
+added to a Data class without regenerating, and a field hand-patched into
+`generated.d.ts` — and it failed on each, leaving the tree unmodified. The wire shape was
+checked against the array it replaced and is byte-identical:
+
+    TenantData:      {"slug":"demo","name":"Demo Manufacturing","created_at":"2026-08-22T07:33:12+00:00"}
+    old hand-rolled: {"slug":"demo","name":"Demo Manufacturing","created_at":"2026-08-22T07:33:12+00:00"}
+
+No wrapping, no reordering, no date-format drift. Then driven: both listings, and a full
+create → archive → view archive → permanently delete cycle, which is what exercises
+`ArchivedTenantData` and the row actions that read `slug` and `name` off the generated
+type. SSR confirmed, zero console errors.
 
 ## Phase 2 — remaining ⬜
 

@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Central;
 
 use App\Actions\ProvisionTenant;
+use App\Data\ArchivedTenantData;
+use App\Data\TenantData;
 use App\Http\Controllers\Concerns\RendersResourceIndex;
 use App\Http\Controllers\Concerns\ResolvesPerPage;
 use App\Http\Controllers\Concerns\RespondsWithToast;
@@ -48,11 +50,7 @@ final class TenantController
             request: $request,
             query: Tenant::query(),
             sortable: self::SORTABLE,
-            toData: fn (Tenant $tenant): array => [
-                'slug' => $tenant->getKey(),
-                'name' => $tenant->name,
-                'created_at' => $tenant->created_at->toIso8601String(),
-            ],
+            toData: TenantData::fromTenant(...),
             searchUsing: self::searchBy(...),
         );
 
@@ -68,11 +66,7 @@ final class TenantController
             request: $request,
             query: Tenant::onlyTrashed(),
             sortable: self::SORTABLE_TRASHED,
-            toData: fn (Tenant $tenant): array => [
-                'slug' => $tenant->getKey(),
-                'name' => $tenant->name,
-                'deleted_at' => $tenant->deleted_at?->toIso8601String(),
-            ],
+            toData: ArchivedTenantData::fromTenant(...),
             searchUsing: self::searchBy(...),
             defaultSort: 'deleted_at',
         );

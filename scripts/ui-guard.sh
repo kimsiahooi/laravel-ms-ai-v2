@@ -23,7 +23,17 @@ staged=$(git diff --cached --name-only --diff-filter=ACM)
 
 fail=0
 
-readonly_re='^(resources/js/components/ui/|resources/js/routes/|resources/js/actions/|resources/js/wayfinder/|bootstrap/ssr/|resources/js/types/generated\.d\.ts)'
+# Every path here is either vendored or gitignored, which is what makes "no
+# modifications" the right rule for it: a gitignored tree can never appear as MODIFIED
+# in a commit, so the rule only ever fires on a genuine hand-edit.
+#
+# `resources/js/types/generated.d.ts` was listed here and has been removed. It is
+# generated but COMMITTED, so it is supposed to change in commits — every regeneration
+# would have tripped this and the only way past would have been to skip the hook. It is
+# guarded the way its twin `lang.d.ts` is instead: `bun run check:generated-types`
+# fails if it does not match what `app/Data` would produce, which catches the stale file
+# AND the hand-edit, rather than blocking the legitimate case.
+readonly_re='^(resources/js/components/ui/|resources/js/routes/|resources/js/actions/|resources/js/wayfinder/|bootstrap/ssr/)'
 
 # 1) Read-only / generated trees — MODIFIED or DELETED only.
 # Additions are how vendored code legitimately arrives (`shadcn add`, a Wayfinder

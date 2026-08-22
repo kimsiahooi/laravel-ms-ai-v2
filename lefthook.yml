@@ -37,5 +37,7 @@ pre-push:
       run: bun run check:validation
     i18n:
       run: bun run check:i18n
+    generated-types:
+      run: bun run check:generated-types
     build:
       run: bun run build

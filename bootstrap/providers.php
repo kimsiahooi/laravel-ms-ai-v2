@@ -3,9 +3,17 @@
 use App\Providers\AppServiceProvider;
 use App\Providers\FortifyServiceProvider;
 use App\Providers\TenancyServiceProvider;
+use App\Providers\TypeScriptTransformerServiceProvider;
+use Spatie\LaravelTypeScriptTransformer\TypeScriptTransformerApplicationServiceProvider;
 
-return [
+return array_values(array_filter([
     AppServiceProvider::class,
     FortifyServiceProvider::class,
     TenancyServiceProvider::class,
-];
+    // Dev-only, and deliberately guarded: TypeScriptTransformerServiceProvider extends
+    // a class from a require-dev package, so listing it unconditionally turns
+    // `composer install --no-dev` into a class-not-found fatal at boot.
+    class_exists(TypeScriptTransformerApplicationServiceProvider::class)
+        ? TypeScriptTransformerServiceProvider::class
+        : null,
+]));

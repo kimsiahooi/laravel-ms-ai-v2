@@ -14,11 +14,13 @@ import { WorkspaceActions } from '@/pages/admin/_components/workspace-actions';
 import { index, trashed } from '@/routes/admin/tenants';
 import type { Paginated, ResourceFilters } from '@/types';
 
-type Workspace = {
-    slug: string;
-    name: string;
-    created_at: string;
-};
+/**
+ * The row shape, generated from App\Data\TenantData — see `bun run types:generate`.
+ * Aliased rather than used inline because the alias is what every column and cell
+ * below is written against, and because `App.Data.*` arrives as an ambient global
+ * rather than through the `@/types` barrel.
+ */
+type Workspace = App.Data.TenantData;
 
 type Props = {
     tenants: Paginated<Workspace>;

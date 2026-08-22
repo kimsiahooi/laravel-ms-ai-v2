@@ -12,6 +12,7 @@
         "lint:check": "biome lint .",
         "check": "biome check --write .",
         "check:ci": "biome check .",
+        "check:generated-types": "bun run scripts/check-generated-types.ts",
         "check:i18n": "bun run scripts/check-i18n.ts",
         "check:structure": "bash scripts/check-structure.sh",
         "check:validation": "bun run scripts/check-validation-parity.ts",

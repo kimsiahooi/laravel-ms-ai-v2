@@ -13,11 +13,8 @@ import { TimeAgo } from '@/pages/admin/_components/time-ago';
 import { index, trashed } from '@/routes/admin/tenants';
 import type { Paginated, ResourceFilters } from '@/types';
 
-type ArchivedWorkspace = {
-    slug: string;
-    name: string;
-    deleted_at: string | null;
-};
+/** Generated from App\Data\ArchivedTenantData; see the note in the sibling index page. */
+type ArchivedWorkspace = App.Data.ArchivedTenantData;
 
 type Props = {
     tenants: Paginated<ArchivedWorkspace>;
