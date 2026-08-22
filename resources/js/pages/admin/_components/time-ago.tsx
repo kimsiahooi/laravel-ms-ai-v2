@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { formatDate, formatDateTime, formatRelative } from '@/lib/format';
+import { useTranslation } from '@/hooks/use-translation';
+import { formatDate, formatDateTime, relativeTime } from '@/lib/format';
 
 /**
  * A timestamp that reads as "3d ago", with the exact time on hover.
@@ -9,6 +10,7 @@ import { formatDate, formatDateTime, formatRelative } from '@/lib/format';
  * only appears after mount, where the two renders can no longer disagree.
  */
 export function TimeAgo({ iso }: { iso: string | null }) {
+    const { t } = useTranslation();
     const [relative, setRelative] = useState<string | null>(null);
 
     useEffect(() => {
@@ -17,10 +19,12 @@ export function TimeAgo({ iso }: { iso: string | null }) {
         }
 
         // Reading the clock is safe here and nowhere else: this is inside useEffect,
-        // so it never runs during render. formatRelative takes `now` as an argument
+        // so it never runs during render. relativeTime takes `now` as an argument
         // precisely so it can only be read from a place like this.
-        setRelative(formatRelative(iso, Date.now())); // ui-allow
-    }, [iso]);
+        const elapsed = relativeTime(iso, Date.now()); // ui-allow
+
+        setRelative(elapsed ? t(elapsed.key, { count: elapsed.count }) : null);
+    }, [iso, t]);
 
     if (iso === null) {
         return <span className="text-muted-foreground">—</span>;

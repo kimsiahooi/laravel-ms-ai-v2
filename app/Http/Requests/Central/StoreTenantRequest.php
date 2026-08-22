@@ -56,9 +56,9 @@ final class StoreTenantRequest extends FormRequest
     public function attributes(): array
     {
         return [
-            'admin_name' => 'administrator name',
-            'admin_email' => 'administrator email',
-            'admin_password' => 'administrator password',
+            'admin_name' => __('console.validation.attribute_admin_name'),
+            'admin_email' => __('console.validation.attribute_admin_email'),
+            'admin_password' => __('console.validation.attribute_admin_password'),
         ];
     }
 
@@ -68,9 +68,9 @@ final class StoreTenantRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'slug.regex' => 'The slug may only contain lowercase letters, numbers and hyphens.',
-            'slug.not_in' => 'That slug is reserved and cannot be used.',
-            'slug.unique' => 'A workspace with that slug already exists (it may be archived — restore or permanently delete it first).',
+            'slug.regex' => __('console.validation.slug_regex'),
+            'slug.not_in' => __('console.validation.slug_reserved'),
+            'slug.unique' => __('console.validation.slug_taken'),
         ];
     }
 }

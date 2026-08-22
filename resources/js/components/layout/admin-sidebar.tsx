@@ -30,14 +30,22 @@ import {
 import { UserInfo } from '@/components/user-info';
 import { useCurrentUrl } from '@/hooks/use-current-url';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useTranslation } from '@/hooks/use-translation';
 import { dashboard, home, logout } from '@/routes/admin';
 import { index as tenantsIndex, trashed } from '@/routes/admin/tenants';
-import type { NavItem, User } from '@/types';
+import type { User } from '@/types';
+import type { TranslationKey } from '@/types/lang';
 
-const NAV: NavItem[] = [
-    { title: 'Overview', href: dashboard(), icon: LayoutGrid },
-    { title: 'Workspaces', href: tenantsIndex(), icon: Building2 },
-    { title: 'Archive', href: trashed(), icon: Archive },
+// Titles are keys, resolved at render — a NavItem carries plain text, and this list
+// lives at module scope where there is no locale.
+const NAV: {
+    title: TranslationKey;
+    href: ReturnType<typeof dashboard>;
+    icon: typeof LayoutGrid;
+}[] = [
+    { title: 'console.nav.overview', href: dashboard(), icon: LayoutGrid },
+    { title: 'console.nav.workspaces', href: tenantsIndex(), icon: Building2 },
+    { title: 'console.nav.archive', href: trashed(), icon: Archive },
 ];
 
 /**
@@ -47,6 +55,7 @@ const NAV: NavItem[] = [
  */
 export function AdminSidebar({ user }: { user: User | null }) {
     const { isCurrentUrl } = useCurrentUrl();
+    const { t } = useTranslation();
     const { state } = useSidebar();
     const isMobile = useIsMobile();
 
@@ -62,10 +71,10 @@ export function AdminSidebar({ user }: { user: User | null }) {
                                 </div>
                                 <div className="ml-1 grid flex-1 text-left text-sm">
                                     <span className="truncate font-semibold leading-tight">
-                                        Console
+                                        {t('console.name')}
                                     </span>
                                     <span className="truncate text-sidebar-foreground/70 text-xs">
-                                        Workspace administration
+                                        {t('console.tagline')}
                                     </span>
                                 </div>
                             </Link>
@@ -76,18 +85,20 @@ export function AdminSidebar({ user }: { user: User | null }) {
 
             <SidebarContent>
                 <SidebarGroup className="px-2 py-0">
-                    <SidebarGroupLabel>Manage</SidebarGroupLabel>
+                    <SidebarGroupLabel>
+                        {t('console.nav.group')}
+                    </SidebarGroupLabel>
                     <SidebarMenu>
                         {NAV.map((item) => (
                             <SidebarMenuItem key={item.title}>
                                 <SidebarMenuButton
                                     asChild
                                     isActive={isCurrentUrl(item.href)}
-                                    tooltip={{ children: item.title }}
+                                    tooltip={{ children: t(item.title) }}
                                 >
                                     <Link href={item.href} prefetch>
-                                        {item.icon && <item.icon />}
-                                        <span>{item.title}</span>
+                                        <item.icon />
+                                        <span>{t(item.title)}</span>
                                     </Link>
                                 </SidebarMenuButton>
                             </SidebarMenuItem>
@@ -138,7 +149,7 @@ export function AdminSidebar({ user }: { user: User | null }) {
                                         }}
                                     >
                                         <LogOut className="mr-2 size-4" />
-                                        Sign out
+                                        {t('console.nav.sign_out')}
                                     </DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>

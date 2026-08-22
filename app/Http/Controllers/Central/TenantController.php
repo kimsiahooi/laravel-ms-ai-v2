@@ -80,7 +80,7 @@ final class TenantController
             adminPassword: $data['admin_password'],
         );
 
-        $this->toast("Workspace \"{$tenant->name}\" created — sign in at /{$tenant->getKey()}/login.");
+        $this->toast(__('console.toast.created', ['name' => $tenant->name, 'slug' => $tenant->getKey()]));
 
         return redirect()->route('admin.tenants.index');
     }
@@ -89,7 +89,7 @@ final class TenantController
     {
         $tenant->delete();
 
-        $this->toast("Workspace \"{$tenant->name}\" archived. Its data is untouched.");
+        $this->toast(__('console.toast.archived', ['name' => $tenant->name]));
 
         return back();
     }
@@ -100,7 +100,7 @@ final class TenantController
 
         $tenant->restore();
 
-        $this->toast("Workspace \"{$tenant->name}\" restored.");
+        $this->toast(__('console.toast.restored', ['name' => $tenant->name]));
 
         return back();
     }
@@ -115,7 +115,7 @@ final class TenantController
         // row in it go with it; there is no undo.
         $tenant->forceDelete();
 
-        $this->toast("Workspace \"{$name}\" and its database were permanently deleted.");
+        $this->toast(__('console.toast.deleted', ['name' => $name]));
 
         return back();
     }

@@ -8,6 +8,7 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
+import { useTranslation } from '@/hooks/use-translation';
 import AdminLayout from '@/layouts/admin-layout';
 import { CreateWorkspaceSheet } from '@/pages/admin/_components/create-workspace-sheet';
 import type { SignupDay } from '@/pages/admin/_components/signup-trend';
@@ -27,18 +28,40 @@ type Props = {
     signups: SignupDay[];
 };
 
+/**
+ * A sentinel we interpolate and then split on, so a React element can sit inside a
+ * translated sentence without concatenating around it. Malay and Chinese put the
+ * timestamp in a different place than English does — "Created :when" versus
+ * "创建于 :when" is the easy case, but nothing guarantees the placeholder stays last.
+ */
+const PLACEHOLDER = '\u0000';
+
+function NewestCreated({ iso, sentence }: { iso: string; sentence: string }) {
+    const [before, after = ''] = sentence.split(PLACEHOLDER);
+
+    return (
+        <p className="text-muted-foreground text-sm">
+            {before}
+            <TimeAgo iso={iso} />
+            {after}
+        </p>
+    );
+}
+
 export default function AdminDashboard({ stats, signups }: Props) {
+    const { t } = useTranslation();
+
     return (
         <AdminLayout>
-            <Head title="Console" />
+            <Head title={t('console.name')} />
 
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="space-y-1">
                     <h1 className="font-semibold text-2xl tracking-tight">
-                        Overview
+                        {t('console.overview.heading')}
                     </h1>
                     <p className="text-muted-foreground text-sm">
-                        How the platform is being used.
+                        {t('console.overview.subheading')}
                     </p>
                 </div>
                 <CreateWorkspaceSheet />
@@ -46,25 +69,25 @@ export default function AdminDashboard({ stats, signups }: Props) {
 
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                 <StatCard
-                    label="Live workspaces"
+                    label={t('console.overview.stat_live')}
                     value={stats.total}
                     icon={Building2}
                 />
                 <StatCard
-                    label="Added today"
+                    label={t('console.overview.stat_today')}
                     value={stats.added_today}
                     icon={CalendarPlus}
                 />
                 <StatCard
-                    label="Added this week"
+                    label={t('console.overview.stat_week')}
                     value={stats.last_7_days}
-                    hint="Rolling 7 days"
+                    hint={t('console.overview.stat_week_hint')}
                     icon={TrendingUp}
                 />
                 <StatCard
-                    label="Archived"
+                    label={t('console.overview.stat_archived')}
                     value={stats.archived}
-                    hint="Restorable from the archive"
+                    hint={t('console.overview.stat_archived_hint')}
                     icon={Archive}
                 />
             </div>
@@ -76,15 +99,17 @@ export default function AdminDashboard({ stats, signups }: Props) {
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>Most recent</CardTitle>
+                        <CardTitle>
+                            {t('console.overview.newest_title')}
+                        </CardTitle>
                         <CardDescription>
-                            The last workspace to be created.
+                            {t('console.overview.newest_description')}
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         {stats.newest === null ? (
                             <p className="text-muted-foreground text-sm">
-                                No workspaces yet.
+                                {t('console.overview.newest_empty')}
                             </p>
                         ) : (
                             <div className="space-y-1">
@@ -94,19 +119,26 @@ export default function AdminDashboard({ stats, signups }: Props) {
                                 <p className="font-mono text-muted-foreground text-sm">
                                     /{stats.newest.slug}
                                 </p>
-                                <p className="text-muted-foreground text-sm">
-                                    Created{' '}
-                                    <TimeAgo iso={stats.newest.created_at} />
-                                </p>
+                                <NewestCreated
+                                    iso={stats.newest.created_at}
+                                    sentence={t(
+                                        'console.overview.newest_created',
+                                        { when: PLACEHOLDER },
+                                    )}
+                                />
                             </div>
                         )}
 
                         <div className="flex flex-wrap gap-2">
                             <Button variant="outline" size="sm" asChild>
-                                <Link href={index()}>All workspaces</Link>
+                                <Link href={index()}>
+                                    {t('console.overview.link_all')}
+                                </Link>
                             </Button>
                             <Button variant="outline" size="sm" asChild>
-                                <Link href={trashed()}>Archive</Link>
+                                <Link href={trashed()}>
+                                    {t('console.overview.link_archive')}
+                                </Link>
                             </Button>
                         </div>
                     </CardContent>

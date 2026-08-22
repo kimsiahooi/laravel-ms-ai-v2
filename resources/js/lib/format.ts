@@ -1,3 +1,5 @@
+import type { TranslationKey } from '@/types/lang';
+
 /**
  * Pure formatting helpers. No React, no `Date.now()`, no `Intl` — every function is
  * a deterministic transform of its arguments.
@@ -54,35 +56,52 @@ const HOUR = 60 * MINUTE;
 const DAY = 24 * HOUR;
 
 /**
- * `2h ago`, `3d ago`, or the absolute date once it is over a month old.
+ * How long ago `iso` was, as a translation key and a count — not as text.
  *
- * `now` is a required argument, not `Date.now()`: that is what keeps this callable
- * from a render without risking a hydration mismatch.
+ * Returning a key keeps this file free of English and free of React while still
+ * letting the caller render "3d ago" in whichever language the server chose. `null`
+ * means it is older than a month, where an absolute date reads better than a count.
+ *
+ * `now` is a required argument rather than a `Date.now()` call: that is what makes
+ * this safe to reach for from anywhere, because reading the clock stays the caller's
+ * decision and can be kept out of render.
  */
-export function formatRelative(iso: string, now: number): string {
+export function relativeTime(
+    iso: string,
+    now: number,
+): { key: TranslationKey; count: number } | null {
     const then = new Date(iso).getTime();
 
     if (Number.isNaN(then)) {
-        return '';
+        return null;
     }
 
     const elapsed = now - then;
 
     if (elapsed < MINUTE) {
-        return 'just now';
+        return { key: 'common.time.just_now', count: 0 };
     }
 
     if (elapsed < HOUR) {
-        return `${Math.floor(elapsed / MINUTE)}m ago`;
+        return {
+            key: 'common.time.minutes_ago',
+            count: Math.floor(elapsed / MINUTE),
+        };
     }
 
     if (elapsed < DAY) {
-        return `${Math.floor(elapsed / HOUR)}h ago`;
+        return {
+            key: 'common.time.hours_ago',
+            count: Math.floor(elapsed / HOUR),
+        };
     }
 
     if (elapsed < 30 * DAY) {
-        return `${Math.floor(elapsed / DAY)}d ago`;
+        return {
+            key: 'common.time.days_ago',
+            count: Math.floor(elapsed / DAY),
+        };
     }
 
-    return formatDate(iso);
+    return null;
 }

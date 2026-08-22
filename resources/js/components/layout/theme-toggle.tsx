@@ -8,11 +8,17 @@ import {
 } from '@/components/ui/dropdown-menu';
 import type { Appearance } from '@/hooks/use-appearance';
 import { useAppearance } from '@/hooks/use-appearance';
+import { useTranslation } from '@/hooks/use-translation';
+import type { TranslationKey } from '@/types/lang';
 
-const OPTIONS: { value: Appearance; label: string; icon: typeof Sun }[] = [
-    { value: 'light', label: 'Light', icon: Sun },
-    { value: 'dark', label: 'Dark', icon: Moon },
-    { value: 'system', label: 'System', icon: Monitor },
+const OPTIONS: {
+    value: Appearance;
+    label: TranslationKey;
+    icon: typeof Sun;
+}[] = [
+    { value: 'light', label: 'common.theme.light', icon: Sun },
+    { value: 'dark', label: 'common.theme.dark', icon: Moon },
+    { value: 'system', label: 'common.theme.system', icon: Monitor },
 ];
 
 /**
@@ -25,11 +31,16 @@ const OPTIONS: { value: Appearance; label: string; icon: typeof Sun }[] = [
  */
 export function ThemeToggle() {
     const { appearance, updateAppearance } = useAppearance();
+    const { t } = useTranslation();
 
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" aria-label="Change theme">
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label={t('common.theme.change')}
+                >
                     <Sun className="size-4 dark:hidden" />
                     <Moon className="hidden size-4 dark:block" />
                 </Button>
@@ -41,7 +52,7 @@ export function ThemeToggle() {
                         onSelect={() => updateAppearance(value)}
                     >
                         <Icon className="mr-2 size-4" />
-                        <span className="flex-1">{label}</span>
+                        <span className="flex-1">{t(label)}</span>
                         {appearance === value && <Check className="size-4" />}
                     </DropdownMenuItem>
                 ))}

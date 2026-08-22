@@ -37,7 +37,7 @@ final class ProvisionTenant
         // being called from anywhere else (a command, a seeder).
         if (in_array($slug, ReservedSlugs::LIST, true)) {
             throw ValidationException::withMessages([
-                'slug' => "The slug \"{$slug}\" is reserved and cannot be used.",
+                'slug' => __('console.validation.slug_reserved_action', ['slug' => $slug]),
             ]);
         }
 

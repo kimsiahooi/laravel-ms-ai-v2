@@ -10,6 +10,7 @@ import {
     TooltipContent,
     TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { useTranslation } from '@/hooks/use-translation';
 
 export type SignupDay = {
     date: string;
@@ -24,17 +25,18 @@ export type SignupDay = {
  * render identically.
  */
 export function SignupTrend({ days }: { days: SignupDay[] }) {
+    const { t, tChoice } = useTranslation();
     const peak = Math.max(1, ...days.map((day) => day.count));
     const total = days.reduce((sum, day) => sum + day.count, 0);
 
     return (
         <Card>
             <CardHeader>
-                <CardTitle>New workspaces</CardTitle>
+                <CardTitle>{t('console.overview.trend_title')}</CardTitle>
                 <CardDescription>
                     {total === 0
-                        ? 'None created in the last 30 days.'
-                        : `${total} created in the last 30 days.`}
+                        ? t('console.overview.trend_empty')
+                        : tChoice('console.overview.trend_summary', total)}
                 </CardDescription>
             </CardHeader>
             <CardContent className="space-y-2">

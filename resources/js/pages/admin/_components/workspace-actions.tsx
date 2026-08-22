@@ -9,6 +9,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useTranslation } from '@/hooks/use-translation';
 import { ConfirmDialog } from '@/pages/admin/_components/confirm-dialog';
 import { destroy } from '@/routes/admin/tenants';
 
@@ -24,6 +25,7 @@ export function WorkspaceActions({
     slug: string;
     name: string;
 }) {
+    const { t } = useTranslation();
     const [confirming, setConfirming] = useState(false);
     const [processing, setProcessing] = useState(false);
 
@@ -34,7 +36,7 @@ export function WorkspaceActions({
                     <Button
                         variant="ghost"
                         size="icon"
-                        aria-label={`Actions for ${name}`}
+                        aria-label={t('common.actions.row_actions', { name })}
                     >
                         <MoreHorizontal className="size-4" />
                     </Button>
@@ -45,7 +47,7 @@ export function WorkspaceActions({
                             on its own session and its own database. */}
                         <a href={`/${slug}`}>
                             <ExternalLink className="mr-2 size-4" />
-                            Open workspace
+                            {t('console.row.open')}
                         </a>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
@@ -54,7 +56,7 @@ export function WorkspaceActions({
                         onSelect={() => setConfirming(true)}
                     >
                         <Archive className="mr-2 size-4" />
-                        Archive
+                        {t('console.row.archive')}
                     </DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
@@ -62,10 +64,10 @@ export function WorkspaceActions({
             <ConfirmDialog
                 open={confirming}
                 onOpenChange={setConfirming}
-                title={`Archive ${name}?`}
-                description="Everyone signed in to this workspace loses access, but nothing is deleted — its database is untouched and you can restore it from the Archive at any time."
-                confirmLabel="Archive workspace"
-                busyLabel="Archiving…"
+                title={t('console.confirm.archive_title', { name })}
+                description={t('console.confirm.archive_description')}
+                confirmLabel={t('console.confirm.archive_submit')}
+                busyLabel={t('console.confirm.archive_submitting')}
                 variant="destructive"
                 processing={processing}
                 onConfirm={() => {

@@ -59,6 +59,7 @@
             "bun run check:ci",
             "bun run types:check",
             "bun run check:validation",
+            "bun run check:i18n",
             "@lint:check",
             "@types:check"
         ],

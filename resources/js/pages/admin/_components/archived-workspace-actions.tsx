@@ -2,6 +2,7 @@ import { router } from '@inertiajs/react';
 import { RotateCcw, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { useTranslation } from '@/hooks/use-translation';
 import { ConfirmDialog } from '@/pages/admin/_components/confirm-dialog';
 import { forceDestroy, restore } from '@/routes/admin/tenants';
 
@@ -21,6 +22,7 @@ export function ArchivedWorkspaceActions({
     slug: string;
     name: string;
 }) {
+    const { t } = useTranslation();
     const [pending, setPending] = useState<Pending>(null);
     const [processing, setProcessing] = useState(false);
 
@@ -38,12 +40,12 @@ export function ArchivedWorkspaceActions({
                     onClick={() => setPending('restore')}
                 >
                     <RotateCcw className="size-4" />
-                    Restore
+                    {t('console.row.restore')}
                 </Button>
                 <Button
                     variant="ghost"
                     size="icon"
-                    aria-label={`Permanently delete ${name}`}
+                    aria-label={t('console.row.delete_forever', { name })}
                     className="text-destructive hover:text-destructive"
                     onClick={() => setPending('delete')}
                 >
@@ -54,10 +56,10 @@ export function ArchivedWorkspaceActions({
             <ConfirmDialog
                 open={pending === 'restore'}
                 onOpenChange={(open) => !open && close()}
-                title={`Restore ${name}?`}
-                description="The workspace becomes reachable again at its original address, with all of its data as it was."
-                confirmLabel="Restore workspace"
-                busyLabel="Restoring…"
+                title={t('console.confirm.restore_title', { name })}
+                description={t('console.confirm.restore_description')}
+                confirmLabel={t('console.confirm.restore_submit')}
+                busyLabel={t('console.confirm.restore_submitting')}
                 processing={processing}
                 onConfirm={() => {
                     router.patch(
@@ -75,10 +77,10 @@ export function ArchivedWorkspaceActions({
             <ConfirmDialog
                 open={pending === 'delete'}
                 onOpenChange={(open) => !open && close()}
-                title={`Permanently delete ${name}?`}
-                description="This drops the workspace's database and everything in it. There is no undo and no backup."
-                confirmLabel="Delete permanently"
-                busyLabel="Deleting…"
+                title={t('console.confirm.delete_title', { name })}
+                description={t('console.confirm.delete_description')}
+                confirmLabel={t('console.confirm.delete_submit')}
+                busyLabel={t('console.confirm.delete_submitting')}
                 variant="destructive"
                 confirmPhrase={slug}
                 processing={processing}

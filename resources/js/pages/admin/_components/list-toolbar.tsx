@@ -10,6 +10,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { useTranslation } from '@/hooks/use-translation';
 
 const PER_PAGE_OPTIONS = [10, 25, 50, 100];
 
@@ -30,6 +31,7 @@ type Props = {
  * page 7 of a different result set is meaningless.
  */
 export function ListToolbar({ href, search, perPage, placeholder }: Props) {
+    const { t } = useTranslation();
     const [value, setValue] = useState(search);
 
     useEffect(() => {
@@ -69,7 +71,7 @@ export function ListToolbar({ href, search, perPage, placeholder }: Props) {
                         type="button"
                         variant="ghost"
                         size="icon"
-                        aria-label="Clear search"
+                        aria-label={t('common.actions.clear_search')}
                         className="absolute top-1/2 right-1 size-7 -translate-y-1/2"
                         onClick={() => setValue('')}
                     >
@@ -79,7 +81,9 @@ export function ListToolbar({ href, search, perPage, placeholder }: Props) {
             </div>
 
             <div className="flex items-center gap-2 sm:ml-auto">
-                <span className="text-muted-foreground text-sm">Show</span>
+                <span className="text-muted-foreground text-sm">
+                    {t('common.list.show')}
+                </span>
                 <Select
                     value={String(perPage)}
                     onValueChange={(next) =>
@@ -93,7 +97,10 @@ export function ListToolbar({ href, search, perPage, placeholder }: Props) {
                         )
                     }
                 >
-                    <SelectTrigger className="w-20" aria-label="Rows per page">
+                    <SelectTrigger
+                        className="w-20"
+                        aria-label={t('common.list.rows_per_page')}
+                    >
                         <SelectValue />
                     </SelectTrigger>
                     <SelectContent>

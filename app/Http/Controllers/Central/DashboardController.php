@@ -65,7 +65,10 @@ final class DashboardController
 
             $days[] = [
                 'date' => $key,
-                'label' => $day->format('M j'),
+                // translatedFormat, not format: month names are user-facing text and
+                // Carbon follows App::setLocale (verified for en/ms/zh_Hans). The `date`
+                // above stays format() — it is a machine key and must not be localized.
+                'label' => $day->translatedFormat('M j'),
                 'count' => (int) $byDay->get($key, 0),
             ];
         }

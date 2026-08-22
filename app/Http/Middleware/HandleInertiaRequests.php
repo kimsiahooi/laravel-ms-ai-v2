@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Middleware;
 
 use App\Models\User;
+use App\Support\Locales;
 use App\Support\TenantRoles;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -64,6 +65,11 @@ class HandleInertiaRequests extends Middleware
                 'permissions' => fn (): array => $tenantUser?->getAllPermissions()->pluck('name')->all() ?? [],
                 'is_admin' => fn (): bool => $tenantUser?->hasRole(TenantRoles::ADMIN) ?? false,
             ],
+            // The locale the SERVER rendered with. The client loads the matching bundle
+            // from this — never from navigator.language, which would render different
+            // text on each side and produce a hydration mismatch.
+            'locale' => fn (): string => app()->getLocale(),
+            'locales' => fn (): array => Locales::options(),
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
             // Identifies the current workspace. The client registers `slug` as the
             // default {tenant} route parameter (see app.tsx), so route helpers

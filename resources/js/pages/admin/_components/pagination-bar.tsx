@@ -1,6 +1,7 @@
 import { router } from '@inertiajs/react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useTranslation } from '@/hooks/use-translation';
 import type { Paginated } from '@/types';
 
 type Props = {
@@ -19,6 +20,8 @@ type Props = {
  * how many results a search returned is the point, not the buttons.
  */
 export function PaginationBar({ href, page, params }: Props) {
+    const { t } = useTranslation();
+
     const go = (to: number) => {
         router.get(
             href,
@@ -31,8 +34,12 @@ export function PaginationBar({ href, page, params }: Props) {
         <div className="flex flex-col gap-3 border-t px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-muted-foreground text-sm">
                 {page.total === 0
-                    ? 'No results'
-                    : `Showing ${page.from}–${page.to} of ${page.total}`}
+                    ? t('common.pagination.no_results')
+                    : t('common.pagination.showing', {
+                          from: page.from ?? 0,
+                          to: page.to ?? 0,
+                          total: page.total,
+                      })}
             </p>
 
             {page.last_page > 1 && (
@@ -45,10 +52,13 @@ export function PaginationBar({ href, page, params }: Props) {
                         onClick={() => go(page.current_page - 1)}
                     >
                         <ChevronLeft className="size-4" />
-                        Previous
+                        {t('common.pagination.previous')}
                     </Button>
                     <span className="px-1 text-muted-foreground text-sm tabular-nums">
-                        Page {page.current_page} of {page.last_page}
+                        {t('common.pagination.page_of', {
+                            current: page.current_page,
+                            last: page.last_page,
+                        })}
                     </span>
                     <Button
                         type="button"
@@ -57,7 +67,7 @@ export function PaginationBar({ href, page, params }: Props) {
                         disabled={page.current_page >= page.last_page}
                         onClick={() => go(page.current_page + 1)}
                     >
-                        Next
+                        {t('common.pagination.next')}
                         <ChevronRight className="size-4" />
                     </Button>
                 </div>

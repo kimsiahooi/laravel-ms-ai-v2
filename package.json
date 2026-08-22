@@ -12,7 +12,9 @@
         "lint:check": "biome lint .",
         "check": "biome check --write .",
         "check:ci": "biome check .",
+        "check:i18n": "bun run scripts/check-i18n.ts",
         "check:validation": "bun run scripts/check-validation-parity.ts",
+        "lang:export": "php artisan lang:export",
         "types:check": "tsc --noEmit",
         "types:generate": "php artisan typescript:transform",
         "prepare": "lefthook install"

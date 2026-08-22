@@ -11,6 +11,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
+import { useTranslation } from '@/hooks/use-translation';
 
 type Props = {
     open: boolean;
@@ -42,6 +43,7 @@ export function ConfirmDialog({
     variant = 'default',
     confirmPhrase,
 }: Props) {
+    const { t } = useTranslation();
     const [typed, setTyped] = useState('');
 
     // Clear the phrase whenever the dialog opens, so a previous confirmation can
@@ -73,11 +75,9 @@ export function ConfirmDialog({
                 {confirmPhrase !== undefined && (
                     <div className="space-y-2">
                         <Label htmlFor="confirm-phrase">
-                            Type{' '}
-                            <span className="font-mono font-semibold">
-                                {confirmPhrase}
-                            </span>{' '}
-                            to confirm
+                            {t('console.confirm.type_to_confirm', {
+                                phrase: confirmPhrase,
+                            })}
                         </Label>
                         <Input
                             id="confirm-phrase"
@@ -97,7 +97,7 @@ export function ConfirmDialog({
                         disabled={processing}
                         onClick={() => onOpenChange(false)}
                     >
-                        Cancel
+                        {t('common.actions.cancel')}
                     </Button>
                     <Button
                         type="button"

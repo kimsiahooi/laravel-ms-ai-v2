@@ -241,7 +241,88 @@ match their zod counterparts word for word.
 All four console pages render through the SSR bundle with no errors and no raw colour
 literals in the output.
 
-## Phase 2 — Shared UI kit ⬜
+## Phase 2 — Shared UI kit 🚧
+
+| Piece | Status | Notes |
+|---|---|---|
+| Localization | ✅ | `lang/` → JSON bundles + a TS key union; `t()` / `tChoice()`; `check:i18n`. |
+| Language switcher | ✅ | `PUT /locale`, session-backed, written through to `users.locale`. |
+| Console translated | ✅ | 125 keys × en/ms/zh_Hans. The retrofit debt from Phase 1 is paid. |
+| `DataTable` | ⬜ | Next. Absorbs the six components parked in `pages/admin/_components/`. |
+| Backend concerns | ⬜ | `RendersResourceIndex`, `SortsResourceQuery`, `ResolvesDateRange`, … |
+| `spatie/laravel-data` + TS types | ⬜ | |
+| zod `primitives.ts` (i18n-aware) | ⬜ | The gate itself already landed in Phase 1. |
+| Shell redesign + ⌘K palette | ⬜ | Auth/settings screens get their `t()` pass here, once. |
+
+### Localization — built first, deliberately
+
+Ordered ahead of `DataTable` so every component from here on is born translated. The
+alternative — build the kit, then retrofit `t()` — means touching every file twice, which
+is exactly the cost the Phase 1 console already paid.
+
+**Three things behaved differently from the design, and the design lost each time:**
+
+1. **No context provider.** The plan assumed one. A provider has to be installed in
+   `withApp`, which wraps Inertia's `<App>` from the *outside*, where `usePage()` does not
+   exist — SSR died with *"usePage must be used within the Inertia component"*. And
+   `withApp` runs only for the first client page, so a locale captured there would go
+   stale on the first language switch. `useTranslation()` reads the page props itself.
+
+2. **A hand-written Inertia `resolve`.** `@inertiajs/vite` generates one, but skips
+   injection when the app defines `resolve` or `pages`. Taking it over is what lets the
+   locale bundle be awaited alongside the page component — `resolve` is the only hook
+   Inertia awaits on *both* the server render and every client visit, which is what makes
+   `t()` synchronous everywhere else. Verified: pages still code-split (72 chunks) and each
+   locale gets its own (~8 kB).
+
+3. **Session-first locale resolution.** The plan's chain started at the user's preference,
+   but the console has no user preference to read — `CentralUser` has no locale column — so
+   the switcher would have had nowhere to write and the feature would have been
+   unverifiable. The session now comes first, and a tenant user also gets it written
+   through to their profile.
+
+**Biome and the exporter had to be separated.** Biome reformatted the generated
+`lang.d.ts`, the exporter wrote it back, and `check:i18n` reported permanent staleness.
+Both artifacts are now in Biome's ignore list, next to `generated.d.ts`.
+
+**The gate was rewritten after its own negative tests failed it.** The first version
+regenerated the artifacts in place, so a failing run left the tree modified and the *next*
+run reported staleness for an unrelated reason — and the staleness line masked the real
+missing-key and bad-key problems underneath. It now exports to a temp directory and reads
+the fresh copy, so each of the four failure modes reports the actual cause. All four were
+re-tested by breaking them on purpose.
+
+### Verified in a real browser (Playwright, SSR on)
+
+Signed in, walked the console, switched all three languages, toggled dark, and checked
+375 px — **zero console warnings throughout**, so no hydration mismatch. Four things were
+wrong and only showed up by looking:
+
+| Found | Fix |
+|---|---|
+| Breadcrumb root read "Console" while the sidebar read "Konsol" / "控制台" | a hard-coded literal in `admin-layout.tsx`; now `t('console.name')` |
+| Timestamps read "1 h ago" | reworded to `:count hr ago` / `jam` / `小时前` |
+| Chart axis read "Jul 24 / Aug 22" in a Chinese UI | `format()` → `translatedFormat()`; Carbon follows `App::setLocale` |
+| **zod messages are English inside a translated form** | *not fixed* — see below |
+
+The zod gate itself works correctly (errors under each field, request never sent), but its
+messages are still English literals while Laravel's equivalents are translated. That is the
+`primitives.ts` row in the table above, still open, and it is a bigger job than it looks:
+doing it properly means translating the parts of Laravel's own `validation.php` that the
+schemas mirror, for `ms` and `zh_Hans`, so both layers keep saying the same sentence.
+
+Also verified through the **SSR bundle** directly, with zero SSR errors: headings, table columns, pagination counts (`Showing 1–1 of 1` / `Memaparkan 1–1
+daripada 1` / `显示第 1–1 项，共 1 项`). `<html lang>` emits BCP-47 (`zh-Hans`, not
+`zh_Hans`). An unsupported locale is refused and leaves the language unchanged.
+
+### Translations want a native-speaker pass
+
+The `ms` and `zh_Hans` strings are mine, not a translator's. They are consistent and
+idiomatic as far as I can judge, but "arkib"/"ruang kerja" and the Chinese phrasing for
+archive-versus-delete are the kind of thing worth a second pair of eyes before customers
+see them.
+
+## Phase 2 — remaining ⬜
 
 ## Phases 3–8 — Modules ⬜
 

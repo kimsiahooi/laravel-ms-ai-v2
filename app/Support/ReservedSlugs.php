@@ -27,7 +27,7 @@ final class ReservedSlugs
         'admin', 'central', 'tenant', 'tenancy',
         'api', 'sanctum', 'broadcasting', 'livewire', 'telescope', 'horizon',
         // health + build / static assets
-        'up', 'storage', 'build', 'vendor', 'assets',
+        'up', 'storage', 'build', 'vendor', 'assets', 'locale',
         'css', 'js', 'img', 'images', 'fonts', 'well-known', '_inertia',
         // auth (Fortify registers these names; a tenant called "login" would be
         // unreachable behind them)

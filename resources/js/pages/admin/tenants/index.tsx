@@ -11,6 +11,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import { useTranslation } from '@/hooks/use-translation';
 import AdminLayout from '@/layouts/admin-layout';
 import { CreateWorkspaceSheet } from '@/pages/admin/_components/create-workspace-sheet';
 import { EmptyState } from '@/pages/admin/_components/empty-state';
@@ -33,26 +34,32 @@ type Props = {
 };
 
 export default function TenantsIndex({ tenants, filters }: Props) {
+    const { t } = useTranslation();
     const href = index().url;
     const isSearching = filters.search !== '';
 
     return (
-        <AdminLayout breadcrumbs={[{ title: 'Workspaces', href: index() }]}>
-            <Head title="Workspaces" />
+        <AdminLayout
+            breadcrumbs={[
+                { title: t('console.workspaces.heading'), href: index() },
+            ]}
+        >
+            <Head title={t('console.workspaces.title')} />
 
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="space-y-1">
                     <h1 className="font-semibold text-2xl tracking-tight">
-                        Workspaces
+                        {t('console.workspaces.heading')}
                     </h1>
                     <p className="text-muted-foreground text-sm">
-                        Every customer workspace on this platform, each with its
-                        own database.
+                        {t('console.workspaces.subheading')}
                     </p>
                 </div>
                 <div className="flex items-center gap-2">
                     <Button variant="outline" asChild>
-                        <Link href={trashed()}>View archive</Link>
+                        <Link href={trashed()}>
+                            {t('console.workspaces.view_archive')}
+                        </Link>
                     </Button>
                     <CreateWorkspaceSheet />
                 </div>
@@ -64,7 +71,7 @@ export default function TenantsIndex({ tenants, filters }: Props) {
                         href={href}
                         search={filters.search}
                         perPage={filters.per_page}
-                        placeholder="Search by name or address"
+                        placeholder={t('console.workspaces.search_placeholder')}
                     />
                 </div>
 
@@ -72,14 +79,21 @@ export default function TenantsIndex({ tenants, filters }: Props) {
                     isSearching ? (
                         <EmptyState
                             icon={SearchX}
-                            title="No workspaces match that search"
-                            description={`Nothing matched “${filters.search}”. Try part of the name, or the address from the URL.`}
+                            title={t('console.workspaces.no_match_title')}
+                            description={t(
+                                'console.workspaces.no_match_description',
+                                {
+                                    term: filters.search,
+                                },
+                            )}
                         />
                     ) : (
                         <EmptyState
                             icon={Building2}
-                            title="No workspaces yet"
-                            description="Create the first one — it gets its own database and an administrator who can sign in straight away."
+                            title={t('console.workspaces.empty_title')}
+                            description={t(
+                                'console.workspaces.empty_description',
+                            )}
                             action={<CreateWorkspaceSheet />}
                         />
                     )
@@ -88,16 +102,18 @@ export default function TenantsIndex({ tenants, filters }: Props) {
                         <TableHeader>
                             <TableRow className="hover:bg-transparent">
                                 <TableHead className="pl-4">
-                                    Workspace
+                                    {t('console.workspaces.column_workspace')}
                                 </TableHead>
                                 <TableHead className="hidden sm:table-cell">
-                                    Address
+                                    {t('console.workspaces.column_address')}
                                 </TableHead>
                                 <TableHead className="hidden md:table-cell">
-                                    Created
+                                    {t('console.workspaces.column_created')}
                                 </TableHead>
                                 <TableHead className="w-12 pr-4 text-right">
-                                    <span className="sr-only">Actions</span>
+                                    <span className="sr-only">
+                                        {t('common.list.actions_column')}
+                                    </span>
                                 </TableHead>
                             </TableRow>
                         </TableHeader>

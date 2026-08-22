@@ -11,6 +11,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import { useTranslation } from '@/hooks/use-translation';
 import AdminLayout from '@/layouts/admin-layout';
 import { ArchivedWorkspaceActions } from '@/pages/admin/_components/archived-workspace-actions';
 import { EmptyState } from '@/pages/admin/_components/empty-state';
@@ -32,30 +33,30 @@ type Props = {
 };
 
 export default function TenantsTrashed({ tenants, filters }: Props) {
+    const { t } = useTranslation();
     const href = trashed().url;
     const isSearching = filters.search !== '';
 
     return (
         <AdminLayout
             breadcrumbs={[
-                { title: 'Workspaces', href: index() },
-                { title: 'Archive', href: trashed() },
+                { title: t('console.workspaces.heading'), href: index() },
+                { title: t('console.archive.heading'), href: trashed() },
             ]}
         >
-            <Head title="Archived workspaces" />
+            <Head title={t('console.archive.title')} />
 
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="space-y-1">
                     <h1 className="font-semibold text-2xl tracking-tight">
-                        Archive
+                        {t('console.archive.heading')}
                     </h1>
                     <p className="text-muted-foreground text-sm">
-                        Archived workspaces are unreachable but intact. Their
-                        addresses stay reserved until they are deleted for good.
+                        {t('console.archive.subheading')}
                     </p>
                 </div>
                 <Button variant="outline" asChild>
-                    <Link href={index()}>Back to workspaces</Link>
+                    <Link href={index()}>{t('console.archive.back')}</Link>
                 </Button>
             </div>
 
@@ -65,7 +66,7 @@ export default function TenantsTrashed({ tenants, filters }: Props) {
                         href={href}
                         search={filters.search}
                         perPage={filters.per_page}
-                        placeholder="Search the archive"
+                        placeholder={t('console.archive.search_placeholder')}
                     />
                 </div>
 
@@ -73,14 +74,19 @@ export default function TenantsTrashed({ tenants, filters }: Props) {
                     isSearching ? (
                         <EmptyState
                             icon={SearchX}
-                            title="Nothing in the archive matches"
-                            description={`No archived workspace matched “${filters.search}”.`}
+                            title={t('console.archive.no_match_title')}
+                            description={t(
+                                'console.archive.no_match_description',
+                                {
+                                    term: filters.search,
+                                },
+                            )}
                         />
                     ) : (
                         <EmptyState
                             icon={Archive}
-                            title="The archive is empty"
-                            description="Archived workspaces appear here, where they can be restored or permanently deleted."
+                            title={t('console.archive.empty_title')}
+                            description={t('console.archive.empty_description')}
                         />
                     )
                 ) : (
@@ -88,16 +94,18 @@ export default function TenantsTrashed({ tenants, filters }: Props) {
                         <TableHeader>
                             <TableRow className="hover:bg-transparent">
                                 <TableHead className="pl-4">
-                                    Workspace
+                                    {t('console.workspaces.column_workspace')}
                                 </TableHead>
                                 <TableHead className="hidden sm:table-cell">
-                                    Address
+                                    {t('console.workspaces.column_address')}
                                 </TableHead>
                                 <TableHead className="hidden md:table-cell">
-                                    Archived
+                                    {t('console.archive.column_archived')}
                                 </TableHead>
                                 <TableHead className="pr-4 text-right">
-                                    <span className="sr-only">Actions</span>
+                                    <span className="sr-only">
+                                        {t('common.list.actions_column')}
+                                    </span>
                                 </TableHead>
                             </TableRow>
                         </TableHeader>

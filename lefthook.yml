@@ -3,7 +3,7 @@
 # single-shot; nothing here spins a watcher or a test runner.
 #
 #   pre-commit — near-instant: format/lint/type-check + the UI/standards guard.
-#   pre-push   — seconds: PHPStan, zod↔Laravel validation parity, production build.
+#   pre-push   — seconds: PHPStan, zod↔Laravel validation parity, i18n, production build.
 #
 # Installed by `bun run prepare` (lefthook install); run `bunx lefthook install` after
 # cloning if hooks aren't active. Skip once with `LEFTHOOK=0 git commit …` in a pinch.
@@ -33,5 +33,7 @@ pre-push:
       run: vendor/bin/phpstan analyse --no-progress --memory-limit=1G
     validation-parity:
       run: bun run check:validation
+    i18n:
+      run: bun run check:i18n
     build:
       run: bun run build

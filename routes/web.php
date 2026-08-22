@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Http\Controllers\Central\AdminSessionController;
 use App\Http\Controllers\Central\DashboardController;
 use App\Http\Controllers\Central\TenantController;
+use App\Http\Controllers\LocaleController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -23,6 +24,12 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::inertia('/', 'welcome')->name('home');
+
+// The language switcher, shared by the console and every workspace. Central, and
+// 'locale' is a reserved slug so it is never read as a workspace address.
+Route::put('locale', LocaleController::class)
+    ->middleware('web')
+    ->name('locale.update');
 
 Route::prefix('admin')->name('admin.')->group(function (): void {
     // Bare /admin -> the dashboard when signed in, otherwise the login page.

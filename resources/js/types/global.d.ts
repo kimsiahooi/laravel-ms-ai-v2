@@ -15,6 +15,9 @@ declare module '@inertiajs/core' {
             sidebarOpen: boolean;
             /** The active workspace, or null on central (/admin, /) pages. */
             tenant: Tenant | null;
+            /** The locale the SERVER rendered with. Never read navigator.language. */
+            locale: string;
+            locales: { code: string; label: string }[];
             [key: string]: unknown;
         };
     }

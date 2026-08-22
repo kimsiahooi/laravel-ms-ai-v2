@@ -4,8 +4,10 @@ import { AppContent } from '@/components/app-content';
 import { AppShell } from '@/components/app-shell';
 import { Breadcrumbs } from '@/components/breadcrumbs';
 import { AdminSidebar } from '@/components/layout/admin-sidebar';
+import { LanguageSwitcher } from '@/components/layout/language-switcher';
 import { ThemeToggle } from '@/components/layout/theme-toggle';
 import { SidebarTrigger } from '@/components/ui/sidebar';
+import { useTranslation } from '@/hooks/use-translation';
 import { dashboard } from '@/routes/admin';
 import type { BreadcrumbItem } from '@/types';
 
@@ -22,6 +24,7 @@ export default function AdminLayout({
     breadcrumbs?: BreadcrumbItem[];
 }) {
     const { auth } = usePage().props;
+    const { t } = useTranslation();
 
     return (
         <AppShell variant="sidebar">
@@ -31,11 +34,12 @@ export default function AdminLayout({
                     <SidebarTrigger className="-ml-1" />
                     <Breadcrumbs
                         breadcrumbs={[
-                            { title: 'Console', href: dashboard() },
+                            { title: t('console.name'), href: dashboard() },
                             ...breadcrumbs,
                         ]}
                     />
-                    <div className="ml-auto">
+                    <div className="ml-auto flex items-center gap-1">
+                        <LanguageSwitcher />
                         <ThemeToggle />
                     </div>
                 </header>
