@@ -37,10 +37,22 @@ Tokens live in `resources/css/app.css` and adapt to light/dark automatically.
 | Muted surfaces / hover | `bg-muted`, `bg-muted/50`, `bg-secondary`, `bg-accent` |
 | Secondary text | `text-muted-foreground` |
 | Borders / inputs | `border-border`, `border-input` |
-| Destructive | `text-destructive`, `<Button variant="destructive">` |
+| Destructive **surface** | `<Button variant="destructive">` — fills with `--destructive` |
+| Destructive **text** | `text-destructive-foreground` — a red icon or label on an ordinary surface |
+
+**The two destructive tokens are not interchangeable.** A solid red button needs a surface
+dark enough for white text; red *text* needs to be lighter than the surface behind it. In
+light mode one value does both, so the distinction is invisible — and that is exactly how it
+gets used wrongly. In dark mode they diverge, and `text-destructive` on a dark card is the
+mistake to avoid: use `text-destructive-foreground`. The reasoning is written out in
+`resources/css/app.css` beside the tokens.
 
 **Dark mode is mandatory.** Because everything uses tokens, both themes work by default.
 If you must add a custom colour, add a `dark:` variant or a token.
+
+**Measure contrast rather than trusting it.** A destructive button in dark mode read 2.89:1
+against shadcn's stock palette — usable-looking, and under AA. Getting a number takes one
+`getComputedStyle` and a canvas; guessing costs a release.
 
 ## 3. Use shadcn/ui — don't hand-roll
 

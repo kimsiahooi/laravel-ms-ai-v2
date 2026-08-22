@@ -468,6 +468,39 @@ the *first* attempt to verify the fix passed for the wrong reason — the browse
 a stale HMR module in which the call existed but its import did not, and a `ReferenceError`
 in the console was the only sign. Read the console before believing a fix.
 
+### Bug: the destructive button failed contrast in dark mode
+
+Reported as "the delete-permanently button is hard to read". Measured rather than eyeballed,
+and it was two problems, the second worse than the reported one:
+
+| | before | after |
+|---|---|---|
+| Confirm button, armed — **dark** | 2.89:1 ✗ | **6.25:1** ✓ |
+| Confirm button, armed — light | 4.77:1 ✓ | 4.77:1 ✓ |
+| Row trash icon — dark | 4.77:1 | **6.21:1** |
+| Confirm button, locked — dark | 2.19:1 | 3.36:1 |
+| Confirm button, locked — light | 2.57:1 | 2.57:1 |
+
+It was never a hard-coded red: `variant="destructive"` resolves to `bg-destructive
+text-white`, and the token is shadcn's own. **The default is what fails.** Upstream handles
+it in the button rather than the palette — its recipe carries `dark:bg-destructive/60`, so
+the solid button is the light red knocked back over the surface. Our vendored
+`ui/button.tsx` was copied without that class; v1's has it.
+
+`ui/**` is read-only and `scripts/ui-guard.sh` blocks editing it, so the surface is
+corrected in the palette instead: dark `--destructive` is now `oklch(0.505 0.126 21.5)`,
+which is the colour `destructive/60` actually composites to — the same pixels stock shadcn
+renders, reached from CSS. `--destructive-foreground` keeps the light red, because
+destructive *text* needs to be lighter than a dark background rather than darker; the two
+`text-destructive` usages moved to it. Light mode is untouched.
+
+**What the palette cannot fix:** the locked state. Until the workspace slug is typed the
+button is `disabled`, and shadcn dims disabled buttons with `opacity-50`, which fades the
+red fill and the white text together — no token reaches it. It improved as a side effect
+(2.19 → 3.36 in dark) and WCAG exempts disabled controls, but it is still the weakest
+surface on the screen. The lever left is behavioural: stop disabling the button and refuse
+the click instead.
+
 ## Phase 2 — remaining ⬜
 
 ## Phases 3–8 — Modules ⬜

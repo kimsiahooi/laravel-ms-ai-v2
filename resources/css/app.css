@@ -76,10 +76,13 @@
     --muted-foreground: oklch(0.556 0 0);
     --accent: oklch(0.97 0 0);
     --accent-foreground: oklch(0.205 0 0);
+    /* Two roles, deliberately separate — see the dark block for why it matters:
+       --destructive is the SOLID SURFACE a destructive button fills with, and
+       --destructive-foreground is destructive TEXT on an ordinary surface
+       (`ui/alert`, `ui/dropdown-menu`, a ghost icon button).
+       In light mode one value serves both: white on it reads at 4.77:1, and it on
+       white reads at 4.77:1. */
     --destructive: oklch(0.577 0.245 27.325);
-    /* Not in the supplied preset, but `ui/alert` and `ui/dropdown-menu` use
-       `text-destructive-foreground` for destructive TEXT on a tinted surface (not a
-       solid button). Kept equal to --destructive so those stay legible. */
     --destructive-foreground: oklch(0.577 0.245 27.325);
     --border: oklch(0.922 0 0);
     --input: oklch(0.922 0 0);
@@ -115,7 +118,19 @@
     --muted-foreground: oklch(0.708 0 0);
     --accent: oklch(0.269 0 0);
     --accent-foreground: oklch(0.985 0 0);
-    --destructive: oklch(0.704 0.191 22.216);
+    /* In dark mode the two roles pull apart, and shadcn's stock theme handles it in
+       the button rather than the palette: its recipe carries `dark:bg-destructive/60`,
+       so the solid button is the light red knocked back to 60% over the surface.
+       Our vendored `ui/button.tsx` was copied without that class (v1's has it), which
+       left white text on the full-strength light red at 2.89:1 — under AA.
+
+       Since `ui/**` is read-only, the surface is corrected here instead: 0.505 is the
+       colour `destructive/60` actually composites to, so a destructive button renders
+       the same pixels as stock shadcn and white text on it reads at 4.9:1.
+
+       --destructive-foreground stays the light red, because destructive TEXT needs to
+       be lighter than its dark background, not darker. One token could not do both. */
+    --destructive: oklch(0.505 0.126 21.5);
     --destructive-foreground: oklch(0.704 0.191 22.216);
     --border: oklch(1 0 0 / 10%);
     --input: oklch(1 0 0 / 15%);

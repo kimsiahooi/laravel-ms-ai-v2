@@ -46,7 +46,7 @@ export function ArchivedWorkspaceActions({
                     variant="ghost"
                     size="icon"
                     aria-label={t('console.row.delete_forever', { name })}
-                    className="text-destructive hover:text-destructive"
+                    className="text-destructive-foreground hover:text-destructive-foreground"
                     onClick={() => setPending('delete')}
                 >
                     <Trash2 className="size-4" />
