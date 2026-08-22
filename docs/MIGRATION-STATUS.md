@@ -444,6 +444,30 @@ and it is now in the table in `docs/CODING-STANDARDS.md`. It is also why that do
 to confirm the marker rather than assume it: this was caught by checking, not by looking at
 the page.
 
+### Bug: a list could show data from before your last change
+
+Reported after DataTable landed, but not caused by it — the sidebar has been marked
+`prefetch` since Phase 1. Inertia fetches a nav target on hover and serves that copy when
+the link is clicked; nothing invalidates it, so a write in between is invisible:
+
+1. hover **Archive** — Inertia caches the archive page, currently empty;
+2. archive a workspace;
+3. click **Archive** — the cached, still-empty page renders.
+
+A manual refresh "fixes" it, which is the tell: the server was right the whole time.
+
+Fixed with `lib/prefetch-cache.ts` — one listener, registered from the client entry
+alongside `initializeTheme()`, that drops every prefetched page when a non-GET visit
+finishes. What changed is not knowable from there, so nothing is guessed at. Inertia can
+flush by cache tag instead, but that means tagging every link correctly and forever, and a
+missed tag brings this back silently.
+
+Proven both ways: with the listener disabled the same sequence renders "No workspaces yet"
+seconds after restoring a workspace; with it enabled the row is there. Worth recording that
+the *first* attempt to verify the fix passed for the wrong reason — the browser was running
+a stale HMR module in which the call existed but its import did not, and a `ReferenceError`
+in the console was the only sign. Read the console before believing a fix.
+
 ## Phase 2 — remaining ⬜
 
 ## Phases 3–8 — Modules ⬜

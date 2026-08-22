@@ -8,6 +8,7 @@ import AppLayout from '@/layouts/app-layout';
 import AuthLayout from '@/layouts/auth-layout';
 import SettingsLayout from '@/layouts/settings/layout';
 import { loadMessages } from '@/lib/i18n-bundles';
+import { invalidatePrefetchOnWrite } from '@/lib/prefetch-cache';
 import { setUrlDefaults } from '@/wayfinder';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
@@ -72,6 +73,9 @@ createInertiaApp({
         color: 'var(--primary)',
     },
 });
+
+// A write makes any prefetched page stale; drop them rather than render one.
+invalidatePrefetchOnWrite();
 
 // This will set light / dark mode on load...
 initializeTheme();
