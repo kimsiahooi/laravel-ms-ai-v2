@@ -567,6 +567,59 @@ Every module from Phase 3 on deletes something through that dialog, so the key m
 `common.confirm.type_to_confirm` before there were 21 callers rather than after. Nothing
 else changed — the same sentence, in the same three locales.
 
+### RendersResourceIndex — and the three concerns deliberately not ported
+
+Two listings, one contract. `filters` is an agreement with `ResourceFilters` in
+`types/ui.ts` and with `DataTable`, which re-sends every key on every request; assembled
+by hand in each controller it drifts one key at a time, and a missing `sortable` is a
+header that looks clickable and does nothing. `resourceList()` builds it once.
+
+Three deliberate departures from v1's version:
+
+- **It takes a `Builder`, not a `class-string`.** v1 called `$model::query()`, which
+  cannot express `onlyTrashed()` — the archive listing could not use the helper at all
+  and duplicated it instead, which is exactly the duplication v2 had. A Builder also
+  makes eager loading plain `->with()` at the call site rather than another parameter.
+- **It returns props; it does not render.** v1 rendered, so it needed `$view`, `$key`
+  and an `$extraProps` array whose values are eagerly evaluated — a trap v1 documents
+  itself, because a partial reload asking only for the list still paid for every extra
+  prop. Handing the props back means the controller writes an ordinary
+  `Inertia::render`, where deferring and closures work as documented. The trait name
+  kept the plan's wording; the method is `resourceList()`, because it does not render.
+- **Search is a closure.** The trait resolves and trims the term and skips the closure
+  when it is empty — so an empty box can never become `LIKE '%%'` on every column.
+
+`Searchable` came with it, as a model concern: the columns describe the data, not the
+request. It uses an abstract `searchableColumns()` rather than v1's `$searchable`
+property, and that is not taste — **PHP fatals when a class redeclares a trait property
+with a different default**, which is why v1's trait cannot declare one and reads
+`$this->searchable ?? []` behind a PHPStan suppression. Checked rather than assumed:
+
+    Fatal error: A and T define the same property ($searchable) in the composition of A.
+
+**Not ported: `ResolvesDateRange`, `StreamsMedia`, `BuildsStockPickers`.** In v1 they
+serve reports/dashboard/export, medialibrary, and eight order/stock controllers. None of
+those exist here yet, medialibrary is not installed, and there are no stock tables — so
+they would be written against imagined callers with nothing to drive in a browser. They
+land with the modules that need them, in Phases 3 to 6.
+
+**Driven after the refactor**, since it changes every listing query: search by name and
+by slug (`zztest-golf` matches the address only); the same search on the archive, which
+returns only archived rows — proof the OR group stays inside `onlyTrashed()`; sort by
+name and by `created_at` in both directions; `defaultSort: 'deleted_at'` on the archive;
+`per_page`; and `?sort=locale&direction=asc` — a real column that is not whitelisted —
+falling back to `created_at desc` with the direction ignored too, which is the injection
+guard intact.
+
+**Found while building the fixtures: `created_at` and `updated_at` are stored twice.**
+`Tenant::getCustomColumns()` lists `id`, `name`, `locale` and `deleted_at`, so the
+timestamps overflow into the `data` JSON column *as well as* occupying their real
+columns. `ORDER BY created_at` reads the real column while the row's displayed timestamp
+comes back from `data`. They agree on any tenant created normally — both are written from
+the same moment — so nothing is visibly wrong today, and it is Phase 1 code rather than
+anything this change introduced. Left alone pending a decision: adding both to
+`getCustomColumns()` is two lines, but it changes how every tenant row is read.
+
 ## Phase 2 — remaining ⬜
 
 ## Phases 3–8 — Modules ⬜

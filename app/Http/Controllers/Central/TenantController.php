@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Central;
 
 use App\Actions\ProvisionTenant;
+use App\Http\Controllers\Concerns\RendersResourceIndex;
 use App\Http\Controllers\Concerns\ResolvesPerPage;
 use App\Http\Controllers\Concerns\RespondsWithToast;
 use App\Http\Controllers\Concerns\SortsResourceQuery;
 use App\Http\Requests\Central\StoreTenantRequest;
 use App\Models\Tenant;
-use Closure;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -26,6 +26,7 @@ use Inertia\Response;
  */
 final class TenantController
 {
+    use RendersResourceIndex;
     use ResolvesPerPage;
     use RespondsWithToast;
     use SortsResourceQuery;
@@ -43,43 +44,42 @@ final class TenantController
 
     public function index(Request $request): Response
     {
-        $search = trim((string) $request->string('search'));
-        $perPage = $this->perPage($request);
-
-        $query = Tenant::query()->tap($this->search($search));
-        $sort = $this->applySort($query, $request, self::SORTABLE);
-
-        $tenants = $this->paginateList($query, $perPage)
-            ->through(fn (Tenant $tenant): array => [
+        ['rows' => $tenants, 'filters' => $filters] = $this->resourceList(
+            request: $request,
+            query: Tenant::query(),
+            sortable: self::SORTABLE,
+            toData: fn (Tenant $tenant): array => [
                 'slug' => $tenant->getKey(),
                 'name' => $tenant->name,
                 'created_at' => $tenant->created_at->toIso8601String(),
-            ]);
+            ],
+            searchUsing: self::searchBy(...),
+        );
 
         return Inertia::render('admin/tenants/index', [
             'tenants' => $tenants,
-            'filters' => [...$sort, 'search' => $search, 'per_page' => $perPage],
+            'filters' => $filters,
         ]);
     }
 
     public function trashed(Request $request): Response
     {
-        $search = trim((string) $request->string('search'));
-        $perPage = $this->perPage($request);
-
-        $query = Tenant::onlyTrashed()->tap($this->search($search));
-        $sort = $this->applySort($query, $request, self::SORTABLE_TRASHED, 'deleted_at');
-
-        $tenants = $this->paginateList($query, $perPage)
-            ->through(fn (Tenant $tenant): array => [
+        ['rows' => $tenants, 'filters' => $filters] = $this->resourceList(
+            request: $request,
+            query: Tenant::onlyTrashed(),
+            sortable: self::SORTABLE_TRASHED,
+            toData: fn (Tenant $tenant): array => [
                 'slug' => $tenant->getKey(),
                 'name' => $tenant->name,
                 'deleted_at' => $tenant->deleted_at?->toIso8601String(),
-            ]);
+            ],
+            searchUsing: self::searchBy(...),
+            defaultSort: 'deleted_at',
+        );
 
         return Inertia::render('admin/tenants/trashed', [
             'tenants' => $tenants,
-            'filters' => [...$sort, 'search' => $search, 'per_page' => $perPage],
+            'filters' => $filters,
         ]);
     }
 
@@ -136,21 +136,14 @@ final class TenantController
     }
 
     /**
-     * Name-or-slug search, as a tap() so both listings share one definition.
+     * What searching a workspace means. The columns themselves live on the model —
+     * see {@see Tenant::searchableColumns()} — so both listings, and anything that
+     * lists workspaces later, agree without being told.
      *
-     * @return Closure(Builder<Tenant>): void
+     * @param  Builder<Tenant>  $query
      */
-    private function search(string $search): Closure
+    private static function searchBy(Builder $query, string $term): void
     {
-        return function (Builder $query) use ($search): void {
-            if ($search === '') {
-                return;
-            }
-
-            $query->where(function (Builder $group) use ($search): void {
-                $group->where('id', 'like', "%{$search}%")
-                    ->orWhere('name', 'like', "%{$search}%");
-            });
-        };
+        $query->search($term);
     }
 }

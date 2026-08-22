@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Models\Concerns\Searchable;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Stancl\Tenancy\Contracts\TenantWithDatabase;
 use Stancl\Tenancy\Database\Concerns\HasDatabase;
@@ -21,6 +22,7 @@ class Tenant extends BaseTenant implements TenantWithDatabase
 {
     // The base Tenant does not ship database management; multi-DB mode needs this.
     use HasDatabase;
+    use Searchable;
     use SoftDeletes;
 
     /**
@@ -53,6 +55,17 @@ class Tenant extends BaseTenant implements TenantWithDatabase
         // 'deleted' intentionally NOT mapped to TenantDeleted (see docblock).
         'forceDeleted' => Events\TenantDeleted::class,
     ];
+
+    /**
+     * A workspace is findable by what it is called and by the address it answers on —
+     * `id` IS the slug, so it is the one people read off a URL and paste back.
+     *
+     * @return array<int, string>
+     */
+    protected function searchableColumns(): array
+    {
+        return ['id', 'name'];
+    }
 
     public function getIncrementing(): bool
     {
