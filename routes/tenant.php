@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\Settings\SecurityController;
 use App\Http\Middleware\AuthorizeTenantRoute;
@@ -38,6 +39,19 @@ Route::middleware(['web', InitializeTenancyByPath::class, SetTenantUrlDefault::c
         // slug is filled in by SetTenantUrlDefault's URL::defaults, which is how every
         // other route() call in the app resolves it too.
         Route::get('/', fn () => redirect()->route('dashboard'));
+
+        // The language switcher, again.
+        //
+        // There is an identical central route (routes/web.php), and a workspace cannot
+        // use it: the session driver is `database` and DatabaseTenancyBootstrapper
+        // switches the connection, so a workspace's session row lives in the tenant
+        // database while the central route reads `central.sessions`. Posting there from
+        // inside a workspace finds no session, starts a fresh one, and the CSRF check
+        // rejects it as a 419.
+        //
+        // Outside the auth group on purpose: the sign-in screen offers the switcher too,
+        // and someone who cannot read the form yet is exactly who needs it.
+        Route::put('locale', LocaleController::class)->name('tenant.locale.update');
 
         // AuthorizeTenantRoute maps each route name to the permission it needs
         // (App\Support\TenantPermissions) and 403s a user who lacks it. Routes with

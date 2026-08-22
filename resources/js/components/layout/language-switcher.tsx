@@ -8,7 +8,8 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useTranslation } from '@/hooks/use-translation';
-import { update } from '@/routes/locale';
+import { update as updateCentralLocale } from '@/routes/locale';
+import { update as updateTenantLocale } from '@/routes/tenant/locale';
 
 /**
  * Switches the UI language.
@@ -20,10 +21,19 @@ import { update } from '@/routes/locale';
  *
  * Each language is listed in its own name, never translated — someone looking for
  * 简体中文 will not recognise "Chinese (Simplified)" written in Malay.
+ *
+ * Two routes, one per area, and the difference is not cosmetic. The session driver is
+ * `database` and DatabaseTenancyBootstrapper switches the connection, so a workspace's
+ * session row lives in its own database. Posting to the central route from inside a
+ * workspace looks the cookie up in `central.sessions`, finds nothing, starts a fresh
+ * session, and CSRF rejects it as a 419.
  */
 export function LanguageSwitcher() {
     const { t } = useTranslation();
-    const { locale, locales } = usePage().props;
+    const { locale, locales, tenant } = usePage().props;
+
+    // Which area is rendering this decides which session the request must reach.
+    const update = tenant ? updateTenantLocale : updateCentralLocale;
 
     return (
         <DropdownMenu>

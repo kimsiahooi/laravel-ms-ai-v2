@@ -722,6 +722,56 @@ caught it, nothing else would have.
 effect because SSR has no `document`, and the layouts that carry a language switcher call
 it. Verified by switching en → zh_Hans → en and reading the attribute at each step.
 
+### The workspace shell
+
+The tenant side was running 100% untouched starter kit — a "Platform" nav group with
+one Dashboard entry and GitHub/Laravel-docs footer links, none of it translated. It is
+now a real shell, modelled on the console shell that was already built and reviewed:
+sidebar with the workspace's name and address, permission-filtered nav, breadcrumbs,
+user menu, language and theme controls.
+
+**The nav is one entry, and that is its honest size.** `config/tenant-nav.ts` ships the
+*mechanism* — groups, `TranslationKey` titles, real Lucide components, Wayfinder hrefs,
+and per-entry permissions — with Dashboard in it, because Dashboard and the three
+account-settings pages are the only navigable tenant routes that exist. A Wayfinder
+helper for a route that has not been written is not a dead link, it is a compile error.
+Each module adds its line as it lands; groups (Catalog, Stock, Orders…) arrive with the
+modules that fill them, because an empty group renders as a heading with nothing under
+it. Both the sidebar and — later — the ⌘K palette read that one function, so the two
+cannot come to disagree about what exists.
+
+Account settings sit in the user menu rather than the sidebar: they belong to the
+person, not to the workspace.
+
+**Deleted, not adapted** — nine starter-kit files with no remaining importer:
+`app-layout`, `app/app-sidebar-layout`, `app/app-header-layout`, `app-sidebar`,
+`app-header`, `nav-main`, `nav-footer`, `nav-user`, `app-logo`, `app-sidebar-header`,
+`user-menu-content`, `auth/auth-card-layout`, `auth/auth-split-layout`. Keeping
+scaffolding you do not use is how a shell ends up with two ways to do everything.
+
+**Found by putting the language switcher in the tenant header: it 419s.** The switcher
+had only ever run on `/admin`, where the central session is the right one. The session
+driver is `database` and `DatabaseTenancyBootstrapper` switches the connection, so a
+workspace's session row lives in its own database — posting to the central `/locale`
+route from inside a workspace looks the cookie up in `central.sessions`, finds nothing,
+starts a fresh session, and CSRF rejects it. Verified rather than guessed: both
+databases were confirmed to hold a `sessions` table. Fixed by registering the same
+controller inside the tenant group as `tenant.locale.update`, outside the auth group —
+the sign-in screen offers the switcher too, and someone who cannot read the form yet is
+exactly who needs it.
+
+**Driven**: signed into `/demo`, both shells side by side, settings still rendering under
+the new layout, all three locales with `<html lang>` following each switch, 375 px with
+the sidebar off-canvas and no horizontal body scroll, SSR confirmed, zero console errors.
+
+**Still starter-kit and untouched:** `pages/dashboard.tsx` is three grey placeholder
+boxes (Phase 8 builds the real one) and every string under `pages/auth/**` and
+`pages/settings/**` is hard-coded English — ~85 literals across nine files, plus missing
+`auth.php`/`passwords.php` in all three locales, which is why Fortify's messages render
+English in Malay and Chinese. `check:i18n` passes green through all of it: it verifies
+that referenced keys exist, and cannot report a namespace nobody created. That sweep is
+the next unit.
+
 ## Phase 2 — remaining ⬜
 
 ## Phases 3–8 — Modules ⬜

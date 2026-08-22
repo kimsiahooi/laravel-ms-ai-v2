@@ -4,9 +4,9 @@ import type { ComponentType } from 'react';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { initializeTheme } from '@/hooks/use-appearance';
-import AppLayout from '@/layouts/app-layout';
 import AuthLayout from '@/layouts/auth-layout';
 import SettingsLayout from '@/layouts/settings/layout';
+import TenantLayout from '@/layouts/tenant-layout';
 import { loadMessages } from '@/lib/i18n-bundles';
 import { invalidatePrefetchOnWrite } from '@/lib/prefetch-cache';
 import { setUrlDefaults } from '@/wayfinder';
@@ -43,9 +43,9 @@ createInertiaApp({
             case name.startsWith('auth/'):
                 return AuthLayout;
             case name.startsWith('settings/'):
-                return [AppLayout, SettingsLayout];
+                return [TenantLayout, SettingsLayout];
             default:
-                return AppLayout;
+                return TenantLayout;
         }
     },
     strictMode: true,
