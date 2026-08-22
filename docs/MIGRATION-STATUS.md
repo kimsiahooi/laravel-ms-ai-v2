@@ -72,7 +72,67 @@ using it is the likely answer.
 - `appearance-tabs.tsx` uses `bg-white` / `dark:bg-neutral-700` rather than tokens. Phase 2
   redesigns it.
 
-## Phase 1 — Tenancy and auth spine ⬜
+## Phase 1 — Tenancy and auth spine 🚧
+
+| Piece | Status | Notes |
+|---|---|---|
+| stancl/tenancy, multi-DB, path slug | ✅ | Central connection `central`; tenant DBs `tenant_<slug>`. |
+| Central / tenant migration split | ✅ | Central: users, cache, jobs, tenants. Tenant: users, sessions, cache, passkeys, 2FA, permissions. |
+| `Tenant` + `CentralUser` + tenant `User` | ✅ | Two `users` tables in different databases; `CentralConnection` pins the admin one. |
+| Guards `web` (tenant) / `central` (admin) | ✅ | |
+| Bootstrappers | ✅ | Permission-cache and Fortify-home. |
+| Fortify on the tenant guard | ✅ | All auth routes at `/{tenant}/…` via `fortify.prefix`. 2FA, passkeys, reset, verification. |
+| spatie/laravel-permission | ✅ | Tables migrate per tenant; cache key scoped per tenant. |
+| Tenant URL defaults | ✅ | `SetTenantUrlDefault` → Wayfinder emits `{tenant}` as OPTIONAL in TS helpers. |
+| Permissions catalog + `AuthorizeTenantRoute` | ⬜ | |
+| `ProvisionTenant` + seeders | ⬜ | Tenants currently created by hand. |
+| Central `/admin` area | ⬜ | |
+
+### Verified end to end
+
+Login at `/acme/login` → dashboard 200, server-rendered, session in the tenant database
+with **zero** rows in central. Cross-tenant isolation confirmed: acme's session is refused
+on `/globex/`, acme's credentials fail on globex, and both tenants can be signed in at once
+in one browser. Unknown slug → 404. Wrong password → back to login.
+
+### The bug worth remembering
+
+Signing in appeared to succeed — the POST redirected to the dashboard — and the very next
+request was a guest again. Cause: `StartSession` builds the session store once, capturing
+BOTH the cookie name AND the database connection at that moment. On routes registered by a
+package (Fortify's), tenancy initialized *after* it, so the authenticated session was
+written to the CENTRAL database while every later read came from the tenant database.
+
+Neither middleware priority nor an explicitly ordered middleware group reordered it
+reliably. The fix is `App\Http\Middleware\InitializeTenancyFromPath`, a **global**
+middleware: global middleware run before routing, so the ordering cannot regress. stancl's
+route-level `InitializeTenancyByPath` stays — it is what 404s an unknown slug.
+
+**Do not move tenancy initialization back into route middleware or a bootstrapper.**
+
+### Sharing the `tenant_` prefix with v1
+
+v2 uses the same `tenant_<slug>` database naming as v1, on the same MySQL server, by
+preference. A slug present in **both** projects therefore resolves to ONE database.
+
+Verified this is self-guarding: provisioning a tenant whose database already exists fails
+with `TenantDatabaseAlreadyExistsException` and leaves the existing data untouched (tested
+against v1's `tenant_acme` — its 53 rows were unchanged). So the collision cannot silently
+migrate over v1's data; it fails loudly.
+
+**Known rough edge:** that failure still leaves an orphan row in the central `tenants`
+table, because the row is inserted before the database is created. `ProvisionTenant` must
+clean up on failure — noted as part of that task.
+
+### Decisions taken here
+
+- **Self-registration disabled** (`Features::registration()` commented out). There is no
+  public signup in a B2B tenant model: a super-admin provisions a tenant and its first user;
+  that admin invites the rest. `pages/auth/register.tsx` deleted with it.
+- Settings routes (`profile`, `security`, `appearance`) moved under `/{tenant}/settings/…`
+  — they are tenant-user settings. `routes/settings.php` folded into `routes/tenant.php`.
+- `tenants.locale` and `users.locale` columns added now so Phase 2's locale resolver has
+  something to read.
 
 ## Phase 2 — Shared UI kit ⬜
 

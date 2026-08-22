@@ -7,9 +7,9 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * CENTRAL users — super-admins who manage tenants at /admin. Tenant users live in a
- * separate `users` table inside each tenant's own database
- * (database/migrations/tenant/). Same table name, different database.
+ * Tenant users. Lives in EACH tenant's database, so there is no tenant_id column —
+ * the database itself is the scope. The central super-admins table is a separate
+ * `users` table in the central database.
  */
 return new class extends Migration
 {
@@ -21,9 +21,12 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+            // Per-user UI language; falls back to the tenant's, then the app's.
+            $table->string('locale', 12)->nullable();
             $table->rememberToken();
             $table->timestamps();
-            // Disables an admin while keeping the row for restore.
+            // Disables a user while keeping the row for restore. The unique index on
+            // `email` counts trashed rows, so the address stays reserved.
             $table->softDeletes();
         });
 
@@ -32,21 +35,11 @@ return new class extends Migration
             $table->string('token');
             $table->timestamp('created_at')->nullable();
         });
-
-        Schema::create('sessions', function (Blueprint $table): void {
-            $table->string('id')->primary();
-            $table->foreignId('user_id')->nullable()->index();
-            $table->string('ip_address', 45)->nullable();
-            $table->text('user_agent')->nullable();
-            $table->longText('payload');
-            $table->integer('last_activity')->index();
-        });
     }
 
     public function down(): void
     {
         Schema::dropIfExists('users');
         Schema::dropIfExists('password_reset_tokens');
-        Schema::dropIfExists('sessions');
     }
 };

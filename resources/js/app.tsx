@@ -5,6 +5,7 @@ import { initializeTheme } from '@/hooks/use-appearance';
 import AppLayout from '@/layouts/app-layout';
 import AuthLayout from '@/layouts/auth-layout';
 import SettingsLayout from '@/layouts/settings/layout';
+import { setUrlDefaults } from '@/wayfinder';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
@@ -23,7 +24,18 @@ createInertiaApp({
         }
     },
     strictMode: true,
-    withApp(app) {
+    withApp(app, { page }) {
+        // Every app route is prefixed /{tenant}/. Registering the slug as a URL
+        // default lets route helpers omit it — `dashboard()` resolves to the current
+        // workspace, while `dashboard({ tenant: 'other' })` still works.
+        //
+        // Set here, per render, from this render's own page: under SSR one Node
+        // process serves every tenant, so a value captured once at module scope
+        // would leak one tenant's slug into another's links.
+        const tenant = (page.props as { tenant?: { slug?: string } | null })
+            .tenant;
+        setUrlDefaults(tenant?.slug ? { tenant: tenant.slug } : {});
+
         return (
             <TooltipProvider delayDuration={0}>
                 {app}

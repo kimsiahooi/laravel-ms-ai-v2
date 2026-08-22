@@ -1,6 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
+use App\Http\Middleware\SetTenantUrlDefault;
 use Laravel\Fortify\Features;
+use Stancl\Tenancy\Middleware\InitializeTenancyByPath;
 
 return [
 
@@ -86,7 +90,7 @@ return [
     |
     */
 
-    'prefix' => '',
+    'prefix' => '{tenant}', // all auth routes live at /{slug}/… (see the comment above 'middleware')
 
     'domain' => null,
 
@@ -101,7 +105,7 @@ return [
     |
     */
 
-    'middleware' => ['web'],
+    'middleware' => ['web', InitializeTenancyByPath::class, SetTenantUrlDefault::class],
 
     /*
     |--------------------------------------------------------------------------
@@ -161,7 +165,10 @@ return [
     */
 
     'features' => [
-        Features::registration(),
+        // Registration is intentionally DISABLED: this is a B2B multi-tenant app
+        // with no public signup. A super-admin provisions a tenant and its first
+        // user at /admin; that admin then invites the rest from the Users screen.
+        // Features::registration(),
         Features::resetPasswords(),
         Features::emailVerification(),
         Features::twoFactorAuthentication([

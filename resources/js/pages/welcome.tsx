@@ -1,45 +1,76 @@
-import { Head, Link, usePage } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
+import { type FormEvent, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { dashboard, login, register } from '@/routes';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 /**
- * Placeholder landing page.
+ * Central landing page: a workspace picker.
  *
- * The starter kit's marketing page was removed: it hard-coded 26 colour literals,
- * which the design-token guard rejects, and none of it ships in this app. Phase 1
- * replaces this route with a redirect to the tenant/admin entry points.
+ * Every application route is prefixed `/{tenant}/`, so there is no single sign-in
+ * URL — each workspace has its own at `/{slug}/login`. This page turns a workspace
+ * name into that URL. (Linking to `login()` here is what produced a 404: with no
+ * tenant in scope the route helper cannot fill in `{tenant}`.)
+ *
+ * An unknown slug lands on the 404 page, which is the same answer the server gives
+ * for any wrong workspace address.
  */
 export default function Welcome() {
-    const { auth } = usePage().props;
+    const [slug, setSlug] = useState('');
+
+    const submit = (event: FormEvent) => {
+        event.preventDefault();
+
+        const workspace = slug
+            .trim()
+            .toLowerCase()
+            .replace(/^\/+|\/+$/g, '');
+
+        if (workspace !== '') {
+            router.visit(`/${workspace}/login`);
+        }
+    };
 
     return (
         <>
             <Head title="Welcome" />
-            <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-background p-6 text-foreground">
-                <div className="flex flex-col items-center gap-2 text-center">
-                    <h1 className="font-semibold text-2xl tracking-tight">
-                        Inventory
-                    </h1>
-                    <p className="max-w-sm text-muted-foreground text-sm">
-                        Multi-tenant inventory and manufacturing management.
-                    </p>
-                </div>
+            <div className="flex min-h-screen flex-col items-center justify-center bg-background p-6 text-foreground">
+                <div className="w-full max-w-sm space-y-6">
+                    <div className="space-y-2 text-center">
+                        <h1 className="font-semibold text-2xl tracking-tight">
+                            Inventory
+                        </h1>
+                        <p className="text-muted-foreground text-sm">
+                            Enter your workspace to sign in.
+                        </p>
+                    </div>
 
-                <div className="flex items-center gap-3">
-                    {auth.user ? (
-                        <Button asChild>
-                            <Link href={dashboard()}>Go to dashboard</Link>
+                    <form onSubmit={submit} className="space-y-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="workspace">Workspace</Label>
+                            <Input
+                                id="workspace"
+                                name="workspace"
+                                value={slug}
+                                onChange={(event) =>
+                                    setSlug(event.target.value)
+                                }
+                                placeholder="acme"
+                                autoComplete="organization"
+                                autoCapitalize="none"
+                                spellCheck={false}
+                                required
+                            />
+                            <p className="text-muted-foreground text-xs">
+                                The name in your address bar, e.g.
+                                <span className="font-medium"> /acme</span>
+                            </p>
+                        </div>
+
+                        <Button type="submit" className="w-full">
+                            Continue
                         </Button>
-                    ) : (
-                        <>
-                            <Button asChild>
-                                <Link href={login()}>Log in</Link>
-                            </Button>
-                            <Button asChild variant="outline">
-                                <Link href={register()}>Register</Link>
-                            </Button>
-                        </>
-                    )}
+                    </form>
                 </div>
             </div>
         </>

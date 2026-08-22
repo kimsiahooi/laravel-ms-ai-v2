@@ -42,6 +42,13 @@ class HandleInertiaRequests extends Middleware
                 'user' => $request->user(),
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
+            // Identifies the current workspace. The client registers `slug` as the
+            // default {tenant} route parameter (see app.tsx), so route helpers
+            // resolve to this workspace without every call site passing it.
+            'tenant' => fn () => tenant() === null ? null : [
+                'slug' => tenant('id'),
+                'name' => tenant('name'),
+            ],
         ];
     }
 }

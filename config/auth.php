@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\CentralUser;
 use App\Models\User;
 
 return [
@@ -38,9 +39,17 @@ return [
     */
 
     'guards' => [
+        // Tenant users — authenticated against the ACTIVE tenant's database.
+        // Fortify drives this guard (login, 2FA, passkeys, password reset).
         'web' => [
             'driver' => 'session',
-            'provider' => 'users',
+            'provider' => 'tenant_users',
+        ],
+
+        // Super-admins — authenticated against the central database at /admin.
+        'central' => [
+            'driver' => 'session',
+            'provider' => 'central_users',
         ],
     ],
 
@@ -62,15 +71,18 @@ return [
     */
 
     'providers' => [
-        'users' => [
+        // Tenant users live in the active tenant DB (the default connection once
+        // tenancy is initialized).
+        'tenant_users' => [
             'driver' => 'eloquent',
             'model' => env('AUTH_MODEL', User::class),
         ],
 
-        // 'users' => [
-        //     'driver' => 'database',
-        //     'table' => 'users',
-        // ],
+        // Super-admins live in the central DB (CentralUser pins the connection).
+        'central_users' => [
+            'driver' => 'eloquent',
+            'model' => CentralUser::class,
+        ],
     ],
 
     /*
