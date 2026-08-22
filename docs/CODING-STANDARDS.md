@@ -66,6 +66,44 @@ excluded from Biome only because of the Tailwind v4 parser limitation.
   It builds the `{tenant}` route pattern, the global tenancy middleware's skip list, and
   the slug validation rule. Adding a central area means adding it there — nowhere else.
 
+## Browser verification with Playwright — after every phase
+
+The user has the Claude Code Playwright plugin installed, and the agreement is: **they read
+the code, I drive the browser.** No phase is finished until its screens have been exercised
+in a real browser and the result reported — screenshots or a console transcript, never
+"should work".
+
+**`bun run dev` server-renders too** — Inertia v3 POSTs the page to the *Vite dev server*
+at `/__inertia_ssr`, not to port 13714. `php artisan inertia:start-ssr` is only for built
+assets. So a browser pass under `bun run dev` is a real SSR pass and does surface hydration
+mismatches.
+
+**But confirm it before trusting the result.** View source and look for
+`<div data-server-rendered="true" id="app">`. An empty `<div id="app"></div>` means you are
+looking at a client-rendered page, and three things cause that — all silent, all HTTP 200:
+
+| Cause | Tell |
+|---|---|
+| The first ~2 s after `bun run dev` | the dev server logs `SSR skipped, module graph is still warming up…`. Wait for `Inertia SSR module graph warmed up`. |
+| A stale `public/hot` from a dev server that died uncleanly | `public/hot` exists with no vite running. Laravel POSTs SSR to a dead port and falls back with **nothing in `laravel.log`**. Delete the file. |
+| You are looking at a redirect | e.g. `/admin/login` while signed in is a 302 — view-source shows Laravel's redirect page, not the app. |
+
+Do at least one pass per phase against **built** assets as well, since that is what
+production runs:
+
+```bash
+rm -f public/hot          # stop Laravel dispatching to the dev server
+bun run build:ssr
+php artisan inertia:start-ssr &
+# … drive with Playwright …
+```
+
+Per screen: create → edit → delete with the toast and list update; empty form and bad value
+(errors under the fields, from the zod gate *and* from Laravel); empty state; "no results"
+after a search; light **and** dark; 375 / 768 / 1024 with no horizontal body scroll; all
+three locales. **Read the browser console every time** — a React #418 warning is a hydration
+mismatch.
+
 ## Verification — there is no test suite
 
 The gates above catch mechanical errors. Everything behavioural is verified by driving the

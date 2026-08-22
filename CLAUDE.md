@@ -14,14 +14,20 @@ The user reviews the diff, then asks for a commit. Staging is fine; committing i
 
 ## There is no test suite — this is deliberate
 
-No Pest, no Vitest, no Playwright, no PHPUnit. Do **not** add one, and do not suggest
-"let me write a test for that". The safety net is:
+No Pest, no Vitest, no PHPUnit, and **no Playwright test suite**. Do **not** add one, and
+do not suggest "let me write a test for that". (Playwright *is* used — to drive the app by
+hand after each phase, per point 3. Driving it is not the same as a suite: nothing is
+asserted, recorded or run in CI.) The safety net is:
 
 1. **Static gates** (below) — they must be green before any handover.
 2. **`bun run check:validation`** — reads the PHP FormRequests and checks every
    server-validated field has a matching zod key. This is the *only* thing standing
    between the two validation layers and silent drift. Never delete or weaken it.
-3. **Driving the real app in a browser** — the verification checklist in
+3. **Driving the real app in a browser with Playwright** — mandatory after every phase, and
+   it is *my* job, not the user's: they review the code, I prove the screens work. Confirm
+   the page is actually server-rendered (`data-server-rendered="true"` in view-source)
+   before trusting the pass, watch the browser console, and report what was observed.
+   Checklist and the three silent client-fallback causes:
    [`docs/CODING-STANDARDS.md`](docs/CODING-STANDARDS.md).
 
 Because nothing runs the UI in CI, **SSR determinism is a hard rule, not a style
