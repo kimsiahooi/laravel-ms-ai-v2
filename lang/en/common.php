@@ -51,6 +51,6 @@ return [
         'just_now' => 'just now',
         'minutes_ago' => ':count min ago',
         'hours_ago' => ':count hr ago',
-        'days_ago' => ':count days ago',
+        'days_ago' => ':count day ago|:count days ago',
     ],
 ];

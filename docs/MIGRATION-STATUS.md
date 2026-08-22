@@ -528,6 +528,12 @@ all three languages, light and dark, and 375 px — where only the primary and a
 columns remain, the address moves under the name, the footer stacks, and neither body nor
 document scrolls sideways. Zero console errors.
 
+**Found while looking at the screenshots: "1 days ago".** `TimeAgo` resolved the count with
+`t()`, a plain lookup, so the singular never rendered. Now `tChoice()`, with `days_ago`
+carrying both forms in `en` and a single segment in `ms`/`zh_Hans` — which is the reason it
+has to be the locale's choice rather than a ternary at the call site: two of the three
+languages have no plural inflection at all.
+
 ## Phase 2 — remaining ⬜
 
 ## Phases 3–8 — Modules ⬜

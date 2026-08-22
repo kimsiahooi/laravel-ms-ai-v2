@@ -10,7 +10,7 @@ import { formatDate, formatDateTime, relativeTime } from '@/lib/format';
  * only appears after mount, where the two renders can no longer disagree.
  */
 export function TimeAgo({ iso }: { iso: string | null }) {
-    const { t } = useTranslation();
+    const { tChoice } = useTranslation();
     const [relative, setRelative] = useState<string | null>(null);
 
     useEffect(() => {
@@ -23,8 +23,11 @@ export function TimeAgo({ iso }: { iso: string | null }) {
         // precisely so it can only be read from a place like this.
         const elapsed = relativeTime(iso, Date.now()); // ui-allow
 
-        setRelative(elapsed ? t(elapsed.key, { count: elapsed.count }) : null);
-    }, [iso, t]);
+        // tChoice, not t: ":count days ago" renders "1 days ago" through a plain
+        // lookup. Malay and Chinese have no plural inflection, so the choice has to be
+        // the locale's to make — a ternary here would be wrong in two of three.
+        setRelative(elapsed ? tChoice(elapsed.key, elapsed.count) : null);
+    }, [iso, tChoice]);
 
     if (iso === null) {
         return <span className="text-muted-foreground">—</span>;

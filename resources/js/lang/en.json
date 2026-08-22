@@ -21,7 +21,7 @@
     "common.theme.dark": "Dark",
     "common.theme.light": "Light",
     "common.theme.system": "System",
-    "common.time.days_ago": ":count days ago",
+    "common.time.days_ago": ":count day ago|:count days ago",
     "common.time.hours_ago": ":count hr ago",
     "common.time.just_now": "just now",
     "common.time.minutes_ago": ":count min ago",
