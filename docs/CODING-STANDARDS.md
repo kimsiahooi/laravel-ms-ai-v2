@@ -80,13 +80,14 @@ mismatches.
 
 **But confirm it before trusting the result.** View source and look for
 `<div data-server-rendered="true" id="app">`. An empty `<div id="app"></div>` means you are
-looking at a client-rendered page, and three things cause that — all silent, all HTTP 200:
+looking at a client-rendered page, and four things cause that — all silent, all HTTP 200:
 
 | Cause | Tell |
 |---|---|
 | The first ~2 s after `bun run dev` | the dev server logs `SSR skipped, module graph is still warming up…`. Wait for `Inertia SSR module graph warmed up`. |
 | A stale `public/hot` from a dev server that died uncleanly | `public/hot` exists with no vite running. Laravel POSTs SSR to a dead port and falls back with **nothing in `laravel.log`**. Delete the file. |
-| You are looking at a redirect | e.g. `/admin/login` while signed in is a 302 — view-source shows Laravel's redirect page, not the app. |
+| **`bun run build` was run while `bun run dev` was up** | `public/hot` is **gone** but vite is still running. The build deletes the hot file, so Laravel switches to production mode and looks for an SSR bundle that `build` (unlike `build:ssr`) never produced — SSR is skipped with nothing logged, and the dev server looks healthy. Restart `bun run dev`. |
+| You are looking at a redirect | e.g. `/admin/login` while signed in is a 302 — view-source shows Laravel's redirect page, not the app. Also: `curl` has no session, so any authenticated URL redirects — check with the browser, not curl. |
 
 Do at least one pass per phase against **built** assets as well, since that is what
 production runs:
