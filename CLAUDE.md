@@ -46,6 +46,32 @@ React #418 hydration mismatch that nothing but your own eyes will catch.
 - **Package manager / JS runtime: Bun** (`bun install`, `bun run …`; lockfile `bun.lock`).
   Not npm / pnpm / yarn.
 
+## Code organisation
+
+**Read [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) before adding a file.** It defines
+where each kind of code lives and the four rules that keep it maintainable: size as a
+signal (~250-line pages, ~30-line controller methods), one-way dependencies
+(`pages → components → ui`, `lib/` imports neither), rule-of-three before promoting a
+component out of its module, and business logic never in a page or a controller.
+`scripts/check-structure.sh` enforces the mechanical parts.
+
+## Localization
+
+**No user-facing literal strings in components.** Every label, placeholder, empty state,
+toast and aria-label goes through `t()`. Laravel `lang/` is the single source of truth;
+locales are `en` (base), `ms`, `zh_Hans`. The active locale comes from a **server prop** —
+never `navigator.language`, which would reintroduce hydration mismatches. Interpolate
+rather than concatenate, and pluralise through the helper (Malay and Chinese have no
+plural inflection). Details: [`docs/LOCALIZATION.md`](docs/LOCALIZATION.md).
+
+## Packages — buy vs build
+
+**Before hand-rolling anything non-trivial, check whether a stable, popular package does
+it.** If one does, propose it (name, what it removes, any risk) and let the user decide —
+never add a dependency silently, and never add one for something the platform already does
+well. The bar and the live catalog of decisions:
+[`docs/PACKAGE-POLICY.md`](docs/PACKAGE-POLICY.md).
+
 ## Architecture
 
 - Laravel 13 + Inertia v3 + React 19 + TypeScript + Tailwind v4, **SSR on**.

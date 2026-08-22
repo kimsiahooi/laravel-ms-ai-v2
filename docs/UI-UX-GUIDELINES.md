@@ -18,6 +18,9 @@ Stack: **React 19 + Inertia v3 + Tailwind v4 + shadcn/ui + lucide-react**, toast
 6. **Plain language.** Written for the person running the business, not the developer. No
    dev jargon (on-hand ledger, morph, snapshot). Keep the domain terms users actually
    use — SKU, warehouse, BOM.
+7. **Translatable.** No user-facing literal in a component — every string goes through
+   `t()`. Interpolate rather than concatenate, and don't assume English label widths:
+   Malay runs longer and Chinese denser. See [`LOCALIZATION.md`](LOCALIZATION.md).
 
 ## 2. Colour & theme (design tokens only)
 
