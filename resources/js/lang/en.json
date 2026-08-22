@@ -105,9 +105,6 @@
     "console.toast.created": "Workspace “:name” created — sign in at /:slug/login.",
     "console.toast.deleted": "Workspace “:name” and its database were permanently deleted.",
     "console.toast.restored": "Workspace “:name” restored.",
-    "console.validation.attribute_admin_email": "administrator email",
-    "console.validation.attribute_admin_name": "administrator name",
-    "console.validation.attribute_admin_password": "administrator password",
     "console.validation.slug_regex": "The slug may only contain lowercase letters, numbers and hyphens.",
     "console.validation.slug_reserved": "That slug is reserved and cannot be used.",
     "console.validation.slug_reserved_action": "The slug \":slug\" is reserved and cannot be used.",
@@ -123,5 +120,16 @@
     "console.workspaces.search_placeholder": "Search by name or address",
     "console.workspaces.subheading": "Every customer workspace on this platform, each with its own database.",
     "console.workspaces.title": "Workspaces",
-    "console.workspaces.view_archive": "View archive"
+    "console.workspaces.view_archive": "View archive",
+    "validation.attributes.admin_email": "administrator email",
+    "validation.attributes.admin_name": "administrator name",
+    "validation.attributes.admin_password": "administrator password",
+    "validation.attributes.name": "name",
+    "validation.attributes.slug": "slug",
+    "validation.email": "The :attribute field must be a valid email address.",
+    "validation.max.string": "The :attribute field must not be greater than :max characters.",
+    "validation.min.string": "The :attribute field must be at least :min characters.",
+    "validation.regex": "The :attribute field format is invalid.",
+    "validation.required": "The :attribute field is required.",
+    "validation.string": "The :attribute field must be a string."
 }

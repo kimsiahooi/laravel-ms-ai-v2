@@ -134,8 +134,5 @@ return [
         'slug_reserved' => '该地址为保留字，无法使用。',
         'slug_taken' => '已存在使用该地址的工作区（它可能已归档 —— 请先恢复或永久删除）。',
         'slug_reserved_action' => '地址 ":slug" 为保留字，无法使用。',
-        'attribute_admin_name' => '管理员姓名',
-        'attribute_admin_email' => '管理员邮箱',
-        'attribute_admin_password' => '管理员密码',
     ],
 ];

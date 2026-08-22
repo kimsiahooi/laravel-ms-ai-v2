@@ -140,8 +140,5 @@ return [
         'slug_reserved' => 'That slug is reserved and cannot be used.',
         'slug_taken' => 'A workspace with that slug already exists (it may be archived — restore or permanently delete it first).',
         'slug_reserved_action' => 'The slug ":slug" is reserved and cannot be used.',
-        'attribute_admin_name' => 'administrator name',
-        'attribute_admin_email' => 'administrator email',
-        'attribute_admin_password' => 'administrator password',
     ],
 ];

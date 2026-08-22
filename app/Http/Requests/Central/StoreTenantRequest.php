@@ -12,6 +12,10 @@ use Illuminate\Validation\Rule;
  * Provisioning a workspace. Mirrored in the browser by
  * resources/js/lib/validation/schemas/store-tenant.ts — `bun run check:validation`
  * fails if the two stop agreeing on which fields are checked.
+ *
+ * There is deliberately no `attributes()` here: the field names live in
+ * `lang/{locale}/validation.php` under `attributes`, where Laravel reads them without
+ * being asked and the zod schema reads the very same keys. One source, both layers.
  */
 final class StoreTenantRequest extends FormRequest
 {
@@ -42,23 +46,6 @@ final class StoreTenantRequest extends FormRequest
             'admin_name' => ['required', 'string', 'max:255'],
             'admin_email' => ['required', 'string', 'email', 'max:255'],
             'admin_password' => ['required', 'string', 'min:8'],
-        ];
-    }
-
-    /**
-     * Plain names for the administrator fields. Without these Laravel says "the admin
-     * email field", which reads like a different thing from the "Administrator" the
-     * form asks for — and the zod schema mirrors these, so both layers say the same
-     * sentence for the same mistake.
-     *
-     * @return array<string, string>
-     */
-    public function attributes(): array
-    {
-        return [
-            'admin_name' => __('console.validation.attribute_admin_name'),
-            'admin_email' => __('console.validation.attribute_admin_email'),
-            'admin_password' => __('console.validation.attribute_admin_password'),
         ];
     }
 

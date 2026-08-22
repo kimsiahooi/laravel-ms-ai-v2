@@ -12,12 +12,21 @@
  *      never edits your working tree);
  *   2. a non-base locale is missing a key the base locale has;
  *   3. a locale carries a key the base locale no longer has (a stale leftover);
- *   4. a `t()` / `tChoice()` call names a key that does not exist.
+ *   4. a `t()` / `tChoice()` call names a key that does not exist;
+ *   5. a FormRequest uses a validation rule that has no translated message.
+ *
+ * That last one exists because of a bug this gate was written after. Laravel falls
+ * back to its own English `validation.php` for any rule `lang/{locale}/validation.php`
+ * does not carry, and it fills `:attribute` from a translation regardless — so a Malay
+ * form was refusing an address with "The e-mel pentadbir field must be a valid email
+ * address.": half translated, and reported by nobody. A missing rule message is
+ * invisible in exactly the way a missing UI string is not.
  *
  * Run: `bun run check:i18n`
  */
 
 import {
+    existsSync,
     mkdtempSync,
     readdirSync,
     readFileSync,
@@ -175,6 +184,129 @@ function preview(keys: string[]): string {
     return keys.slice(0, 5).join(', ') + (keys.length > 5 ? ', …' : '');
 }
 
+// --- 5. every validation rule in use has a translated message -----------------
+//
+// Laravel's fallback hides this: an untranslated rule renders in English rather than
+// failing, so nothing short of reading every message in every language would catch it.
+
+/** Rules that never produce a message — they only decide whether others run. */
+const SILENT = new Set([
+    'bail',
+    'exclude',
+    'exclude_if',
+    'exclude_unless',
+    'exclude_with',
+    'exclude_without',
+    'nullable',
+    'sometimes',
+]);
+
+const REQUEST_DIRS = ['app/Http/Requests'];
+
+for (const file of phpFiles(REQUEST_DIRS)) {
+    const php = readFileSync(file, 'utf8');
+    const overridden = customMessages(php);
+    const where = file.replace(`${process.cwd()}/`, '');
+
+    for (const [field, rule] of rulesInUse(php)) {
+        if (SILENT.has(rule) || overridden.has(`${field}.${rule}`)) {
+            continue;
+        }
+
+        const covered = baseKeys.some(
+            (key) =>
+                key === `validation.${rule}` ||
+                key.startsWith(`validation.${rule}.`),
+        );
+
+        if (!covered) {
+            problems.push(
+                `${where}: rule '${rule}' on '${field}' has no message in lang/${BASE}/validation.php — ` +
+                    `it would fall back to the framework's English in ms and zh_Hans.`,
+            );
+        }
+    }
+}
+
+/** Every `field => rule` pair a FormRequest's `rules()` declares. */
+function rulesInUse(php: string): Array<[string, string]> {
+    const start = php.indexOf('public function rules');
+
+    if (start === -1) {
+        return [];
+    }
+
+    // Stop at the next method, so `messages()` and `attributes()` are not read as rules.
+    const rest = php.slice(start);
+    const end = rest.indexOf('\n    public function', 1);
+    const body = end === -1 ? rest : rest.slice(0, end);
+
+    const fields = [...body.matchAll(/^\s{12}'([^'.]+)'\s*=>/gm)];
+
+    return fields.flatMap((match, index) => {
+        const from = (match.index ?? 0) + match[0].length;
+        const to = fields[index + 1]?.index ?? body.length;
+        const block = body.slice(from, to);
+        const field = match[1];
+
+        // `Rule::notIn(…)` is the `not_in` rule wearing a builder.
+        const builders = [...block.matchAll(/Rule::(\w+)\s*\(/g)].map((m) =>
+            m[1].replace(/([a-z0-9])([A-Z])/g, '$1_$2').toLowerCase(),
+        );
+        // Their arguments are table and column names, not rules — drop them before
+        // reading the plain-string rules, or `Rule::unique('tenants', 'id')` reports
+        // two rules called `tenants` and `id`.
+        const strings = [
+            ...block
+                .replace(/Rule::\w+\s*\([^)]*\)/g, '')
+                .matchAll(/'([a-z_]+)(?::[^']*)?'/g),
+        ].map((m) => m[1]);
+
+        return [...new Set([...strings, ...builders])].map(
+            (rule) => [field, rule] as [string, string],
+        );
+    });
+}
+
+/** `'slug.regex' => __('console.validation.slug_regex')` — rules with their own wording. */
+function customMessages(php: string): Set<string> {
+    const start = php.indexOf('public function messages');
+
+    if (start === -1) {
+        return new Set();
+    }
+
+    return new Set(
+        [...php.slice(start).matchAll(/^\s{12}'([^']+\.[^']+)'\s*=>/gm)].map(
+            (m) => m[1],
+        ),
+    );
+}
+
+function phpFiles(dirs: string[]): string[] {
+    const found: string[] = [];
+
+    for (const dir of dirs) {
+        const root = join(process.cwd(), dir);
+
+        if (!existsSync(root)) {
+            continue;
+        }
+
+        for (const entry of readdirSync(root)) {
+            const path = join(root, entry);
+
+            if (statSync(path).isDirectory()) {
+                found.push(...phpFiles([join(dir, entry)]));
+            } else if (path.endsWith('Request.php')) {
+                found.push(path);
+            }
+        }
+    }
+
+    return found;
+}
+
 // --- report -------------------------------------------------------------------
 
 if (problems.length > 0) {
@@ -186,5 +318,6 @@ if (problems.length > 0) {
 }
 
 console.log(
-    `✓ i18n: ${baseKeys.length} keys × ${bundles.size} locales agree, every t() key exists.`,
+    `✓ i18n: ${baseKeys.length} keys × ${bundles.size} locales agree, every t() key exists, ` +
+        `every validation rule in use is translated.`,
 );

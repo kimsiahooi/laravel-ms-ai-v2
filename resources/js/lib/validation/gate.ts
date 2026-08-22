@@ -1,4 +1,6 @@
 import type { ZodType } from 'zod';
+import type { Translate } from '@/lib/i18n';
+import { resolveMessage } from '@/lib/validation/message';
 
 /**
  * Client-side validation that runs *before* the request leaves the browser, and
@@ -8,6 +10,11 @@ import type { ZodType } from 'zod';
  * `issue.path` is `['items', 0, 'quantity']` — the two join up exactly. So a form
  * needs no separate notion of "client errors": both sources write to one bag, and
  * the `<InputError>` already under each field renders whichever arrived.
+ *
+ * Messages are translated *here*, not in the schema. A schema is built once at module
+ * scope and shared by every render, so it carries translation keys rather than
+ * sentences; the translator arrives per call, from the render that owns it. See
+ * `message.ts`.
  */
 
 /** A field path → its first message. The shape Laravel returns. */
@@ -34,7 +41,11 @@ export type Gateable = {
  * Only the first issue per field is kept — more than one message under a single
  * input is noise, and it matches what Laravel sends.
  */
-export function zodErrors(schema: ZodType, values: unknown): ErrorBag | null {
+export function zodErrors(
+    schema: ZodType,
+    values: unknown,
+    t: Translate,
+): ErrorBag | null {
     const result = schema.safeParse(values);
 
     if (result.success) {
@@ -47,7 +58,7 @@ export function zodErrors(schema: ZodType, values: unknown): ErrorBag | null {
         const key = issue.path.map(String).join('.') || FORM_ERROR_KEY;
 
         if (!(key in errors)) {
-            errors[key] = issue.message;
+            errors[key] = resolveMessage(t, issue.message);
         }
     }
 
@@ -71,6 +82,7 @@ export function runGate(
     schema: ZodType,
     values: unknown,
     bag: Gateable | null | undefined,
+    t: Translate,
 ): boolean {
     // A form whose ref hasn't attached yet should still submit — a wiring mistake
     // must not silently make the page unusable.
@@ -78,7 +90,7 @@ export function runGate(
         return true;
     }
 
-    const errors = zodErrors(schema, values);
+    const errors = zodErrors(schema, values, t);
 
     bag.clearErrors();
 

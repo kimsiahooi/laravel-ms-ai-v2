@@ -23,6 +23,9 @@ asserted, recorded or run in CI.) The safety net is:
 2. **`bun run check:validation`** — reads the PHP FormRequests and checks every
    server-validated field has a matching zod key. This is the *only* thing standing
    between the two validation layers and silent drift. Never delete or weaken it.
+   Its sibling `bun run check:i18n` fails on a validation rule with no translated
+   message, because Laravel *falls back* to English rather than failing — an
+   untranslated rule renders, and nothing reports it.
 3. **Driving the real app in a browser with Playwright** — mandatory after every phase, and
    it is *my* job, not the user's: they review the code, I prove the screens work. Confirm
    the page is actually server-rendered (`data-server-rendered="true"` in view-source)
@@ -63,8 +66,11 @@ component out of its module, and business logic never in a page or a controller.
 
 ## Localization
 
-**No user-facing literal strings in components.** Every label, placeholder, empty state,
-toast and aria-label goes through `t()`. Laravel `lang/` is the single source of truth;
+**No user-facing literal strings in components — or in validation schemas.** Every label,
+placeholder, empty state, toast and aria-label goes through `t()`; every zod check is built
+from `lib/validation/primitives.ts`, which carries a translation key rather than a sentence
+so the browser refuses a value with the words the server would have used. Laravel `lang/`
+is the single source of truth;
 locales are `en` (base), `ms`, `zh_Hans`. The active locale comes from a **server prop** —
 never `navigator.language`, which would reintroduce hydration mismatches. Interpolate
 rather than concatenate, and pluralise through the helper (Malay and Chinese have no

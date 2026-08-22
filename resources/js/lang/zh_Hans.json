@@ -105,9 +105,6 @@
     "console.toast.created": "工作区“:name”已创建 —— 请在 /:slug/login 登录。",
     "console.toast.deleted": "工作区“:name”及其数据库已被永久删除。",
     "console.toast.restored": "工作区“:name”已恢复。",
-    "console.validation.attribute_admin_email": "管理员邮箱",
-    "console.validation.attribute_admin_name": "管理员姓名",
-    "console.validation.attribute_admin_password": "管理员密码",
     "console.validation.slug_regex": "地址只能包含小写字母、数字和连字符。",
     "console.validation.slug_reserved": "该地址为保留字，无法使用。",
     "console.validation.slug_reserved_action": "地址 \":slug\" 为保留字，无法使用。",
@@ -123,5 +120,16 @@
     "console.workspaces.search_placeholder": "按名称或地址搜索",
     "console.workspaces.subheading": "本平台上的所有客户工作区，每个都拥有独立的数据库。",
     "console.workspaces.title": "工作区",
-    "console.workspaces.view_archive": "查看归档"
+    "console.workspaces.view_archive": "查看归档",
+    "validation.attributes.admin_email": "管理员邮箱",
+    "validation.attributes.admin_name": "管理员姓名",
+    "validation.attributes.admin_password": "管理员密码",
+    "validation.attributes.name": "名称",
+    "validation.attributes.slug": "地址",
+    "validation.email": ":attribute必须是有效的电子邮件地址。",
+    "validation.max.string": ":attribute不能大于 :max 个字符。",
+    "validation.min.string": ":attribute至少需要 :min 个字符。",
+    "validation.regex": ":attribute格式不正确。",
+    "validation.required": ":attribute不能为空。",
+    "validation.string": ":attribute必须是字符串。"
 }

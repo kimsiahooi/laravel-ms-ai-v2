@@ -1,20 +1,10 @@
 import { usePage } from '@inertiajs/react';
 import { useMemo } from 'react';
-import type { TranslationParams } from '@/lib/i18n';
+import type { Translate, TranslateChoice } from '@/lib/i18n';
 import { translate, translateChoice } from '@/lib/i18n';
 import { messagesFor } from '@/lib/i18n-bundles';
-import type { TranslationKey } from '@/types/lang';
 
-export type Translate = (
-    key: TranslationKey,
-    params?: TranslationParams,
-) => string;
-
-export type TranslateChoice = (
-    key: TranslationKey,
-    count: number,
-    params?: TranslationParams,
-) => string;
+export type { Translate, TranslateChoice };
 
 /**
  * `const { t } = useTranslation()` — the only way a component should produce

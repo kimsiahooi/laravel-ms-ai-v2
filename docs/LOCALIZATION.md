@@ -93,13 +93,44 @@ loads the same bundle the server rendered with.
 ## Validation messages — both layers
 
 Validation is two-layer (a Laravel FormRequest and a matching zod schema), and both produce
-user-facing text that must agree. The schemas must not carry English literals.
+user-facing text that must agree. Neither layer may carry a literal sentence.
 
-zod v4 supports customising errors **at parse time**, so the schema itself stays static and
-locale-free: the primitives emit a translation **key** plus params, and `runGate()` maps
-them through `t()` when it validates. One bundle feeds both layers, the schema stays a pure
-value, and nothing is locale-aware at module scope — which keeps SSR safe for the same
-reason as above.
+**One source: `lang/{locale}/validation.php`.** Laravel reads it natively, and the zod
+primitives resolve the very same keys. `attributes` lives there too, which is why no
+FormRequest needs an `attributes()` method — Laravel looks it up on its own, and the schema
+names its fields with the same keys.
+
+The file is deliberately a **subset** of the framework's. Laravel merges yours over its own
+with `array_replace_recursive`, so any rule you leave out keeps the framework's wording, and
+`lang/en/validation.php` is quoted from the framework verbatim — English output is identical
+to having no file at all. Each module adds the rules it introduces, in all three locales.
+
+**Why the schema carries a key, not a sentence.** A schema is built once, at module scope,
+and shared by every render for the life of the process. Choosing the language there is the
+same shared-state bug that ruled out a full i18n library: one SSR render would set it and
+another would read it. So each check carries an encoded payload —
+
+```ts
+text({ attribute: 'validation.attributes.name', max: 255 })
+//  → z.string().trim().min(1, '@i18n:{"key":"validation.required",…}')…
+```
+
+— and `runGate()` decodes it at parse time with the translator belonging to the render that
+asked (`lib/validation/message.ts`). The schema stays a static, locale-free value.
+
+`attribute` is resolved *before* it is interpolated, because Laravel's `:attribute` is
+itself a translation. Skipping that step is not a subtle failure: it produces
+`The e-mel pentadbir field must be a valid email address.` — half translated, which is how
+the server actually behaved before this existed.
+
+**Forms need no wiring.** `useZodGate()` picks the translator up itself, so a form gets
+messages in the user's language without knowing translation is involved — the step nobody
+can forget on the twenty-second form. A schema written with plain strings still works;
+unencoded messages pass straight through, so schemas convert one at a time.
+
+Only the primitives with a live consumer exist. The numeric ones — quantities, money, the
+decimal-scale guard — arrive with the stock and order modules, along with the message keys
+they introduce.
 
 ## Enforcement
 
@@ -113,7 +144,14 @@ alone, or it and the exporter reformat each other forever.
   back silently and ship as English);
 - a locale has a key `en` does not (a stale leftover after a rename);
 - a `t()` call references a key that does not exist in the base locale;
-- the committed artifacts are out of date with `lang/`.
+- the committed artifacts are out of date with `lang/`;
+- **a FormRequest uses a validation rule with no translated message.**
+
+That last one exists because of a bug it was written after. Laravel *falls back* to its own
+English for any rule your file does not carry, so an untranslated rule renders rather than
+fails — invisible in exactly the way a missing UI string is not. The check reads the rules
+out of every FormRequest and requires a `validation.<rule>` key for each, unless the request
+overrides that rule's message itself.
 
 The gate exports to a **temp directory** (`lang:export --output=…`) and compares, rather
 than regenerating in place. A gate that edits the working tree turns one failure into a

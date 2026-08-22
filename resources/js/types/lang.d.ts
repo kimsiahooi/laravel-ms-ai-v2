@@ -109,9 +109,6 @@ export type TranslationKey =
     | 'console.toast.created'
     | 'console.toast.deleted'
     | 'console.toast.restored'
-    | 'console.validation.attribute_admin_email'
-    | 'console.validation.attribute_admin_name'
-    | 'console.validation.attribute_admin_password'
     | 'console.validation.slug_regex'
     | 'console.validation.slug_reserved'
     | 'console.validation.slug_reserved_action'
@@ -127,5 +124,16 @@ export type TranslationKey =
     | 'console.workspaces.search_placeholder'
     | 'console.workspaces.subheading'
     | 'console.workspaces.title'
-    | 'console.workspaces.view_archive';
+    | 'console.workspaces.view_archive'
+    | 'validation.attributes.admin_email'
+    | 'validation.attributes.admin_name'
+    | 'validation.attributes.admin_password'
+    | 'validation.attributes.name'
+    | 'validation.attributes.slug'
+    | 'validation.email'
+    | 'validation.max.string'
+    | 'validation.min.string'
+    | 'validation.regex'
+    | 'validation.required'
+    | 'validation.string';
 

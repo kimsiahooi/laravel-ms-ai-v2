@@ -1,6 +1,7 @@
 import type { FormComponentRef } from '@inertiajs/core';
 import { useCallback, useRef } from 'react';
 import type { ZodType } from 'zod';
+import { useTranslation } from '@/hooks/use-translation';
 import { runGate } from '@/lib/validation/gate';
 
 /**
@@ -16,16 +17,21 @@ import { runGate } from '@/lib/validation/gate';
  *
  * With no schema the form submits as it always did, so forms can be converted one
  * at a time.
+ *
+ * The translator is picked up here rather than passed in, so a form gets messages in
+ * the user's language without knowing that translation is involved at all — which is
+ * what keeps it from being the step someone forgets on the twenty-second form.
  */
 export function useZodGate(schema?: ZodType) {
     const ref = useRef<FormComponentRef | null>(null);
+    const { t } = useTranslation();
 
     const onBefore = useCallback(
         () =>
             schema
-                ? runGate(schema, ref.current?.getData(), ref.current)
+                ? runGate(schema, ref.current?.getData(), ref.current, t)
                 : true,
-        [schema],
+        [schema, t],
     );
 
     return { ref, onBefore };

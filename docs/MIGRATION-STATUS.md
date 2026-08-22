@@ -251,7 +251,7 @@ literals in the output.
 | `DataTable` | ⬜ | Next. Absorbs the six components parked in `pages/admin/_components/`. |
 | Backend concerns | ⬜ | `RendersResourceIndex`, `SortsResourceQuery`, `ResolvesDateRange`, … |
 | `spatie/laravel-data` + TS types | ⬜ | |
-| zod `primitives.ts` (i18n-aware) | ⬜ | The gate itself already landed in Phase 1. |
+| zod `primitives.ts` (i18n-aware) | ✅ | Both layers read `lang/{locale}/validation.php`. `check:i18n` now fails on an untranslated rule. |
 | Shell redesign + ⌘K palette | ⬜ | Auth/settings screens get their `t()` pass here, once. |
 
 ### Localization — built first, deliberately
@@ -303,13 +303,59 @@ wrong and only showed up by looking:
 | Breadcrumb root read "Console" while the sidebar read "Konsol" / "控制台" | a hard-coded literal in `admin-layout.tsx`; now `t('console.name')` |
 | Timestamps read "1 h ago" | reworded to `:count hr ago` / `jam` / `小时前` |
 | Chart axis read "Jul 24 / Aug 22" in a Chinese UI | `format()` → `translatedFormat()`; Carbon follows `App::setLocale` |
-| **zod messages are English inside a translated form** | *not fixed* — see below |
+| **zod messages were English inside a translated form** | fixed — see below |
 
-The zod gate itself works correctly (errors under each field, request never sent), but its
-messages are still English literals while Laravel's equivalents are translated. That is the
-`primitives.ts` row in the table above, still open, and it is a bigger job than it looks:
-doing it properly means translating the parts of Laravel's own `validation.php` that the
-schemas mirror, for `ms` and `zh_Hans`, so both layers keep saying the same sentence.
+### Validation messages — and a correction
+
+This was first written up as "zod is English while Laravel's equivalents are translated".
+That was wrong, and checking it turned up something worse. Laravel ships `validation.php` in
+English only; nothing had published a `ms` or `zh_Hans` copy, so **both** layers were
+English. And because `:attribute` *was* translated while the sentence around it was not, the
+server produced half-translated output:
+
+```
+The e-mel pentadbir field must be a valid email address.
+```
+
+A missing rule message does not fail — Laravel falls back to English and renders — so this
+sat in front of every Malay and Chinese user without a single log line.
+
+Fixed on both sides at once, from one source:
+
+- `lang/{locale}/validation.php` — the rules this app can emit, in all three languages.
+  A deliberate subset: Laravel merges it over the framework's, so anything omitted keeps the
+  framework's wording, and the `en` copy is quoted verbatim so English output is unchanged.
+- `attributes` moved there too, which **deleted** `StoreTenantRequest::attributes()` —
+  Laravel reads that key without being asked, and the zod schema reads the same one.
+- `lib/validation/primitives.ts` + `message.ts` — a check carries a translation key and its
+  params, encoded into zod's message slot, and `runGate()` resolves it at parse time with
+  the current render's translator. The schema stays a static, locale-free value, so nothing
+  locale-aware exists at module scope and concurrent SSR renders cannot cross.
+- `useZodGate()` supplies the translator itself, so no form component is wired for this.
+
+`store-tenant.ts` is now a line-for-line transcription of its FormRequest:
+
+```ts
+name: text({ attribute: 'validation.attributes.name', max: 255 }),   // ['required','string','max:255']
+```
+
+**A fifth check joined `check:i18n`:** a rule used by a FormRequest with no translated
+message is now a failure. Without it the next module to introduce `numeric` or `exists`
+would ship English into a Malay screen exactly as this did — silently. Both the failing and
+the overridden-message paths were confirmed by breaking them on purpose.
+
+Driven in the browser, SSR on, zero console errors. Submitted empty and with bad values in
+each language, and both layers were read back from the live page:
+
+| | browser (zod, request never sent) | server (`demo` already taken) |
+|---|---|---|
+| en | The administrator password field must be at least 8 characters. | A workspace with that slug already exists… |
+| ms | Ruangan kata laluan pentadbir mestilah sekurang-kurangnya 8 aksara. | Ruang kerja dengan alamat itu sudah wujud… |
+| zh_Hans | 管理员密码至少需要 8 个字符。 | 已存在使用该地址的工作区… |
+
+The browser's sentences match the server's word for word — checked against the same rules
+run through the validator directly. English is unchanged from before the fix, which is the
+point of quoting the framework verbatim.
 
 Also verified through the **SSR bundle** directly, with zero SSR errors: headings, table columns, pagination counts (`Showing 1–1 of 1` / `Memaparkan 1–1
 daripada 1` / `显示第 1–1 项，共 1 项`). `<html lang>` emits BCP-47 (`zh-Hans`, not

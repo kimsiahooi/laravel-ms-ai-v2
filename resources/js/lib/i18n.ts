@@ -13,6 +13,22 @@ export type Messages = Record<string, string>;
 export type TranslationParams = Record<string, string | number>;
 
 /**
+ * The bound lookups a component holds. Declared here rather than beside the hook so
+ * that pure modules under `lib/` can accept a translator without importing React —
+ * `lib/validation/gate.ts` is the one that needs it.
+ */
+export type Translate = (
+    key: TranslationKey,
+    params?: TranslationParams,
+) => string;
+
+export type TranslateChoice = (
+    key: TranslationKey,
+    count: number,
+    params?: TranslationParams,
+) => string;
+
+/**
  * Look up `key` and fill in its `:placeholders`.
  *
  * A missing key returns the key itself rather than an empty string — a visible

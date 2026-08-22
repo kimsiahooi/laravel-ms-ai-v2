@@ -130,12 +130,9 @@ return [
     ],
 
     'validation' => [
-        'slug_regex' => 'Slug hanya boleh mengandungi huruf kecil, nombor dan sengkang.',
-        'slug_reserved' => 'Slug itu dikhaskan dan tidak boleh digunakan.',
-        'slug_taken' => 'Ruang kerja dengan slug itu sudah wujud (mungkin ia diarkibkan — pulihkan atau padamkannya secara kekal dahulu).',
-        'slug_reserved_action' => 'Slug ":slug" dikhaskan dan tidak boleh digunakan.',
-        'attribute_admin_name' => 'nama pentadbir',
-        'attribute_admin_email' => 'e-mel pentadbir',
-        'attribute_admin_password' => 'kata laluan pentadbir',
+        'slug_regex' => 'Alamat hanya boleh mengandungi huruf kecil, nombor dan sengkang.',
+        'slug_reserved' => 'Alamat itu dikhaskan dan tidak boleh digunakan.',
+        'slug_taken' => 'Ruang kerja dengan alamat itu sudah wujud (mungkin ia diarkibkan — pulihkan atau padamkannya secara kekal dahulu).',
+        'slug_reserved_action' => 'Alamat ":slug" dikhaskan dan tidak boleh digunakan.',
     ],
 ];
