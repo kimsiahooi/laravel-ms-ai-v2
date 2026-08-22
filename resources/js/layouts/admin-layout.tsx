@@ -7,6 +7,7 @@ import { AdminSidebar } from '@/components/layout/admin-sidebar';
 import { LanguageSwitcher } from '@/components/layout/language-switcher';
 import { ThemeToggle } from '@/components/layout/theme-toggle';
 import { SidebarTrigger } from '@/components/ui/sidebar';
+import { useDocumentLocale } from '@/hooks/use-document-locale';
 import { useTranslation } from '@/hooks/use-translation';
 import { dashboard } from '@/routes/admin';
 import type { BreadcrumbItem } from '@/types';
@@ -25,6 +26,8 @@ export default function AdminLayout({
 }) {
     const { auth } = usePage().props;
     const { t } = useTranslation();
+
+    useDocumentLocale();
 
     return (
         <AppShell variant="sidebar">

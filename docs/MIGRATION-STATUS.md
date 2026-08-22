@@ -695,6 +695,33 @@ create → archive → view archive → permanently delete cycle, which is what 
 `ArchivedTenantData` and the row actions that read `slug` and `name` off the generated
 type. SSR confirmed, zero console errors.
 
+### Bug: `<html lang>` went stale after a language switch
+
+Found while building the workspace shell, but it is older than that and the console had
+it too. The blade template gets the attribute right on a full page load; a language
+switch is an Inertia visit, and the `<html>` element outlives one. So the page re-renders
+in Malay while the document still claims English, and a screen reader pronounces it with
+English phonetics until the next hard refresh.
+
+Two attempts failed before the third worked, and both failures were already written down
+in `use-translation.tsx`'s own docblock, which explains why that hook has no context
+provider:
+
+- A component rendered in `withApp` throws — `withApp` wraps Inertia's `<App>` from the
+  outside, where `usePage()` is not available.
+- Passing the locale down from `withApp` instead compiles and does nothing useful:
+  `withApp` runs only for the first page, so the value is frozen at whatever the app
+  booted with — which is precisely the value the blade had already set correctly.
+
+A `router.on('navigate')` subscription was no better: it reports the page being *left*,
+so the attribute sat exactly one visit behind. That one is worth recording because it
+looks right in code review and only fails on the second switch — the browser check
+caught it, nothing else would have.
+
+`useDocumentLocale()` reads `usePage()` inside the tree like everything else does, in an
+effect because SSR has no `document`, and the layouts that carry a language switcher call
+it. Verified by switching en → zh_Hans → en and reading the attribute at each step.
+
 ## Phase 2 — remaining ⬜
 
 ## Phases 3–8 — Modules ⬜
