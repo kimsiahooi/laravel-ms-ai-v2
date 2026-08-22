@@ -54,6 +54,18 @@ that touch any of them.
 `resources/css/app.css` is **not** read-only — it holds the authored design tokens. It's
 excluded from Biome only because of the Tailwind v4 parser limitation.
 
+## Routing traps (Laravel + a package that registers routes)
+
+- **`Route::pattern()` goes in a provider's `register()`, not `boot()`.** A pattern is
+  merged into a route as that route is *defined*, so it only constrains routes declared
+  after the call. Fortify defines its `{tenant}/…` routes in its own `boot()`, which runs
+  before this app's providers — declaring the `{tenant}` pattern in `boot()` silently
+  misses them, and `/admin/login` 404s as an unknown workspace. This has already cost one
+  debugging session; see `docs/MIGRATION-STATUS.md`.
+- **Reserved first-path segments live in exactly one list**, `App\Support\ReservedSlugs`.
+  It builds the `{tenant}` route pattern, the global tenancy middleware's skip list, and
+  the slug validation rule. Adding a central area means adding it there — nowhere else.
+
 ## Verification — there is no test suite
 
 The gates above catch mechanical errors. Everything behavioural is verified by driving the

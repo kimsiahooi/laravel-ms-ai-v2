@@ -34,6 +34,10 @@ return Application::configure(basePath: dirname(__DIR__))
         // the slug. Without this Laravel would aim at a bare /login, which is not a
         // route in this app.
         $middleware->redirectGuestsTo(function (Request $request) {
+            if ($request->is('admin', 'admin/*')) {
+                return route('admin.login');
+            }
+
             $tenant = tenant();
 
             return $tenant !== null
@@ -42,6 +46,10 @@ return Application::configure(basePath: dirname(__DIR__))
         });
 
         $middleware->redirectUsersTo(function (Request $request) {
+            if ($request->is('admin', 'admin/*')) {
+                return route('admin.dashboard');
+            }
+
             $tenant = tenant();
 
             return $tenant !== null

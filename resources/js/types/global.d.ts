@@ -1,4 +1,4 @@
-import type { Auth } from '@/types/auth';
+import type { Auth, Tenant } from '@/types/auth';
 
 declare module 'react' {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -13,6 +13,8 @@ declare module '@inertiajs/core' {
             name: string;
             auth: Auth;
             sidebarOpen: boolean;
+            /** The active workspace, or null on central (/admin, /) pages. */
+            tenant: Tenant | null;
             [key: string]: unknown;
         };
     }

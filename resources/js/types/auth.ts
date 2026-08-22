@@ -11,7 +11,23 @@ export type User = {
 };
 
 export type Auth = {
-    user: User;
+    /**
+     * The signed-in user for the current area: a tenant user under /{tenant}/…, a
+     * central super-admin under /admin. Null when nobody is signed in.
+     */
+    user: User | null;
+    /**
+     * The tenant user's permission names. Always empty outside a workspace. Read it
+     * through `usePermissions()` rather than directly.
+     */
+    permissions: string[];
+    /** True for the built-in Administrator role inside a workspace. */
+    is_admin: boolean;
+};
+
+export type Tenant = {
+    slug: string;
+    name: string;
 };
 
 export type Passkey = {

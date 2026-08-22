@@ -15,6 +15,10 @@ createInertiaApp({
         switch (true) {
             case name === 'welcome':
                 return null;
+            // The central console pages import AdminLayout themselves, so its login
+            // screen — which has no shell — simply doesn't.
+            case name.startsWith('admin/'):
+                return null;
             case name.startsWith('auth/'):
                 return AuthLayout;
             case name.startsWith('settings/'):

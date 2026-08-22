@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\Settings\SecurityController;
+use App\Http\Middleware\AuthorizeTenantRoute;
 use App\Http\Middleware\SetTenantUrlDefault;
 use Illuminate\Auth\Middleware\RequirePassword;
 use Illuminate\Support\Facades\Route;
@@ -30,9 +31,18 @@ Route::middleware(['web', InitializeTenancyByPath::class, SetTenantUrlDefault::c
     ->prefix('{tenant}')
     ->group(function (): void {
         // Landing on the workspace root goes to the dashboard.
-        Route::get('/', fn (string $tenant) => redirect()->route('dashboard', ['tenant' => $tenant]));
+        //
+        // No `$tenant` argument, deliberately: stancl's PathTenantResolver calls
+        // $route->forgetParameter('tenant') once it has identified the workspace, so a
+        // route action can never receive it — asking for one is a 500, not a slug. The
+        // slug is filled in by SetTenantUrlDefault's URL::defaults, which is how every
+        // other route() call in the app resolves it too.
+        Route::get('/', fn () => redirect()->route('dashboard'));
 
-        Route::middleware(['auth:web'])->group(function (): void {
+        // AuthorizeTenantRoute maps each route name to the permission it needs
+        // (App\Support\TenantPermissions) and 403s a user who lacks it. Routes with
+        // no mapped permission stay open to any signed-in user.
+        Route::middleware(['auth:web', AuthorizeTenantRoute::class])->group(function (): void {
             Route::get('dashboard', fn () => Inertia::render('dashboard'))->name('dashboard');
 
             Route::redirect('settings', 'settings/profile');

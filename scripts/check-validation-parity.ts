@@ -24,7 +24,15 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-const REQUESTS = join(process.cwd(), 'app/Http/Requests/Tenant');
+/**
+ * Every directory of FormRequests that must have browser-side counterparts. Settings
+ * requests are deliberately absent: they are covered by the starter kit's own auth
+ * screens, which validate server-side only.
+ */
+const REQUEST_DIRS = [
+    join(process.cwd(), 'app/Http/Requests/Tenant'),
+    join(process.cwd(), 'app/Http/Requests/Central'),
+];
 const SCHEMAS = join(process.cwd(), 'resources/js/lib/validation/schemas');
 
 /** Requests with no hand-written schema, and why that is correct. */
@@ -48,7 +56,7 @@ const FACTORY_ARGS: Record<string, unknown[]> = {
     SalesOrderRequest: [['MYR']],
 };
 
-/** `WarehouseReorderLevelRequest` → `warehouse-reorder-level`. */
+/** `StoreTenantRequest` → `store-tenant`. */
 function schemaModule(request: string): string {
     return request
         .replace(/Request$/, '')
@@ -57,8 +65,8 @@ function schemaModule(request: string): string {
 }
 
 /** The top-level field names a FormRequest's `rules()` returns. */
-function laravelFields(request: string): string[] {
-    const php = readFileSync(join(REQUESTS, `${request}.php`), 'utf8');
+function laravelFields(path: string): string[] {
+    const php = readFileSync(path, 'utf8');
     const body = php.slice(php.indexOf('public function rules'));
     const keys = [...body.matchAll(/^\s{12}'([^']+)'\s*=>/gm)].map((m) => m[1]);
 
@@ -82,22 +90,27 @@ function zodFields(schema: any): string[] {
 
 const problems: string[] = [];
 
-if (!existsSync(REQUESTS)) {
-    console.log(
-        '✓ validation parity: no tenant FormRequests yet — nothing to check.',
-    );
+/** Every request to check, as `{ name, path }`, across all watched directories. */
+const requests = REQUEST_DIRS.filter((dir) => existsSync(dir))
+    .flatMap((dir) =>
+        readdirSync(dir)
+            .filter((file) => file.endsWith('Request.php'))
+            .map((file) => ({
+                name: file.replace('.php', ''),
+                path: join(dir, file),
+            })),
+    )
+    .filter(({ name }) => !EXEMPT.has(name))
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+if (requests.length === 0) {
+    console.log('✓ validation parity: no FormRequests yet — nothing to check.');
     process.exit(0);
 }
 
-const requests = readdirSync(REQUESTS)
-    .filter((file) => file.endsWith('Request.php'))
-    .map((file) => file.replace('.php', ''))
-    .filter((name) => !EXEMPT.has(name))
-    .sort();
-
 let checked = 0;
 
-for (const request of requests) {
+for (const { name: request, path: source } of requests) {
     const module = schemaModule(request);
     const path = join(SCHEMAS, `${module}.ts`);
 
@@ -125,7 +138,7 @@ for (const request of requests) {
     }
 
     const known = zodFields(schema);
-    const missing = laravelFields(request).filter((f) => !known.includes(f));
+    const missing = laravelFields(source).filter((f) => !known.includes(f));
 
     if (missing.length > 0) {
         problems.push(
