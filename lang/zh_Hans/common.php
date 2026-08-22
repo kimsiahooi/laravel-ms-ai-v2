@@ -16,11 +16,12 @@ return [
         'page_empty_hint' => '这些行已不存在 —— 自打开此页以来，列表可能变短了。',
         'back_to_first' => '返回第一页',
         'actions_column' => '操作',
-        'show' => '显示',
         'rows_per_page' => '每页行数',
     ],
 
     'pagination' => [
+        'label' => '分页',
+        'page' => '第 :page 页',
         'no_results' => '无结果',
         'showing' => '显示第 :from–:to 项，共 :total 项',
         'page_of' => '第 :current 页，共 :last 页',

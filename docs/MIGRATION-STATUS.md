@@ -501,6 +501,33 @@ red fill and the white text together — no token reaches it. It improved as a s
 surface on the screen. The lever left is behavioural: stop disabling the button and refuse
 the click instead.
 
+### DataTable, revamped
+
+Reworked into three bands with a clear job each, after the first pass put the page-size
+control in the wrong one.
+
+- **Toolbar** — search and per-resource filters only. Narrowing the result set.
+- **Table** — a muted header row in `text-xs`, taller cells, and gutters that line up
+  with the bands above and below. No uppercase: Chinese has no case and Malay reads as
+  shouting.
+- **Footer** — the count, the page size and the pager, together. How many rows there are
+  and how many to show at once are the same question as which page you are on; splitting
+  them across two ends of the card made the list feel like two components.
+
+The pager gained numbered pages (`lib/pagination.ts`). Prev/next alone makes "jump to the
+end" impossible, and rendering every page is unusable by page 40. The window keeps the
+first and last page reachable plus a run around the current one — and holds a **constant
+slot count** once gaps appear, so the footer does not change width while paging and the
+buttons stay under the cursor. Below `sm` the numbers collapse to "Page 5 of 9".
+
+Also removed a redundant `overflow-x-auto` wrapper: `ui/table` already brings its own.
+
+Driven with 81 seeded workspaces, because a two-page list never exercises the gaps: first
+page (`1 2 3 4 5 … 9`), middle (`1 … 4 5 6 … 9`), last, page size 10 → 100, search, sort,
+all three languages, light and dark, and 375 px — where only the primary and actions
+columns remain, the address moves under the name, the footer stacks, and neither body nor
+document scrolls sideways. Zero console errors.
+
 ## Phase 2 — remaining ⬜
 
 ## Phases 3–8 — Modules ⬜

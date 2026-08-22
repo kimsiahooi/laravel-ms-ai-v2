@@ -184,113 +184,105 @@ export function DataTable<TRow extends RowData>({
         <Card className="gap-0 overflow-hidden py-0">
             {/* Nothing to search when nothing exists — the box would only be furniture. */}
             {(page.total > 0 || searching) && (
-                <div className="px-4 py-4">
-                    <ListToolbar
-                        search={filters.search}
-                        perPage={filters.per_page}
-                        placeholder={searchPlaceholder}
-                        onSearch={onSearch}
-                        onPerPage={onPerPage}
-                        extra={toolbar}
-                    />
-                </div>
+                <ListToolbar
+                    search={filters.search}
+                    placeholder={searchPlaceholder}
+                    onSearch={onSearch}
+                    extra={toolbar}
+                />
             )}
 
             {rows.length > 0 ? (
-                // The table scrolls inside this box so the page body never does.
-                <div className="overflow-x-auto">
-                    <Table>
-                        <TableHeader>
-                            {table.getHeaderGroups().map((group) => (
-                                <TableRow
-                                    key={group.id}
-                                    className="hover:bg-transparent"
-                                >
-                                    {group.headers.map((header) => {
-                                        const meta =
-                                            header.column.columnDef.meta;
-                                        const sortable =
-                                            filters.sortable.includes(
-                                                header.column.id,
-                                            );
-                                        const active =
-                                            sortable &&
-                                            filters.sort === header.column.id;
+                // `Table` brings its own `overflow-x-auto` wrapper, so a wide table
+                // scrolls inside the card and the page body never does.
+                <Table>
+                    <TableHeader className="bg-muted/40">
+                        {table.getHeaderGroups().map((group) => (
+                            <TableRow
+                                key={group.id}
+                                className="hover:bg-transparent"
+                            >
+                                {group.headers.map((header) => {
+                                    const meta = header.column.columnDef.meta;
+                                    const sortable = filters.sortable.includes(
+                                        header.column.id,
+                                    );
+                                    const active =
+                                        sortable &&
+                                        filters.sort === header.column.id;
 
-                                        return (
-                                            <TableHead
-                                                key={header.id}
-                                                colSpan={header.colSpan}
-                                                aria-sort={
-                                                    active
-                                                        ? filters.direction ===
-                                                          'asc'
-                                                            ? 'ascending'
-                                                            : 'descending'
-                                                        : undefined
-                                                }
-                                                className={cn(
-                                                    'first:pl-4 last:pr-4',
-                                                    columnClasses(meta),
-                                                )}
-                                            >
-                                                {header.isPlaceholder ? null : sortable ? (
-                                                    <button
-                                                        type="button"
-                                                        onClick={header.column.getToggleSortingHandler()}
-                                                        className={cn(
-                                                            'group -mx-2 inline-flex items-center gap-1 rounded-sm px-2 py-1 hover:text-foreground focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
-                                                            meta?.align ===
-                                                                'end' &&
-                                                                'flex-row-reverse',
-                                                            active &&
-                                                                'text-foreground',
-                                                        )}
-                                                    >
-                                                        <table.FlexRender
-                                                            header={header}
-                                                        />
-                                                        <SortIcon
-                                                            direction={
-                                                                active
-                                                                    ? filters.direction
-                                                                    : null
-                                                            }
-                                                        />
-                                                    </button>
-                                                ) : (
+                                    return (
+                                        <TableHead
+                                            key={header.id}
+                                            colSpan={header.colSpan}
+                                            aria-sort={
+                                                active
+                                                    ? filters.direction ===
+                                                      'asc'
+                                                        ? 'ascending'
+                                                        : 'descending'
+                                                    : undefined
+                                            }
+                                            className={cn(
+                                                'h-11 font-medium text-muted-foreground text-xs first:pl-4 last:pr-4',
+                                                columnClasses(meta),
+                                            )}
+                                        >
+                                            {header.isPlaceholder ? null : sortable ? (
+                                                <button
+                                                    type="button"
+                                                    onClick={header.column.getToggleSortingHandler()}
+                                                    className={cn(
+                                                        'group -mx-2 inline-flex items-center gap-1 rounded-sm px-2 py-1 hover:text-foreground focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
+                                                        meta?.align === 'end' &&
+                                                            'flex-row-reverse',
+                                                        active &&
+                                                            'text-foreground',
+                                                    )}
+                                                >
                                                     <table.FlexRender
                                                         header={header}
                                                     />
-                                                )}
-                                            </TableHead>
-                                        );
-                                    })}
-                                </TableRow>
-                            ))}
-                        </TableHeader>
-
-                        <TableBody>
-                            {rows.map((row) => (
-                                <TableRow key={row.id}>
-                                    {row.getAllCells().map((cell) => (
-                                        <TableCell
-                                            key={cell.id}
-                                            className={cn(
-                                                'first:pl-4 last:pr-4',
-                                                columnClasses(
-                                                    cell.column.columnDef.meta,
-                                                ),
+                                                    <SortIcon
+                                                        direction={
+                                                            active
+                                                                ? filters.direction
+                                                                : null
+                                                        }
+                                                    />
+                                                </button>
+                                            ) : (
+                                                <table.FlexRender
+                                                    header={header}
+                                                />
                                             )}
-                                        >
-                                            <table.FlexRender cell={cell} />
-                                        </TableCell>
-                                    ))}
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                </div>
+                                        </TableHead>
+                                    );
+                                })}
+                            </TableRow>
+                        ))}
+                    </TableHeader>
+
+                    <TableBody>
+                        {rows.map((row) => (
+                            <TableRow key={row.id}>
+                                {row.getAllCells().map((cell) => (
+                                    <TableCell
+                                        key={cell.id}
+                                        className={cn(
+                                            'py-3 first:pl-4 last:pr-4',
+                                            columnClasses(
+                                                cell.column.columnDef.meta,
+                                            ),
+                                        )}
+                                    >
+                                        <table.FlexRender cell={cell} />
+                                    </TableCell>
+                                ))}
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
             ) : searching ? (
                 <div className="px-4 py-12">
                     <EmptyState
@@ -338,7 +330,13 @@ export function DataTable<TRow extends RowData>({
                 <div className="px-4 py-12">{emptyState}</div>
             )}
 
-            {page.total > 0 && <PaginationBar page={page} onPage={onPage} />}
+            {page.total > 0 && (
+                <PaginationBar
+                    page={page}
+                    onPage={onPage}
+                    onPerPage={onPerPage}
+                />
+            )}
         </Card>
     );
 }

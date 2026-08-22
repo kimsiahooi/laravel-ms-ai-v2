@@ -16,11 +16,12 @@ return [
         'page_empty_hint' => 'Baris itu sudah tiada — senarai mungkin menjadi lebih pendek sejak halaman ini dibuka.',
         'back_to_first' => 'Kembali ke halaman pertama',
         'actions_column' => 'Tindakan',
-        'show' => 'Papar',
         'rows_per_page' => 'Baris setiap halaman',
     ],
 
     'pagination' => [
+        'label' => 'Penomboran halaman',
+        'page' => 'Halaman :page',
         'no_results' => 'Tiada keputusan',
         'showing' => 'Memaparkan :from–:to daripada :total',
         'page_of' => 'Halaman :current daripada :last',
