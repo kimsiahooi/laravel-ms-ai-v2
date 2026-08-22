@@ -498,8 +498,15 @@ destructive *text* needs to be lighter than a dark background rather than darker
 button is `disabled`, and shadcn dims disabled buttons with `opacity-50`, which fades the
 red fill and the white text together — no token reaches it. It improved as a side effect
 (2.19 → 3.36 in dark) and WCAG exempts disabled controls, but it is still the weakest
-surface on the screen. The lever left is behavioural: stop disabling the button and refuse
-the click instead.
+surface on the screen.
+
+The behavioural alternative — drop `disabled`, let the click land, and answer it with what
+is missing — was built and then reverted at the owner's call. It measured well (4.73:1
+light, 6.25:1 dark, because a button at full opacity is just a button) but a vivid, fully
+live "Delete permanently" beside an empty confirmation field reads as ready to fire. The
+dimming is doing real work: it is the signal that the phrase has not been typed yet. WCAG
+exempts disabled controls precisely because they are not offering themselves, so the
+low number here is the honest one. Kept as `disabled`.
 
 ### DataTable, revamped
 
