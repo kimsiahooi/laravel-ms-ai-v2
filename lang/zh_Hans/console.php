@@ -107,7 +107,6 @@ return [
     ],
 
     'confirm' => [
-        'type_to_confirm' => '输入 :phrase 以确认',
         'archive_title' => '归档 :name？',
         'archive_description' => '所有已登录该工作区的人都将失去访问权限，但不会删除任何数据 —— 其数据库保持不变，你可以随时从归档中恢复。',
         'archive_submit' => '归档工作区',

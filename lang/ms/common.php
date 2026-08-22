@@ -9,6 +9,10 @@ return [
         'row_actions' => 'Tindakan untuk :name',
     ],
 
+    'confirm' => [
+        'type_to_confirm' => 'Taip :phrase untuk mengesahkan',
+    ],
+
     'list' => [
         'no_matches' => 'Tiada padanan',
         'no_matches_hint' => 'Tiada apa-apa sepadan dengan “:search”.',

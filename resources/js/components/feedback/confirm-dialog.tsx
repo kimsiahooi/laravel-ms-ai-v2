@@ -75,7 +75,7 @@ export function ConfirmDialog({
                 {confirmPhrase !== undefined && (
                     <div className="space-y-2">
                         <Label htmlFor="confirm-phrase">
-                            {t('console.confirm.type_to_confirm', {
+                            {t('common.confirm.type_to_confirm', {
                                 phrase: confirmPhrase,
                             })}
                         </Label>

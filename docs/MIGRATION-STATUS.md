@@ -553,6 +553,13 @@ when it closes, so the field groups take their state with them and reopen empty 
 worth stating out loud in the file rather than leaving as an accident, and was checked in
 the browser: fill all five fields, Escape, reopen, all five empty.
 
+### The confirm prompt moved to `common`
+
+`ConfirmDialog` lives in `components/feedback/`, but its one string sat under `console`.
+Every module from Phase 3 on deletes something through that dialog, so the key moved to
+`common.confirm.type_to_confirm` before there were 21 callers rather than after. Nothing
+else changed — the same sentence, in the same three locales.
+
 ## Phase 2 — remaining ⬜
 
 ## Phases 3–8 — Modules ⬜

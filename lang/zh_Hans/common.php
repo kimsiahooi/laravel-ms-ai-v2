@@ -9,6 +9,10 @@ return [
         'row_actions' => ':name 的操作',
     ],
 
+    'confirm' => [
+        'type_to_confirm' => '输入 :phrase 以确认',
+    ],
+
     'list' => [
         'no_matches' => '没有匹配项',
         'no_matches_hint' => '没有任何内容与“:search”匹配。',

@@ -112,7 +112,6 @@ return [
     ],
 
     'confirm' => [
-        'type_to_confirm' => 'Type :phrase to confirm',
         'archive_title' => 'Archive :name?',
         'archive_description' => 'Everyone signed in to this workspace loses access, but nothing is deleted — its database is untouched and you can restore it from the Archive at any time.',
         'archive_submit' => 'Archive workspace',

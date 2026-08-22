@@ -107,7 +107,6 @@ return [
     ],
 
     'confirm' => [
-        'type_to_confirm' => 'Taip :phrase untuk mengesahkan',
         'archive_title' => 'Arkibkan :name?',
         'archive_description' => 'Semua orang yang log masuk ke ruang kerja ini akan hilang akses, tetapi tiada apa-apa dipadam — pangkalan datanya kekal utuh dan anda boleh memulihkannya dari Arkib pada bila-bila masa.',
         'archive_submit' => 'Arkibkan ruang kerja',

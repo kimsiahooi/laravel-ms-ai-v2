@@ -14,6 +14,12 @@ return [
         'row_actions' => 'Actions for :name',
     ],
 
+    // The shared confirm dialog. It is chrome, not console-specific — every module
+    // from here on deletes something through it.
+    'confirm' => [
+        'type_to_confirm' => 'Type :phrase to confirm',
+    ],
+
     'list' => [
         'no_matches' => 'No matches',
         'no_matches_hint' => 'Nothing matched “:search”.',
