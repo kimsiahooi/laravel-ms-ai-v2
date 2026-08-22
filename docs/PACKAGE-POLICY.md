@@ -43,6 +43,21 @@ let the user decide. Never silently add a dependency.
 2FA) · `laravel/wayfinder` (typed routes) · `@tanstack/react-table` · `zod` · `cmdk` ·
 `sonner` · `recharts` · `radix-ui`.
 
+**`@tanstack/react-table` — v9, decided 2026-08-22.** Worth recording because the evidence
+argued the other way and the call was the user's. v1 pays for this dependency and registers
+only `getCoreRowModel`: across all 20 of its list pages it uses no sorting, filtering,
+pagination, selection or visibility model, because every one of those happens in SQL. So the
+library was earning a `ColumnDef` type and `flexRender`, and hand-rolling a column
+descriptor was the cheaper, lighter option. It was adopted anyway, on v9.1.2 rather than the
+v8.21.3 every shadcn data-table snippet targets, so the feature set is there when row
+selection or virtualization arrives rather than needing the column API rewritten then.
+
+Two things to know when working on it: v9 renamed `useReactTable` to `useTable` and nothing
+exists until its feature is registered in `tableFeatures({…})`, so a missing API usually
+means a missing feature rather than a removed one; and `manualPagination` / `manualSorting`
+only *bypass* the client stages — they never fetch and never slice, so `data` must already
+be the page the database returned.
+
 **Deliberately not added — the platform already does it:**
 
 | Need | Use instead |

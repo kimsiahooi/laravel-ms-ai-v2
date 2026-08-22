@@ -1,34 +1,23 @@
-import { router } from '@inertiajs/react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/hooks/use-translation';
 import type { Paginated } from '@/types';
 
 type Props = {
-    href: string;
-    // Only the counts are needed; the row type is irrelevant here.
+    // Only the counts matter here; the row type is irrelevant.
     page: Pick<
         Paginated<unknown>,
         'current_page' | 'last_page' | 'from' | 'to' | 'total'
     >;
-    /** Filters to carry across page changes, so paging never drops a search. */
-    params: Record<string, string | number | undefined>;
+    onPage: (page: number) => void;
 };
 
 /**
- * Prev/next paging with a live count. A single page still shows the count — knowing
- * how many results a search returned is the point, not the buttons.
+ * Prev/next paging with a live count. A single page still shows the count — how many
+ * results a search returned is the useful part, not the buttons.
  */
-export function PaginationBar({ href, page, params }: Props) {
+export function PaginationBar({ page, onPage }: Props) {
     const { t } = useTranslation();
-
-    const go = (to: number) => {
-        router.get(
-            href,
-            { ...params, page: to },
-            { preserveState: true, preserveScroll: true },
-        );
-    };
 
     return (
         <div className="flex flex-col gap-3 border-t px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
@@ -49,7 +38,7 @@ export function PaginationBar({ href, page, params }: Props) {
                         variant="outline"
                         size="sm"
                         disabled={page.current_page <= 1}
-                        onClick={() => go(page.current_page - 1)}
+                        onClick={() => onPage(page.current_page - 1)}
                     >
                         <ChevronLeft className="size-4" />
                         {t('common.pagination.previous')}
@@ -65,7 +54,7 @@ export function PaginationBar({ href, page, params }: Props) {
                         variant="outline"
                         size="sm"
                         disabled={page.current_page >= page.last_page}
-                        onClick={() => go(page.current_page + 1)}
+                        onClick={() => onPage(page.current_page + 1)}
                     >
                         {t('common.pagination.next')}
                         <ChevronRight className="size-4" />

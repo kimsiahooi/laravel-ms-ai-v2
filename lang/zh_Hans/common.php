@@ -10,6 +10,11 @@ return [
     ],
 
     'list' => [
+        'no_matches' => '没有匹配项',
+        'no_matches_hint' => '没有任何内容与“:search”匹配。',
+        'page_empty' => '此页没有内容',
+        'page_empty_hint' => '这些行已不存在 —— 自打开此页以来，列表可能变短了。',
+        'back_to_first' => '返回第一页',
         'actions_column' => '操作',
         'show' => '显示',
         'rows_per_page' => '每页行数',

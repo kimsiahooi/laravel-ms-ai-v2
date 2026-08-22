@@ -1,6 +1,7 @@
 import { router } from '@inertiajs/react';
 import { Archive, ExternalLink, MoreHorizontal } from 'lucide-react';
 import { useState } from 'react';
+import { ConfirmDialog } from '@/components/feedback/confirm-dialog';
 import { Button } from '@/components/ui/button';
 import {
     DropdownMenu,
@@ -10,7 +11,6 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useTranslation } from '@/hooks/use-translation';
-import { ConfirmDialog } from '@/pages/admin/_components/confirm-dialog';
 import { destroy } from '@/routes/admin/tenants';
 
 /**

@@ -248,7 +248,8 @@ literals in the output.
 | Localization | ✅ | `lang/` → JSON bundles + a TS key union; `t()` / `tChoice()`; `check:i18n`. |
 | Language switcher | ✅ | `PUT /locale`, session-backed, written through to `users.locale`. |
 | Console translated | ✅ | 125 keys × en/ms/zh_Hans. The retrofit debt from Phase 1 is paid. |
-| `DataTable` | ⬜ | Next. Absorbs the six components parked in `pages/admin/_components/`. |
+| `DataTable` | ✅ | TanStack v9, server-driven. Absorbed `ListToolbar` + `PaginationBar`; `EmptyState` and `ConfirmDialog` moved to `components/feedback/`. |
+| `scripts/check-structure.sh` | ✅ | The gate CLAUDE.md and ARCHITECTURE.md already claimed existed. |
 | Backend concerns | ⬜ | `RendersResourceIndex`, `SortsResourceQuery`, `ResolvesDateRange`, … |
 | `spatie/laravel-data` + TS types | ⬜ | |
 | zod `primitives.ts` (i18n-aware) | ✅ | Both layers read `lang/{locale}/validation.php`. `check:i18n` now fails on an untranslated rule. |
@@ -367,6 +368,81 @@ The `ms` and `zh_Hans` strings are mine, not a translator's. They are consistent
 idiomatic as far as I can judge, but "arkib"/"ruang kerja" and the Chinese phrasing for
 archive-versus-delete are the kind of thing worth a second pair of eyes before customers
 see them.
+
+### DataTable
+
+Built on `@tanstack/react-table` v9 (see `docs/PACKAGE-POLICY.md` for why v9 and not v8 —
+and for the evidence that argued against the dependency at all).
+
+The shape it settled into, and the reasons:
+
+- **`data` is the answer, never the input.** `manualSorting` and `manualPagination` skip
+  TanStack's own stages; the rows handed in are already the page SQL returned. Registering
+  `createSortedRowModel` here would re-order the 25 rows on screen and present that as a
+  sort of the whole table — worse than no sorting.
+- **The table owns every request the list makes.** Search, sort, page size and paging all go
+  through one `visit()`. That is what keeps "a new search must not carry `page` forward" in
+  one place instead of in each control, which is how someone lands on an empty page 7 of a
+  fresh result set. Search replaces the history entry; a sort or a page change does not,
+  because those are deliberate and Back should undo them.
+- **Which headers are clickable comes from the server.** `filters.sortable` is the same
+  allow-list that guards `ORDER BY` against injection, so there is no second copy to
+  disagree with it. A page declares no sortability at all. (v1 opted in per column via
+  `meta.sortKey`, and duly forgot it: its activity list has a `created_at` column that 13
+  other pages sort and that one cannot.)
+- **Columns name their intent, not their Tailwind.** `hideBelow`, `align`, `numeric`,
+  `width` instead of free-text `meta.className`. v1 has two columns with identical intent
+  hiding at different breakpoints and no way to tell which is right.
+- **Four list states, each with its own copy**: rows; nothing yet; nothing matched the
+  search; and *nothing on this page* — a real state, not a theoretical one, since deleting
+  the last row of the last page redirects back to a `?page=N` that no longer exists. v1
+  showed `No results match ""` there, quoting a search nobody had made. It now offers a way
+  back to the first page.
+- The empty state renders **inside** the card. v1 early-returned the bare empty state and
+  discarded the whole shell, which is why 18 of its 19 pages write their create button
+  twice — once for the toolbar, once for the empty state.
+
+Converted both console lists as the proving ground; `TenantController` gained
+`SortsResourceQuery`, which is v2's first backend concern beyond `ResolvesPerPage`. Two
+deliberate differences from v1's version are noted in its docblock: `direction` is only
+honoured alongside a recognised `sort` (v1 read them independently, so `?direction=asc`
+could reorder a column the header UI had no way to indicate), and the tiebreaker follows the
+primary direction instead of always being `id desc`.
+
+### The structure gate now exists
+
+`CLAUDE.md` and `docs/ARCHITECTURE.md` both said `scripts/check-structure.sh` enforced the
+one-way dependency rule. It did not exist. Since `components/data/` is exactly the boundary
+that rule protects, it was written here: `lib/` may not import React, `components/` may not
+import from `pages/`, one module may not reach into another's `_components/`, and a
+controller may not run a raw query — plus page size caps as warnings. All four failures were
+confirmed by breaking them on purpose. Wired into lefthook's pre-commit and `bun run
+check:structure`.
+
+### Verified in a real browser (Playwright, SSR on)
+
+Against the **production** bundle (`build:ssr` + `inertia:start-ssr`), because that is what
+production runs: `data-server-rendered="true"`, rows and `aria-sort` present in the source,
+and the Malay row count rendered server-side. **Zero console errors and zero React
+warnings** — TanStack v9 hydrates cleanly, which was the open question in adopting a
+three-week-old major.
+
+Exercised with 15 seeded workspaces, since a one-row table proves nothing about sorting:
+sort by each column (URL updates, `aria-sort` moves, `page` drops); page 2 (`Showing 11–15
+of 15`, sort preserved); search (resets to page 1, keeps the sort); a search matching
+nothing; `?page=99` and the recovery button; page size 10 → 25 (pager disappears at a single
+page); archiving through the row-actions dropdown (15 → 14, row gone). All three languages,
+light and dark, and 375 px — where only the primary and actions columns remain, the address
+moves under the name, and neither body nor document scrolls horizontally. Seed data removed
+afterwards; only `demo` remains.
+
+**One finding, and it is in the tooling rather than the code:** `bun run build` deletes
+`public/hot`. Run it while `bun run dev` is up and Laravel switches to production mode,
+finds no SSR bundle (`build` does not make one — `build:ssr` does), and silently
+client-renders while the dev server still looks healthy. That is a fourth silent fallback
+and it is now in the table in `docs/CODING-STANDARDS.md`. It is also why that document says
+to confirm the marker rather than assume it: this was caught by checking, not by looking at
+the page.
 
 ## Phase 2 — remaining ⬜
 

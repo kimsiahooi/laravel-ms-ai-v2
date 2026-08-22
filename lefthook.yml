@@ -2,7 +2,7 @@
 # so these static checks are the entire automated safety net. They are all fast and
 # single-shot; nothing here spins a watcher or a test runner.
 #
-#   pre-commit — near-instant: format/lint/type-check + the UI/standards guard.
+#   pre-commit — near-instant: format/lint/type-check + the UI and structure guards.
 #   pre-push   — seconds: PHPStan, zod↔Laravel validation parity, i18n, production build.
 #
 # Installed by `bun run prepare` (lefthook install); run `bunx lefthook install` after
@@ -24,6 +24,8 @@ pre-commit:
       run: bun run types:check
     ui-guard:
       run: bash scripts/ui-guard.sh
+    structure:
+      run: bash scripts/check-structure.sh
 
 pre-push:
   parallel: false

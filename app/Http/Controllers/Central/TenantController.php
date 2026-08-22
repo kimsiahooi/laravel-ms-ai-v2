@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Central;
 use App\Actions\ProvisionTenant;
 use App\Http\Controllers\Concerns\ResolvesPerPage;
 use App\Http\Controllers\Concerns\RespondsWithToast;
+use App\Http\Controllers\Concerns\SortsResourceQuery;
 use App\Http\Requests\Central\StoreTenantRequest;
 use App\Models\Tenant;
 use Closure;
@@ -27,24 +28,37 @@ final class TenantController
 {
     use ResolvesPerPage;
     use RespondsWithToast;
+    use SortsResourceQuery;
+
+    /**
+     * Columns a workspace listing may be ordered by. This list is the SQL-injection
+     * guard for `?sort=` — see {@see SortsResourceQuery}. `id` is the slug.
+     *
+     * @var array<int, string>
+     */
+    private const SORTABLE = ['name', 'id', 'created_at'];
+
+    /** Archived listings sort by when they were archived instead of when created. */
+    private const SORTABLE_TRASHED = ['name', 'id', 'deleted_at'];
 
     public function index(Request $request): Response
     {
         $search = trim((string) $request->string('search'));
         $perPage = $this->perPage($request);
 
-        $tenants = $this->paginateList(
-            Tenant::query()->tap($this->search($search))->latest()->latest('id'),
-            $perPage,
-        )->through(fn (Tenant $tenant): array => [
-            'slug' => $tenant->getKey(),
-            'name' => $tenant->name,
-            'created_at' => $tenant->created_at->toIso8601String(),
-        ]);
+        $query = Tenant::query()->tap($this->search($search));
+        $sort = $this->applySort($query, $request, self::SORTABLE);
+
+        $tenants = $this->paginateList($query, $perPage)
+            ->through(fn (Tenant $tenant): array => [
+                'slug' => $tenant->getKey(),
+                'name' => $tenant->name,
+                'created_at' => $tenant->created_at->toIso8601String(),
+            ]);
 
         return Inertia::render('admin/tenants/index', [
             'tenants' => $tenants,
-            'filters' => ['search' => $search, 'per_page' => $perPage],
+            'filters' => [...$sort, 'search' => $search, 'per_page' => $perPage],
         ]);
     }
 
@@ -53,18 +67,19 @@ final class TenantController
         $search = trim((string) $request->string('search'));
         $perPage = $this->perPage($request);
 
-        $tenants = $this->paginateList(
-            Tenant::onlyTrashed()->tap($this->search($search))->orderByDesc('deleted_at')->latest('id'),
-            $perPage,
-        )->through(fn (Tenant $tenant): array => [
-            'slug' => $tenant->getKey(),
-            'name' => $tenant->name,
-            'deleted_at' => $tenant->deleted_at?->toIso8601String(),
-        ]);
+        $query = Tenant::onlyTrashed()->tap($this->search($search));
+        $sort = $this->applySort($query, $request, self::SORTABLE_TRASHED, 'deleted_at');
+
+        $tenants = $this->paginateList($query, $perPage)
+            ->through(fn (Tenant $tenant): array => [
+                'slug' => $tenant->getKey(),
+                'name' => $tenant->name,
+                'deleted_at' => $tenant->deleted_at?->toIso8601String(),
+            ]);
 
         return Inertia::render('admin/tenants/trashed', [
             'tenants' => $tenants,
-            'filters' => ['search' => $search, 'per_page' => $perPage],
+            'filters' => [...$sort, 'search' => $search, 'per_page' => $perPage],
         ]);
     }
 

@@ -1,9 +1,9 @@
 import { router } from '@inertiajs/react';
 import { RotateCcw, Trash2 } from 'lucide-react';
 import { useState } from 'react';
+import { ConfirmDialog } from '@/components/feedback/confirm-dialog';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/hooks/use-translation';
-import { ConfirmDialog } from '@/pages/admin/_components/confirm-dialog';
 import { forceDestroy, restore } from '@/routes/admin/tenants';
 
 type Pending = 'restore' | 'delete' | null;

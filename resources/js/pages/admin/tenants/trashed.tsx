@@ -1,25 +1,17 @@
 import { Head, Link } from '@inertiajs/react';
-import { Archive, SearchX } from 'lucide-react';
+import { Archive } from 'lucide-react';
+import { ColumnHeader } from '@/components/data/column-header';
+import { DataTable } from '@/components/data/data-table';
+import { columnsFor } from '@/components/data/table';
+import { EmptyState } from '@/components/feedback/empty-state';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
 import { useTranslation } from '@/hooks/use-translation';
 import AdminLayout from '@/layouts/admin-layout';
 import { ArchivedWorkspaceActions } from '@/pages/admin/_components/archived-workspace-actions';
-import { EmptyState } from '@/pages/admin/_components/empty-state';
-import { ListToolbar } from '@/pages/admin/_components/list-toolbar';
-import { PaginationBar } from '@/pages/admin/_components/pagination-bar';
 import { TimeAgo } from '@/pages/admin/_components/time-ago';
 import { index, trashed } from '@/routes/admin/tenants';
-import type { Paginated } from '@/types';
+import type { Paginated, ResourceFilters } from '@/types';
 
 type ArchivedWorkspace = {
     slug: string;
@@ -29,13 +21,62 @@ type ArchivedWorkspace = {
 
 type Props = {
     tenants: Paginated<ArchivedWorkspace>;
-    filters: { search: string; per_page: number };
+    filters: ResourceFilters;
 };
+
+/** Module scope: see the note in the sibling index page. */
+const column = columnsFor<ArchivedWorkspace>();
+
+const columns = column.columns([
+    column.accessor('name', {
+        header: () => (
+            <ColumnHeader label="console.workspaces.column_workspace" />
+        ),
+        cell: ({ row }) => (
+            <>
+                <span className="font-medium">{row.original.name}</span>
+                <span className="block text-muted-foreground text-xs sm:hidden">
+                    /{row.original.slug}
+                </span>
+            </>
+        ),
+        meta: { width: 'max-w-[16rem] truncate' },
+    }),
+    column.accessor('slug', {
+        id: 'id',
+        header: () => (
+            <ColumnHeader label="console.workspaces.column_address" />
+        ),
+        cell: ({ row }) => (
+            <Badge variant="secondary" className="font-mono font-normal">
+                /{row.original.slug}
+            </Badge>
+        ),
+        meta: { hideBelow: 'sm' },
+    }),
+    column.accessor('deleted_at', {
+        header: () => <ColumnHeader label="console.archive.column_archived" />,
+        cell: ({ row }) => <TimeAgo iso={row.original.deleted_at} />,
+        meta: { hideBelow: 'md' },
+    }),
+    column.display({
+        id: 'actions',
+        header: () => (
+            <ColumnHeader label="common.list.actions_column" srOnly />
+        ),
+        cell: ({ row }) => (
+            <ArchivedWorkspaceActions
+                slug={row.original.slug}
+                name={row.original.name}
+            />
+        ),
+        // Two inline buttons, not a dropdown — wider than the live list's actions.
+        meta: { align: 'end', width: 'w-40' },
+    }),
+]);
 
 export default function TenantsTrashed({ tenants, filters }: Props) {
     const { t } = useTranslation();
-    const href = trashed().url;
-    const isSearching = filters.search !== '';
 
     return (
         <AdminLayout
@@ -60,96 +101,28 @@ export default function TenantsTrashed({ tenants, filters }: Props) {
                 </Button>
             </div>
 
-            <Card className="gap-0 overflow-hidden py-0">
-                <div className="p-4">
-                    <ListToolbar
-                        href={href}
-                        search={filters.search}
-                        perPage={filters.per_page}
-                        placeholder={t('console.archive.search_placeholder')}
+            <DataTable
+                href={trashed().url}
+                page={tenants}
+                filters={filters}
+                columns={columns}
+                getRowId={(workspace) => workspace.slug}
+                only={['tenants']}
+                searchPlaceholder={t('console.archive.search_placeholder')}
+                noMatch={{
+                    title: t('console.archive.no_match_title'),
+                    description: t('console.archive.no_match_description', {
+                        term: filters.search,
+                    }),
+                }}
+                emptyState={
+                    <EmptyState
+                        icon={Archive}
+                        title={t('console.archive.empty_title')}
+                        description={t('console.archive.empty_description')}
                     />
-                </div>
-
-                {tenants.data.length === 0 ? (
-                    isSearching ? (
-                        <EmptyState
-                            icon={SearchX}
-                            title={t('console.archive.no_match_title')}
-                            description={t(
-                                'console.archive.no_match_description',
-                                {
-                                    term: filters.search,
-                                },
-                            )}
-                        />
-                    ) : (
-                        <EmptyState
-                            icon={Archive}
-                            title={t('console.archive.empty_title')}
-                            description={t('console.archive.empty_description')}
-                        />
-                    )
-                ) : (
-                    <Table>
-                        <TableHeader>
-                            <TableRow className="hover:bg-transparent">
-                                <TableHead className="pl-4">
-                                    {t('console.workspaces.column_workspace')}
-                                </TableHead>
-                                <TableHead className="hidden sm:table-cell">
-                                    {t('console.workspaces.column_address')}
-                                </TableHead>
-                                <TableHead className="hidden md:table-cell">
-                                    {t('console.archive.column_archived')}
-                                </TableHead>
-                                <TableHead className="pr-4 text-right">
-                                    <span className="sr-only">
-                                        {t('common.list.actions_column')}
-                                    </span>
-                                </TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {tenants.data.map((workspace) => (
-                                <TableRow key={workspace.slug}>
-                                    <TableCell className="max-w-[16rem] truncate pl-4 font-medium">
-                                        {workspace.name}
-                                        <span className="block text-muted-foreground text-xs sm:hidden">
-                                            /{workspace.slug}
-                                        </span>
-                                    </TableCell>
-                                    <TableCell className="hidden sm:table-cell">
-                                        <Badge
-                                            variant="secondary"
-                                            className="font-mono font-normal"
-                                        >
-                                            /{workspace.slug}
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell className="hidden text-muted-foreground md:table-cell">
-                                        <TimeAgo iso={workspace.deleted_at} />
-                                    </TableCell>
-                                    <TableCell className="pr-4 text-right">
-                                        <ArchivedWorkspaceActions
-                                            slug={workspace.slug}
-                                            name={workspace.name}
-                                        />
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                )}
-
-                <PaginationBar
-                    href={href}
-                    page={tenants}
-                    params={{
-                        search: filters.search || undefined,
-                        per_page: filters.per_page,
-                    }}
-                />
-            </Card>
+                }
+            />
         </AdminLayout>
     );
 }

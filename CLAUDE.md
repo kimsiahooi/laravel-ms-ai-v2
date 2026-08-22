@@ -102,6 +102,6 @@ installs it). Run them by hand too:
 
 1. `bun run check` (frontend) · `vendor/bin/pint --dirty` (PHP)
 2. `bun run types:check` · `composer types:check`
-3. `bun run check:validation` (any form/FormRequest touched)
+3. `bun run check:structure` · `bun run check:validation` (any form/FormRequest touched)
 4. `bun run build` before a release
 5. Drive the change in a browser — light **and** dark, 375 / 768 / 1024

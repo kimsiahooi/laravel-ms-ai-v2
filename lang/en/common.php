@@ -15,6 +15,11 @@ return [
     ],
 
     'list' => [
+        'no_matches' => 'No matches',
+        'no_matches_hint' => 'Nothing matched “:search”.',
+        'page_empty' => 'Nothing on this page',
+        'page_empty_hint' => 'Those rows are gone — the list may have got shorter since this page was opened.',
+        'back_to_first' => 'Back to the first page',
         'actions_column' => 'Actions',
         'show' => 'Show',
         'rows_per_page' => 'Rows per page',

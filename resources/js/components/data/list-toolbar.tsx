@@ -1,5 +1,5 @@
-import { router } from '@inertiajs/react';
 import { Search, X } from 'lucide-react';
+import type { ReactNode } from 'react';
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,47 +12,60 @@ import {
 } from '@/components/ui/select';
 import { useTranslation } from '@/hooks/use-translation';
 
+/**
+ * Kept in step with ResolvesPerPage::$perPageOptions. A value outside the server's
+ * allow-list does not clamp — it falls back to the smallest — so the two lists
+ * disagreeing would silently drop a user from 100 rows to 10.
+ */
 const PER_PAGE_OPTIONS = [10, 25, 50, 100];
 
 type Props = {
-    href: string;
+    /** What the server is currently showing, not what is being typed. */
     search: string;
     perPage: number;
     placeholder: string;
+    onSearch: (search: string) => void;
+    onPerPage: (perPage: number) => void;
+    /** Per-resource controls: a status filter, a date range. */
+    extra?: ReactNode;
 };
 
 /**
- * Search + page size for a server-paginated list. Both write straight to the query
- * string, so the current view is a URL a person can bookmark or share.
+ * Search and page size. Deliberately issues no requests of its own — it reports what
+ * the user asked for and {@see DataTable} decides what that means for the query, so
+ * the rule about resetting to page 1 has exactly one home.
  *
- * Typing is debounced and replaces the history entry, so a search does not bury the
- * previous page in the back button. Changing the page size is a deliberate click, so
- * it goes immediately. Neither sends `page`, which resets the list to the first one —
- * page 7 of a different result set is meaningless.
+ * Typing is debounced; changing the page size is a deliberate click and goes at once.
  */
-export function ListToolbar({ href, search, perPage, placeholder }: Props) {
+export function ListToolbar({
+    search,
+    perPage,
+    placeholder,
+    onSearch,
+    onPerPage,
+    extra,
+}: Props) {
     const { t } = useTranslation();
     const [value, setValue] = useState(search);
 
+    // The server's answer is the source of truth for the box: if a redirect clears the
+    // search, the stale term must not stay on screen hiding the row that was just
+    // created. Re-syncing on `search` also covers the back button.
     useEffect(() => {
-        // `search` is what the server is currently showing, so this is "is there
-        // anything new to ask for?". It is false on mount, and false again once a
-        // search lands — which is also what stops a page-size change (which sends its
-        // own request below) from firing a second, duplicate one.
+        setValue(search);
+    }, [search]);
+
+    useEffect(() => {
+        // "Is there anything new to ask for?" — false on mount, and false again once a
+        // search lands, which is what stops the answer from re-triggering the question.
         if (value === search) {
             return;
         }
 
-        const timer = setTimeout(() => {
-            router.get(
-                href,
-                { search: value || undefined, per_page: perPage },
-                { preserveState: true, preserveScroll: true, replace: true },
-            );
-        }, 300);
+        const timer = setTimeout(() => onSearch(value), 300);
 
         return () => clearTimeout(timer);
-    }, [value, search, perPage, href]);
+    }, [value, search, onSearch]);
 
     return (
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -80,22 +93,15 @@ export function ListToolbar({ href, search, perPage, placeholder }: Props) {
                 )}
             </div>
 
+            {extra}
+
             <div className="flex items-center gap-2 sm:ml-auto">
                 <span className="text-muted-foreground text-sm">
                     {t('common.list.show')}
                 </span>
                 <Select
                     value={String(perPage)}
-                    onValueChange={(next) =>
-                        router.get(
-                            href,
-                            {
-                                search: value || undefined,
-                                per_page: Number(next),
-                            },
-                            { preserveState: true, preserveScroll: true },
-                        )
-                    }
+                    onValueChange={(next) => onPerPage(Number(next))}
                 >
                     <SelectTrigger
                         className="w-20"

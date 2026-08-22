@@ -1,26 +1,18 @@
 import { Head, Link } from '@inertiajs/react';
-import { Building2, SearchX } from 'lucide-react';
+import { Building2 } from 'lucide-react';
+import { ColumnHeader } from '@/components/data/column-header';
+import { DataTable } from '@/components/data/data-table';
+import { columnsFor } from '@/components/data/table';
+import { EmptyState } from '@/components/feedback/empty-state';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
 import { useTranslation } from '@/hooks/use-translation';
 import AdminLayout from '@/layouts/admin-layout';
 import { CreateWorkspaceSheet } from '@/pages/admin/_components/create-workspace-sheet';
-import { EmptyState } from '@/pages/admin/_components/empty-state';
-import { ListToolbar } from '@/pages/admin/_components/list-toolbar';
-import { PaginationBar } from '@/pages/admin/_components/pagination-bar';
 import { TimeAgo } from '@/pages/admin/_components/time-ago';
 import { WorkspaceActions } from '@/pages/admin/_components/workspace-actions';
 import { index, trashed } from '@/routes/admin/tenants';
-import type { Paginated } from '@/types';
+import type { Paginated, ResourceFilters } from '@/types';
 
 type Workspace = {
     slug: string;
@@ -30,13 +22,72 @@ type Workspace = {
 
 type Props = {
     tenants: Paginated<Workspace>;
-    filters: { search: string; per_page: number };
+    filters: ResourceFilters;
 };
+
+/**
+ * Columns are built once at module scope, not per render: TanStack treats the array
+ * as an input, and a fresh one each render rebuilds every column instance.
+ *
+ * A column's id is the column the server sorts by — `name`, `id` (the slug),
+ * `created_at`. Which of them are actually clickable is decided by the controller's
+ * allow-list, which arrives in `filters.sortable`; nothing here declares it.
+ */
+const column = columnsFor<Workspace>();
+
+const columns = column.columns([
+    column.accessor('name', {
+        header: () => (
+            <ColumnHeader label="console.workspaces.column_workspace" />
+        ),
+        cell: ({ row }) => (
+            <>
+                <span className="font-medium">{row.original.name}</span>
+                {/* The address has no column of its own on a phone, so it rides along. */}
+                <span className="block text-muted-foreground text-xs sm:hidden">
+                    /{row.original.slug}
+                </span>
+            </>
+        ),
+        meta: { width: 'max-w-[16rem] truncate' },
+    }),
+    column.accessor('slug', {
+        // `id` is the primary key on Tenant, so that is the name the server sorts by.
+        id: 'id',
+        header: () => (
+            <ColumnHeader label="console.workspaces.column_address" />
+        ),
+        cell: ({ row }) => (
+            <Badge variant="secondary" className="font-mono font-normal">
+                /{row.original.slug}
+            </Badge>
+        ),
+        meta: { hideBelow: 'sm' },
+    }),
+    column.accessor('created_at', {
+        header: () => (
+            <ColumnHeader label="console.workspaces.column_created" />
+        ),
+        cell: ({ row }) => <TimeAgo iso={row.original.created_at} />,
+        meta: { hideBelow: 'md' },
+    }),
+    column.display({
+        id: 'actions',
+        header: () => (
+            <ColumnHeader label="common.list.actions_column" srOnly />
+        ),
+        cell: ({ row }) => (
+            <WorkspaceActions
+                slug={row.original.slug}
+                name={row.original.name}
+            />
+        ),
+        meta: { align: 'end', width: 'w-12' },
+    }),
+]);
 
 export default function TenantsIndex({ tenants, filters }: Props) {
     const { t } = useTranslation();
-    const href = index().url;
-    const isSearching = filters.search !== '';
 
     return (
         <AdminLayout
@@ -65,99 +116,29 @@ export default function TenantsIndex({ tenants, filters }: Props) {
                 </div>
             </div>
 
-            <Card className="gap-0 overflow-hidden py-0">
-                <div className="p-4">
-                    <ListToolbar
-                        href={href}
-                        search={filters.search}
-                        perPage={filters.per_page}
-                        placeholder={t('console.workspaces.search_placeholder')}
+            <DataTable
+                href={index().url}
+                page={tenants}
+                filters={filters}
+                columns={columns}
+                getRowId={(workspace) => workspace.slug}
+                only={['tenants']}
+                searchPlaceholder={t('console.workspaces.search_placeholder')}
+                noMatch={{
+                    title: t('console.workspaces.no_match_title'),
+                    description: t('console.workspaces.no_match_description', {
+                        term: filters.search,
+                    }),
+                }}
+                emptyState={
+                    <EmptyState
+                        icon={Building2}
+                        title={t('console.workspaces.empty_title')}
+                        description={t('console.workspaces.empty_description')}
+                        action={<CreateWorkspaceSheet />}
                     />
-                </div>
-
-                {tenants.data.length === 0 ? (
-                    isSearching ? (
-                        <EmptyState
-                            icon={SearchX}
-                            title={t('console.workspaces.no_match_title')}
-                            description={t(
-                                'console.workspaces.no_match_description',
-                                {
-                                    term: filters.search,
-                                },
-                            )}
-                        />
-                    ) : (
-                        <EmptyState
-                            icon={Building2}
-                            title={t('console.workspaces.empty_title')}
-                            description={t(
-                                'console.workspaces.empty_description',
-                            )}
-                            action={<CreateWorkspaceSheet />}
-                        />
-                    )
-                ) : (
-                    <Table>
-                        <TableHeader>
-                            <TableRow className="hover:bg-transparent">
-                                <TableHead className="pl-4">
-                                    {t('console.workspaces.column_workspace')}
-                                </TableHead>
-                                <TableHead className="hidden sm:table-cell">
-                                    {t('console.workspaces.column_address')}
-                                </TableHead>
-                                <TableHead className="hidden md:table-cell">
-                                    {t('console.workspaces.column_created')}
-                                </TableHead>
-                                <TableHead className="w-12 pr-4 text-right">
-                                    <span className="sr-only">
-                                        {t('common.list.actions_column')}
-                                    </span>
-                                </TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {tenants.data.map((workspace) => (
-                                <TableRow key={workspace.slug}>
-                                    <TableCell className="max-w-[16rem] truncate pl-4 font-medium">
-                                        {workspace.name}
-                                        <span className="block text-muted-foreground text-xs sm:hidden">
-                                            /{workspace.slug}
-                                        </span>
-                                    </TableCell>
-                                    <TableCell className="hidden sm:table-cell">
-                                        <Badge
-                                            variant="secondary"
-                                            className="font-mono font-normal"
-                                        >
-                                            /{workspace.slug}
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell className="hidden text-muted-foreground md:table-cell">
-                                        <TimeAgo iso={workspace.created_at} />
-                                    </TableCell>
-                                    <TableCell className="pr-4 text-right">
-                                        <WorkspaceActions
-                                            slug={workspace.slug}
-                                            name={workspace.name}
-                                        />
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                )}
-
-                <PaginationBar
-                    href={href}
-                    page={tenants}
-                    params={{
-                        search: filters.search || undefined,
-                        per_page: filters.per_page,
-                    }}
-                />
-            </Card>
+                }
+            />
         </AdminLayout>
     );
 }
