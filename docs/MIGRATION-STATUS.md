@@ -534,6 +534,25 @@ carrying both forms in `en` and a single segment in `ms`/`zh_Hans` — which is 
 has to be the locale's choice rather than a ternary at the call site: two of the three
 languages have no plural inflection at all.
 
+### create-workspace-sheet, split three ways
+
+251 lines, so the structure gate warned on every commit. It was doing four jobs; now each
+has a file:
+
+- `lib/slug.ts` — `toSlug()`. Pure, ASCII-only, capped at 50 so `<db prefix><slug>` fits
+  MySQL's 64-character database-name limit.
+- `_components/workspace-identity-fields.tsx` — name and address, and the mirroring rule
+  that is the only real behaviour on the form: the slug tracks the name until it is edited
+  by hand, then stops for good.
+- `_components/workspace-admin-fields.tsx` — the administrator fieldset. Entirely
+  uncontrolled; nothing reads those values back before submit.
+- `create-workspace-sheet.tsx` — the sheet, the `<Form>`, and the submission. 92 lines.
+
+The `reset()` function disappeared rather than moving. Radix unmounts the sheet's content
+when it closes, so the field groups take their state with them and reopen empty — which is
+worth stating out loud in the file rather than leaving as an accident, and was checked in
+the browser: fill all five fields, Escape, reopen, all five empty.
+
 ## Phase 2 — remaining ⬜
 
 ## Phases 3–8 — Modules ⬜
