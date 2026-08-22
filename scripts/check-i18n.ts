@@ -25,6 +25,7 @@
  * Run: `bun run check:i18n`
  */
 
+import { spawnSync } from 'node:child_process';
 import {
     existsSync,
     mkdtempSync,
@@ -61,17 +62,20 @@ function read(path: string): string {
 
 const scratch = mkdtempSync(join(tmpdir(), 'i18n-'));
 
-const exported = Bun.spawnSync([
-    'php',
+// `node:child_process` rather than `Bun.spawnSync`: identical here, and it keeps this
+// file typed by @types/node alone, so `bun run types:check` covers the gates too.
+const exported = spawnSync('php', [
     'artisan',
     'lang:export',
     `--output=${scratch}`,
 ]);
 
-if (exported.exitCode !== 0) {
+if (exported.status !== 0) {
     rmSync(scratch, { force: true, recursive: true });
     console.error('✗ php artisan lang:export failed:\n');
-    console.error(exported.stderr.toString() || exported.stdout.toString());
+    console.error(
+        exported.stderr?.toString() || exported.stdout?.toString() || '',
+    );
     process.exit(1);
 }
 

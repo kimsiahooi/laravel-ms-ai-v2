@@ -116,6 +116,11 @@
     "include": [
         "resources/js/**/*.ts",
         "resources/js/**/*.d.ts",
-        "resources/js/**/*.tsx"
+        "resources/js/**/*.tsx",
+        /* The gate scripts are the safety net that stands in for a test suite, so they
+           are type-checked like everything else — and an editor that opens one shows
+           real diagnostics instead of "Cannot find name 'process'". They are typed by
+           @types/node alone: keep Bun-only globals out of them, or this stops holding. */
+        "scripts/**/*.ts"
     ]
 }
