@@ -354,7 +354,12 @@ const HUMAN_PROPS = new Set([
 ]);
 
 // A value that is already a translation key, passed through to a component that resolves
-// it (ColumnHeader does this) — not a sentence.
+// it — ColumnHeader takes one as `label`, ResourceFormDialog takes four. Not a sentence.
+//
+// Applied wherever a literal could be one: a plain attribute value, and a literal inside
+// a rendered expression. The tradeoff is that a genuine sentence shaped like a key would
+// slip through — but lowercase, dotted and spaceless is not a shape English comes in, and
+// one rendered as text would read as `categories.edit.title` on screen.
 const KEY_SHAPE = /^[a-z0-9_]+(?:\.[a-z0-9_]+)+$/;
 
 function tsxFiles(dir: string): string[] {
@@ -486,7 +491,13 @@ for (const root of UI_ROOTS) {
                 collect(node.expression);
 
                 for (const literal of literals) {
-                    if (/[A-Za-z]{2}/.test(literal.text)) {
+                    // KEY_SHAPE applies here exactly as it does to a plain attribute
+                    // value. `title={editing ? 'x.edit' : 'x.create'}` is a key chosen
+                    // between, not a sentence — the component it goes to resolves it.
+                    if (
+                        /[A-Za-z]{2}/.test(literal.text) &&
+                        !KEY_SHAPE.test(literal.text)
+                    ) {
                         report(
                             literal,
                             `hard-coded ${JSON.stringify(literal.text)}`,
