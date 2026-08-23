@@ -11,7 +11,7 @@ return [
     'title' => 'Suppliers',
     'subtitle' => 'Who you buy from, and how to reach them.',
 
-    'search_placeholder' => 'Search name, contact, email or notes…',
+    'search_placeholder' => 'Search name, contact person, phone, email or notes…',
 
     'column' => [
         'name' => 'Supplier',

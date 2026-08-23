@@ -1413,6 +1413,54 @@ the catalog is grouped. Clickability won.
   combobox filtering correctly from the production bundle.
 - en / ms / zh_Hans, light and dark, 375 / 1280.
 
+### Search: "contact" meant the wrong thing, and phone was excluded for a bad reason
+
+Reported from a screenshot: the suppliers placeholder read *"Search name, contact, email
+or notes…"* and was taken to mean **contact number**. In Malaysian English that is the
+ordinary reading of the word. The field is `contact_person`, so the placeholder was
+ambiguous rather than wrong — but ambiguous is wrong for a placeholder. Now "contact
+person", in all three locales, on both suppliers and customers.
+
+Then the question underneath it: *why can't it search phone?* Because of a note left on
+`Supplier::searchableColumns()` saying `tax_id` and `phone` were both excluded as exact-
+value lookups where "a LIKE would match a fragment of one number inside another". That
+reasoning holds for a tax number and is backwards for a phone number — **fragment
+matching is the entire point there**, since the last four digits are how people recognise
+one.
+
+It was also hiding a worse problem. A plain LIKE on a phone column barely works at all:
+the value is stored as somebody typed it, `+60 3 1234 5678`, and the person searching
+types `0312345678`. Neither is a substring of the other, so the column would have looked
+searchable and found nothing. Adding `phone` to the ordinary list would have "fixed" the
+complaint and left it broken.
+
+`Searchable` gained `searchableDigitColumns()`: the noise (` -()+.`) is stripped from the
+column and from the term, and what is compared is digits. Verified against the seeded
+numbers:
+
+| typed | finds `+60 3 1234 5678` |
+|---|---|
+| `+60 3 1234 5678` | ✅ |
+| `0312345678` | ✅ |
+| `312345678` | ✅ |
+| `1234 5678` | ✅ |
+| `60-3-1234-5678` | ✅ |
+| `5678` | ✅ |
+
+US formatting works the same way — `9856508` finds `+1 (644) 985-6508`. The phone clause
+is only added when the term contains a digit, so searching "steel" still produces exactly
+the SQL it did before.
+
+**PHPStan caught the interesting part.** `orWhereRaw()` wants a `literal-string`, and the
+expression is built in a loop. The fix was not a cast: `searchableDigitColumns()` is typed
+`list<literal-string>` and the builder takes and returns `literal-string`, so *the compiler*
+now proves the raw SQL is assembled from source code alone. A column name that came from a
+request fails to type-check rather than reaching the database.
+
+Nested `REPLACE` rather than `REGEXP_REPLACE`, which reads better and would pin this to
+MySQL 8. Neither is indexable — it is a function of the column and the LIKE leads with a
+wildcard — which is fine for a table of contacts and would not be for a table of movements.
+
 ### Bug: every search box had two clear buttons
 
 Visible in the same screenshot. Chrome renders its own `::-webkit-search-cancel-button`

@@ -11,7 +11,7 @@ return [
     'title' => '供应商',
     'subtitle' => '你向谁采购，以及如何联系他们。',
 
-    'search_placeholder' => '搜索名称、联系人、邮箱或备注…',
+    'search_placeholder' => '搜索名称、联系人姓名、电话、邮箱或备注…',
 
     'column' => [
         'name' => '供应商',

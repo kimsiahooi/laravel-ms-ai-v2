@@ -11,7 +11,7 @@ return [
     'title' => 'Pelanggan',
     'subtitle' => 'Kepada siapa anda menjual, dan butiran yang perlu ada pada invois.',
 
-    'search_placeholder' => 'Cari nama, kenalan, e-mel, TIN atau nota…',
+    'search_placeholder' => 'Cari nama, orang untuk dihubungi, telefon, e-mel, TIN atau nota…',
 
     'column' => [
         'name' => 'Pelanggan',

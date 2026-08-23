@@ -11,7 +11,7 @@ return [
     'title' => 'Pembekal',
     'subtitle' => 'Tempat anda membeli, dan cara menghubungi mereka.',
 
-    'search_placeholder' => 'Cari nama, kenalan, e-mel atau nota…',
+    'search_placeholder' => 'Cari nama, orang untuk dihubungi, telefon, e-mel atau nota…',
 
     'column' => [
         'name' => 'Pembekal',

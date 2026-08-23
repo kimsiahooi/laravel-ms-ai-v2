@@ -10,7 +10,7 @@ return [
     'title' => '客户',
     'subtitle' => '你向谁销售，以及开票所需的信息。',
 
-    'search_placeholder' => '搜索名称、联系人、邮箱、税号或备注…',
+    'search_placeholder' => '搜索名称、联系人姓名、电话、邮箱、税号或备注…',
 
     'column' => [
         'name' => '客户',

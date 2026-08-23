@@ -40,13 +40,27 @@ class Supplier extends Model
      * What "find a supplier" means: the company, the person you deal with, the address
      * you reach them at, and whatever was written down about them.
      *
-     * `tax_id` and `phone` are absent on purpose — both are looked up by exact value,
-     * and a LIKE over them would match a fragment of one number inside another.
+     * `tax_id` is absent on purpose: it is looked up by exact value, and a LIKE over it
+     * would match a fragment of one tax number inside another — a wrong answer dressed
+     * as a right one.
+     *
+     * `phone` used to be excluded for the same stated reason, and that reasoning was
+     * wrong. Fragment matching is a nuisance on a tax number and the entire point on a
+     * phone number — the last four digits are how people recognise one. It is searched
+     * below instead, on digits, because a plain LIKE would have found almost nothing.
      *
      * @return array<int, string>
      */
     protected function searchableColumns(): array
     {
         return ['name', 'contact_person', 'email', 'notes'];
+    }
+
+    /**
+     * @return list<literal-string>
+     */
+    protected function searchableDigitColumns(): array
+    {
+        return ['phone'];
     }
 }

@@ -11,7 +11,7 @@ return [
     'title' => 'Customers',
     'subtitle' => 'Who you sell to, and the details an invoice has to carry.',
 
-    'search_placeholder' => 'Search name, contact, email, TIN or notes…',
+    'search_placeholder' => 'Search name, contact person, phone, email, TIN or notes…',
 
     'column' => [
         'name' => 'Customer',

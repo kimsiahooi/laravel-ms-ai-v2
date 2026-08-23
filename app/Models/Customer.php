@@ -55,11 +55,22 @@ class Customer extends Model
      * The address parts are absent. A LIKE across `city` and `postcode` turns a search
      * for a name into a search for a region, and the result is a list nobody asked for.
      *
+     * `phone` is searched below rather than here — see {@see Supplier} for why a plain
+     * LIKE on a phone column looks searchable and finds nothing.
+     *
      * @return array<int, string>
      */
     protected function searchableColumns(): array
     {
         return ['name', 'contact_person', 'email', 'tin', 'registration_no', 'notes'];
+    }
+
+    /**
+     * @return list<literal-string>
+     */
+    protected function searchableDigitColumns(): array
+    {
+        return ['phone'];
     }
 
     /**
