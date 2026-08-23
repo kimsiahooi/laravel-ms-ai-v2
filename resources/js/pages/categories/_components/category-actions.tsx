@@ -1,8 +1,8 @@
-import { router } from '@inertiajs/react';
 import { useState } from 'react';
 import { RowActions } from '@/components/data/row-actions';
 import { ConfirmDialog } from '@/components/feedback/confirm-dialog';
 import { usePermissions } from '@/hooks/use-permissions';
+import { useResourceDelete } from '@/hooks/use-resource-delete';
 import { useTranslation } from '@/hooks/use-translation';
 import { CategoryFormDialog } from '@/pages/categories/_components/category-form-dialog';
 import { destroy } from '@/routes/categories';
@@ -19,8 +19,7 @@ export function CategoryActions({ category }: { category: Category }) {
     const { t } = useTranslation();
     const { can } = usePermissions();
     const [editing, setEditing] = useState(false);
-    const [confirming, setConfirming] = useState(false);
-    const [processing, setProcessing] = useState(false);
+    const remove = useResourceDelete(destroy({ category: category.id }).url);
 
     return (
         <>
@@ -29,7 +28,7 @@ export function CategoryActions({ category }: { category: Category }) {
                 canEdit={can('categories.update')}
                 canDelete={can('categories.delete')}
                 onEdit={() => setEditing(true)}
-                onDelete={() => setConfirming(true)}
+                onDelete={remove.ask}
             />
 
             <CategoryFormDialog
@@ -39,8 +38,8 @@ export function CategoryActions({ category }: { category: Category }) {
             />
 
             <ConfirmDialog
-                open={confirming}
-                onOpenChange={setConfirming}
+                open={remove.confirming}
+                onOpenChange={remove.onOpenChange}
                 title={t('categories.confirm.delete_title', {
                     name: category.name,
                 })}
@@ -48,17 +47,8 @@ export function CategoryActions({ category }: { category: Category }) {
                 confirmLabel={t('categories.confirm.delete_submit')}
                 busyLabel={t('categories.confirm.delete_submitting')}
                 variant="destructive"
-                processing={processing}
-                onConfirm={() => {
-                    router.delete(destroy({ category: category.id }).url, {
-                        preserveScroll: true,
-                        onStart: () => setProcessing(true),
-                        onFinish: () => {
-                            setProcessing(false);
-                            setConfirming(false);
-                        },
-                    });
-                }}
+                processing={remove.processing}
+                onConfirm={remove.confirm}
             />
         </>
     );

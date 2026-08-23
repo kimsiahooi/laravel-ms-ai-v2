@@ -1,8 +1,8 @@
-import { router } from '@inertiajs/react';
 import { useState } from 'react';
 import { RowActions } from '@/components/data/row-actions';
 import { ConfirmDialog } from '@/components/feedback/confirm-dialog';
 import { usePermissions } from '@/hooks/use-permissions';
+import { useResourceDelete } from '@/hooks/use-resource-delete';
 import { useTranslation } from '@/hooks/use-translation';
 import { CustomerFormDialog } from '@/pages/customers/_components/customer-form-dialog';
 import { destroy } from '@/routes/customers';
@@ -14,8 +14,7 @@ export function CustomerActions({ customer }: { customer: Customer }) {
     const { t } = useTranslation();
     const { can } = usePermissions();
     const [editing, setEditing] = useState(false);
-    const [confirming, setConfirming] = useState(false);
-    const [processing, setProcessing] = useState(false);
+    const remove = useResourceDelete(destroy({ customer: customer.id }).url);
 
     return (
         <>
@@ -24,7 +23,7 @@ export function CustomerActions({ customer }: { customer: Customer }) {
                 canEdit={can('customers.update')}
                 canDelete={can('customers.delete')}
                 onEdit={() => setEditing(true)}
-                onDelete={() => setConfirming(true)}
+                onDelete={remove.ask}
             />
 
             <CustomerFormDialog
@@ -34,8 +33,8 @@ export function CustomerActions({ customer }: { customer: Customer }) {
             />
 
             <ConfirmDialog
-                open={confirming}
-                onOpenChange={setConfirming}
+                open={remove.confirming}
+                onOpenChange={remove.onOpenChange}
                 title={t('customers.confirm.delete_title', {
                     name: customer.name,
                 })}
@@ -43,17 +42,8 @@ export function CustomerActions({ customer }: { customer: Customer }) {
                 confirmLabel={t('customers.confirm.delete_submit')}
                 busyLabel={t('customers.confirm.delete_submitting')}
                 variant="destructive"
-                processing={processing}
-                onConfirm={() => {
-                    router.delete(destroy({ customer: customer.id }).url, {
-                        preserveScroll: true,
-                        onStart: () => setProcessing(true),
-                        onFinish: () => {
-                            setProcessing(false);
-                            setConfirming(false);
-                        },
-                    });
-                }}
+                processing={remove.processing}
+                onConfirm={remove.confirm}
             />
         </>
     );
