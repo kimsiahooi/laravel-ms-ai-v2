@@ -77,11 +77,18 @@ export function TextField({
             <Label htmlFor={id}>
                 {t(label)}
                 {optional && (
-                    // A margin, not a `{' '}`: JSX drops whitespace between lines,
-                    // and the space is presentation anyway.
-                    <span className="ml-1 font-normal text-muted-foreground">
-                        {t('common.field.optional')}
-                    </span>
+                    // An explicit `{' '}`, not a margin. A margin is the obvious fix
+                    // and only half of one: it puts a gap on screen, but the accessible
+                    // name is built by concatenating text nodes, and nothing is inserted
+                    // between two inline elements — so a screen reader announced
+                    // "Barcodeoptional". `{' '}` survives (JSX drops whitespace between
+                    // lines, not an expression) and fixes both at once.
+                    <>
+                        {' '}
+                        <span className="font-normal text-muted-foreground">
+                            {t('common.field.optional')}
+                        </span>
+                    </>
                 )}
             </Label>
 
