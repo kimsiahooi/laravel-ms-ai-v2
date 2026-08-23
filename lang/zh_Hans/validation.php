@@ -26,6 +26,7 @@ return [
         'admin_email' => '管理员邮箱',
         'admin_name' => '管理员姓名',
         'admin_password' => '管理员密码',
+        'barcode' => '条码',
         'city' => '城市',
         'contact_person' => '联系人',
         'country_code' => '国家',
@@ -37,10 +38,12 @@ return [
         'postcode' => '邮编',
         'registration_no' => '注册号',
         'slug' => '地址',
+        'sku' => 'SKU',
         'sst_registration_no' => 'SST/GST 注册号',
         'state_code' => '州代码',
         'tax_id' => '税号',
         'tin' => '税务识别号',
+        'unit' => '单位',
     ],
 
 ];

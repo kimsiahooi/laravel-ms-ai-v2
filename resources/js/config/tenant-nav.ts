@@ -1,7 +1,8 @@
-import { Building, LayoutGrid, Tags, Truck } from 'lucide-react';
+import { Boxes, Building, LayoutGrid, Tags, Truck } from 'lucide-react';
 import { dashboard } from '@/routes';
 import { index as categories } from '@/routes/categories';
 import { index as customers } from '@/routes/customers';
+import { index as rawMaterials } from '@/routes/raw-materials';
 import { index as suppliers } from '@/routes/suppliers';
 import type { TenantNavGroup } from '@/types/navigation';
 
@@ -59,6 +60,12 @@ export function tenantNavGroups(
                     href: customers(),
                     icon: Building,
                     permission: 'customers.view',
+                },
+                {
+                    title: 'raw-materials.title',
+                    href: rawMaterials(),
+                    icon: Boxes,
+                    permission: 'raw-materials.view',
                 },
             ],
         },

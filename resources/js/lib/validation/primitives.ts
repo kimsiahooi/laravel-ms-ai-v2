@@ -111,6 +111,34 @@ export function optionalText({
 }
 
 /**
+ * A required value from a fixed list — `['required', Rule::enum(...)]`.
+ *
+ * The {@see optionalOneOf} of this, with one difference that matters: empty is a
+ * failure, and it reports "is required" rather than "is invalid". Somebody who has not
+ * touched the picker has not chosen a wrong value, they have not chosen one — and the
+ * two sentences send them to different places.
+ *
+ * `values` arrives at call time for the same reason as below: the list is the server's,
+ * sent as a page prop, so the browser cannot end up checking against a stale copy.
+ */
+export function oneOf({
+    values,
+    attribute,
+}: {
+    values: readonly string[];
+    attribute: TranslationKey;
+}) {
+    return z
+        .string(message('validation.string', attribute))
+        .trim()
+        .min(1, message('validation.required', attribute))
+        .refine(
+            (value) => values.includes(value),
+            message('validation.enum', attribute),
+        );
+}
+
+/**
  * An optional value from a fixed list — `['nullable', Rule::enum(...)]` or
  * `Rule::in(...)`.
  *

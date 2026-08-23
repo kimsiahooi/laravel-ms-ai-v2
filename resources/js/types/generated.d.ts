@@ -30,6 +30,15 @@ notes: string | null,
 created_at: string,
 creator: string | null,
 };
+export type RawMaterialData = {
+id: number,
+name: string,
+sku: string,
+barcode: string | null,
+unit: App.Enums.Unit,
+created_at: string,
+creator: string | null,
+};
 export type SupplierData = {
 id: number,
 name: string,
@@ -50,5 +59,7 @@ created_at: string,
 }
 namespace Enums {
 export type Country = 'MY' | 'SG';
+export type Dimension = 'mass' | 'volume' | 'length' | 'count';
+export type Unit = 'g' | 'kg' | 't' | 'ml' | 'l' | 'mm' | 'cm' | 'm' | 'pcs' | 'box' | 'roll' | 'sheet' | 'pair' | 'set';
 }
 }

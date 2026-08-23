@@ -894,7 +894,7 @@ wrapper rather than an edit — deliberately left.
 | categories | ✅ | Full CRUD, translated, permission-gated. First use of `TenantFormRequest` + `RecordsCreator`. |
 | suppliers | ✅ | Seven fields, a two-column form. Where the shared form kit came from. |
 | customers | ✅ | Thirteen fields in three groups. First enum, first select. |
-| raw materials | ⬜ | |
+| raw materials | ✅ | Four fields, three required. `App\Enums\Unit` replaces v1's free-text unit — dimensions, factors, conversion. |
 | products (+ BOM, image) | ⬜ | |
 
 ### Categories — what landed
@@ -1113,11 +1113,184 @@ the server does.
   the scrolling container, which is the classic place for this to come apart.
 - en / ms / zh_Hans, light and dark, 375 / 667 / 1280.
 
+### Raw materials — the first module that requires something
+
+Four fields against customers' thirteen, and the harder module of the two, because this
+is the first one where a required field is required for a *reason downstream* rather than
+because the record would look empty without it.
+
+`sku` and `unit` are both NOT NULL. Every quantity that a purchase order line, a stock
+movement or a BOM row will ever record is a number *of* this material's unit, referred to
+by its SKU. A material saved without them is a row the stock engine cannot use — so the
+form asks, and both fields carry a hint saying what they are for.
+
+**What did not arrive, and why.** v1's `RawMaterialData` also carries a
+`purchase_history` collection — which received purchase orders this material came in on,
+rendered as an expandable row. Purchase orders are phase 5. It returns with them rather
+than being stubbed out now.
+
+**No decimals here after all.** The plan and the previous handover both said raw
+materials would be the module that forces `TenantFormRequest`'s deferred decimal helpers.
+Reading v1's schema settles it: `raw_materials` is `name`, `sku`, `barcode`, `unit` — no
+cost, no price, no quantity. Nothing in the catalog holds a number. The decimal rules and
+their zod mirrors arrive with the stock and order modules that actually store amounts,
+which is where the `decimal:0,4` guard against MySQL's silent rounding starts mattering.
+
+**`unit` is an enum, not free text — and it carries the physics.** This came out of a
+direct question ("unit can be presets? coz in future i want to convert, like gram to kg")
+and it changed the module. v1's `varchar(20)` meant "kg" and "KG" were two different units
+to a stock engine that would later add their quantities together; fixing that after the
+fact means reconciling every row somebody has already typed. See the next section.
+
+**The barcode is searchable; a supplier's tax ID deliberately is not.** The difference is
+how the value gets into the box. A barcode is scanned, whole, and a scan that matched
+nothing is a scan that failed. A tax ID is typed from memory, where a LIKE matching a
+fragment of some other number is a wrong answer dressed as a right one. `barcode` is also
+indexed, which v1's is not: phase 8's scanner resolves a scanned value by exact match.
+
+### `App\Enums\Unit` — presets that can actually convert
+
+Fourteen units, chosen as the manufacturing default: mass (g, kg, t), volume (ml, L),
+length (mm, cm, m) and count (pcs, box, roll, sheet, pair, set).
+
+A bare list of allowed strings would have been the easy reading of "presets" and would
+not have delivered what was asked for. Converting g → kg needs two things per unit that a
+list does not carry:
+
+- **a `Dimension`** — mass, volume, length, count. Conversion only happens inside one.
+  `g → kg` is arithmetic; `kg → L` is a question with no answer, and answering it anyway
+  is how a wrong number becomes somebody's stock figure.
+- **an integer factor to that dimension's base** — gram, millilitre, millimetre. Integers
+  and exact, because a decimal factor puts a rounding error inside every quantity that
+  passes through it, which is the whole class of bug the enum exists to prevent.
+
+So `Unit::convert()` is `qty × from.factor() ÷ to.factor()`, guarded by
+`isConvertibleTo()`. Verified before wiring anything to it: 1500 g → 1.5 kg, 2.5 kg →
+2500 g, 1 t → 1000 kg, 250 cm → 2.5 m, 1.5 L → 1500 ml, and `kg → L` → null.
+
+**Count units never convert into each other.** A box, a roll and a sheet are each "one of
+something", but there is no universal number of pieces in a box — a box of screws and a
+box of paper hold different amounts. `Dimension::Count` is therefore explicitly
+non-convertible, and `box → pcs` returns null rather than 1.
+
+**That number, when it is wanted, is a pack size on the material — not a unit.** "One box
+= 24 pieces" is a fact about *this* material. Modelling it on the enum would make every box
+in the workspace the same size. It is a separate small feature, named here rather than
+quietly folded in.
+
+**`convert()` and `isConvertibleTo()` have no caller yet**; the stock engine in phase 4 is
+their consumer. That is a deliberate exception to the rule that has deferred everything
+else (the decimal primitives, `RendersResourceIndex`'s missing helpers): those would have
+meant guessing at a shape, and these are physical constants. `Unit::codes()` and
+`Dimension::keys()` were written and then deleted in the same change — `Rule::enum` and
+`grouped()` already cover both, and an unused helper is a guess about a future caller.
+
+**The column is still `varchar(20)`, deliberately.** Not a database enum: adding a unit
+stays a code change rather than an ALTER on every tenant database, and a per-workspace
+units table later needs no data migration, because the column already holds the code such
+a table would key on.
+
+**`SelectField` learned to group.** Fourteen units in a flat list is a wall; the same
+fourteen under Mass / Volume / Length / Count is a menu. Grouping is per-option
+(`group?: TranslationKey`) rather than a second prop, so the country picker — which groups
+nothing — renders exactly as it did before, verified. Options are collected into *runs*
+rather than buckets, so the server's order survives.
+
+`primitives.ts` gained `oneOf`, the required sibling of `optionalOneOf`. The difference
+that matters: an untouched picker reports **"is required"**, not "is invalid". Somebody who
+has not chosen has not chosen *wrongly*, and the two sentences send them to different
+places.
+
+### The delete wiring, promoted on its fourth copy
+
+`hooks/use-resource-delete.ts`. Categories, suppliers and customers each spelled out the
+same four decisions — `preserveScroll`, `onStart`/`onFinish` rather than `onSuccess`,
+closing the dialog in `onFinish` too, and never removing the row locally — and all three
+have been rewritten onto it in the same change. An abstraction with one user is a guess;
+this one had three before it existed.
+
+`RowActions` stays as it is. The menu is identical everywhere, the wording and the
+consequences never are, and that split is the reason a module still owns its own
+`XActions`.
+
+### `check:i18n` learned that a module can have a hyphen in its name
+
+The gate's key pattern was `[a-z0-9_]`, so `raw-materials.title` failed it twice over: it
+was reported as a hard-coded sentence, and — the quieter half — the `t()`-call scanner
+stopped matching it, so nothing was checking that those keys existed at all. Both patterns
+now allow a hyphen, verified by planting a bad dashed key and watching the gate refuse it.
+
+Worth fixing once here rather than ten times later: `purchase-orders`, `sales-orders`,
+`stock-movements`, `stock-takes` and four more are all spelled this way.
+
+### Bug: every optional field said "Barcodeoptional" to a screen reader
+
+The `(optional)` marker sits in a `<span>` beside the label. When the visual gap was
+missing in Malay (`Alamat(pilihan)`), that was fixed with `ml-1` and a comment saying the
+space was presentation anyway. It is not: the accessible name is built by concatenating
+text nodes, and nothing is inserted between two inline elements — so the margin fixed the
+screen and left the announcement as "Alamatpilihan".
+
+Now an explicit `{' '}`, which JSX preserves (it drops whitespace between lines, not an
+expression), in both `TextField` and `SelectField`. Confirmed in the accessibility tree:
+`Barcode (optional)`, `Negara (pilihan)`, across all four catalog modules at once.
+
+### `TextField` grew a `hint`
+
+A line of muted text under the control, wired into `aria-describedby` alongside the error
+— both ids when both exist, because taking the explanation away exactly when a field
+errors is the wrong trade.
+
+Plain text rather than v1's `InfoHint` tooltip. A tooltip has nowhere to go on a phone,
+and hiding the explanation behind a hover hides it from the people most likely to need
+it. This is the first module with a field nobody can guess the answer to ("Unit" — type
+what?), which is what earned it.
+
+### Verified in a real browser (Playwright, SSR on)
+
+- Create, edit, delete, all through the row menu — the delete going through the newly
+  promoted hook, list re-rendered from the server rather than patched locally.
+- The zod gate refuses an empty form in Chinese with the new attributes translated:
+  `名称不能为空。` `SKU不能为空。` `单位不能为空。` The hints stay visible beside the errors.
+- The unit picker: grouped and translated (`Jisim` / `Isi padu` / `Panjang` / `Bilangan`),
+  the trigger showing `Helai` while the hidden input carries `sheet`, and an edit
+  re-seeding both from the stored code.
+- **The case-sensitivity v1 would have accepted:** posting past the picker with `KG`,
+  `kilogram` and `zz` is refused 422 by `Rule::enum` in the translated wording; `kg` is
+  accepted. v1's `string|max:20` would have stored all four as distinct units.
+- A duplicate SKU is refused by the server, in the translated wording, with the typed
+  values still in the form — then accepted once changed.
+- Barcode search finds a material by a fragment of its scanned code; a nonsense term hits
+  the no-match state and clears from it.
+- Newest first, without the controller asking for it — the house default.
+- 375px: the SKU, date and creator columns drop away and the unit under the name is what
+  survives, which is the reason it is not a column of its own. No horizontal body scroll
+  (`scrollWidth` 375 = `clientWidth` 375).
+- The dialog at 375 in Malay — the longest of the three — scrolls its body with the footer
+  pinned, all four hints intact.
+- **Built assets, with the SSR node process actually running** (`bun run build:ssr` +
+  `inertia:start-ssr`, `public/hot` moved aside): `data-server-rendered="true"`, the
+  Malay heading present in the server HTML, CSS 200, no React #418, and a material created
+  end-to-end in production mode.
+- Categories, suppliers and customers re-driven after the refactor — confirm dialog,
+  cancel, and every optional label now spaced.
+- en / ms / zh_Hans, light and dark, 375 / 1280.
+
+### Open, carried forward
+
+- **`formatDate` renders English month names in every locale** — `23 Aug 2026` under a
+  Malay and a Chinese UI. Now visible on four screens. Fixing it needs either 12 month
+  keys × 3 locales or a pinned `Intl.DateTimeFormat`, which the current SSR rule forbids.
+- **A deleted SKU stays reserved.** The unique index counts trashed rows, so re-creating a
+  deleted material reports "already been taken" with nothing on screen to explain it.
+  Correct behaviour, confusing message — same as categories' and customers'. Reword, or
+  add a restore path.
+
 ## Phases 3–8 — Modules ⬜
 
 | Phase | Modules | Status |
 |---|---|---|
-| 3 · Catalog | **categories ✅ · suppliers ✅ · customers ✅** · raw materials, products (+BOM, image) | 🚧 |
+| 3 · Catalog | **categories ✅ · suppliers ✅ · customers ✅ · raw materials ✅** · products (+BOM, image) | 🚧 |
 | 4 · Stock | locations, warehouses, StockService, movements, transfers, reorder levels, stock takes | ⬜ |
 | 5 · Orders | purchase orders, purchase returns, sales orders, sales returns, production orders | ⬜ |
 | 6 · Insights | reports, activity log | ⬜ |

@@ -4,7 +4,9 @@ import { Label } from '@/components/ui/label';
 import {
     Select,
     SelectContent,
+    SelectGroup,
     SelectItem,
+    SelectLabel,
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
@@ -15,6 +17,15 @@ export type SelectOption = {
     value: string;
     /** A key, not a sentence — the option list is data and has no locale of its own. */
     label: TranslationKey;
+    /**
+     * A heading to file this option under. Options carrying the same one are rendered
+     * together, in the order they arrive.
+     *
+     * Per-option rather than a separate `groups` prop, so a caller with nothing to group
+     * writes exactly what it wrote before. Fourteen units in a flat list is a wall; the
+     * same fourteen under Mass, Volume, Length and Count is a menu.
+     */
+    group?: TranslationKey;
 };
 
 type Props = {
@@ -22,6 +33,8 @@ type Props = {
     name: string;
     label: TranslationKey;
     options: SelectOption[];
+    /** A line under the control explaining the choice. See {@see TextField}. */
+    hint?: TranslationKey;
     error?: string;
     defaultValue?: string | null;
     /** Shown when nothing is chosen. */
@@ -54,6 +67,7 @@ export function SelectField({
     name,
     label,
     options,
+    hint,
     error,
     defaultValue,
     placeholder,
@@ -62,7 +76,16 @@ export function SelectField({
     const { t } = useTranslation();
     const id = useId();
     const errorId = `${id}-error`;
+    const hintId = `${id}-hint`;
     const [value, setValue] = useState(defaultValue ?? '');
+
+    // Both, when both exist — see TextField for why the hint is not dropped on error.
+    const describedBy =
+        [hint ? hintId : null, error ? errorId : null]
+            .filter(Boolean)
+            .join(' ') || undefined;
+
+    const groups = groupOptions(options);
 
     return (
         <div className="space-y-2">
@@ -98,7 +121,7 @@ export function SelectField({
                     id={id}
                     className="w-full"
                     aria-invalid={!!error}
-                    aria-describedby={error ? errorId : undefined}
+                    aria-describedby={describedBy}
                 >
                     <SelectValue placeholder={t(placeholder)} />
                 </SelectTrigger>
@@ -108,17 +131,60 @@ export function SelectField({
                             {t('common.field.none')}
                         </SelectItem>
                     )}
-                    {options.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                            {t(option.label)}
-                        </SelectItem>
-                    ))}
+                    {groups.map((group) => {
+                        const items = group.options.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                                {t(option.label)}
+                            </SelectItem>
+                        ));
+
+                        // An ungrouped list renders bare, exactly as it did before
+                        // grouping existed — no empty heading, no extra wrapper.
+                        return group.label === undefined ? (
+                            items
+                        ) : (
+                            <SelectGroup key={group.label}>
+                                <SelectLabel>{t(group.label)}</SelectLabel>
+                                {items}
+                            </SelectGroup>
+                        );
+                    })}
                 </SelectContent>
             </Select>
 
             <input type="hidden" name={name} value={value} />
 
+            {hint && (
+                <p id={hintId} className="text-muted-foreground text-xs">
+                    {t(hint)}
+                </p>
+            )}
+
             <InputError id={errorId} role="alert" message={error} />
         </div>
     );
+}
+
+/**
+ * Options in the order given, collected into runs that share a `group`.
+ *
+ * A run, not a bucket: options are never reordered, so what the server sent is what the
+ * list shows. A caller that sets no groups gets exactly one ungrouped run back.
+ */
+function groupOptions(
+    options: SelectOption[],
+): { label?: TranslationKey; options: SelectOption[] }[] {
+    const groups: { label?: TranslationKey; options: SelectOption[] }[] = [];
+
+    for (const option of options) {
+        const last = groups.at(-1);
+
+        if (last && last.label === option.group) {
+            last.options.push(option);
+        } else {
+            groups.push({ label: option.group, options: [option] });
+        }
+    }
+
+    return groups;
 }

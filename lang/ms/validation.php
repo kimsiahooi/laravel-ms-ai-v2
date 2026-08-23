@@ -27,6 +27,7 @@ return [
         'admin_email' => 'e-mel pentadbir',
         'admin_name' => 'nama pentadbir',
         'admin_password' => 'kata laluan pentadbir',
+        'barcode' => 'kod bar',
         'city' => 'bandar',
         'contact_person' => 'orang untuk dihubungi',
         'country_code' => 'negara',
@@ -38,10 +39,12 @@ return [
         'postcode' => 'poskod',
         'registration_no' => 'nombor pendaftaran',
         'slug' => 'alamat',
+        'sku' => 'SKU',
         'sst_registration_no' => 'nombor pendaftaran SST/GST',
         'state_code' => 'kod negeri',
         'tax_id' => 'nombor cukai',
         'tin' => 'TIN',
+        'unit' => 'unit',
     ],
 
 ];

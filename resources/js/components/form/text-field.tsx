@@ -10,6 +10,16 @@ type Props = {
     /** The name the server reads, and the key the error bag files a failure under. */
     name: string;
     label: TranslationKey;
+    /**
+     * A line under the control explaining what belongs in it. For fields whose label
+     * is not self-explanatory — "SKU", "Unit" — where a placeholder shows the shape
+     * but not the meaning, and disappears the moment anyone types.
+     *
+     * Plain text rather than v1's tooltip: a tooltip has nowhere to go on a phone, and
+     * hiding the explanation behind a hover is hiding it from the people most likely
+     * to need it.
+     */
+    hint?: TranslationKey;
     /** Whichever of the zod gate's or Laravel's messages arrived for this field. */
     error?: string;
     defaultValue?: string | null;
@@ -47,6 +57,7 @@ type Props = {
 export function TextField({
     name,
     label,
+    hint,
     error,
     defaultValue,
     placeholder,
@@ -59,6 +70,14 @@ export function TextField({
     const { t } = useTranslation();
     const id = useId();
     const errorId = `${id}-error`;
+    const hintId = `${id}-hint`;
+
+    // Both, when both exist. aria-describedby takes a list, and dropping the hint the
+    // moment a field errors would take the explanation away exactly when it is needed.
+    const describedBy =
+        [hint ? hintId : null, error ? errorId : null]
+            .filter(Boolean)
+            .join(' ') || undefined;
 
     const shared = {
         id,
@@ -69,7 +88,7 @@ export function TextField({
         autoComplete,
         placeholder: placeholder ? t(placeholder) : undefined,
         'aria-invalid': !!error,
-        'aria-describedby': error ? errorId : undefined,
+        'aria-describedby': describedBy,
     };
 
     return (
@@ -96,6 +115,12 @@ export function TextField({
                 <Input type={type} {...shared} />
             ) : (
                 <Textarea rows={rows} {...shared} />
+            )}
+
+            {hint && (
+                <p id={hintId} className="text-muted-foreground text-xs">
+                    {t(hint)}
+                </p>
             )}
 
             <InputError id={errorId} role="alert" message={error} />

@@ -7,6 +7,7 @@ use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\Settings\SecurityController;
 use App\Http\Controllers\Tenant\CategoryController;
 use App\Http\Controllers\Tenant\CustomerController;
+use App\Http\Controllers\Tenant\RawMaterialController;
 use App\Http\Controllers\Tenant\SupplierController;
 use App\Http\Middleware\AuthorizeTenantRoute;
 use App\Http\Middleware\SetTenantUrlDefault;
@@ -86,6 +87,15 @@ Route::middleware(['web', InitializeTenancyByPath::class, SetTenantUrlDefault::c
                 Route::post('/', [CustomerController::class, 'store'])->name('store');
                 Route::patch('{customer}', [CustomerController::class, 'update'])->name('update');
                 Route::delete('{customer}', [CustomerController::class, 'destroy'])->name('destroy');
+            });
+
+            // The URL segment is `raw-materials`; the route parameter is `rawMaterial`,
+            // because that is the name Laravel resolves the model binding from.
+            Route::prefix('raw-materials')->name('raw-materials.')->group(function (): void {
+                Route::get('/', [RawMaterialController::class, 'index'])->name('index');
+                Route::post('/', [RawMaterialController::class, 'store'])->name('store');
+                Route::patch('{rawMaterial}', [RawMaterialController::class, 'update'])->name('update');
+                Route::delete('{rawMaterial}', [RawMaterialController::class, 'destroy'])->name('destroy');
             });
 
             Route::redirect('settings', 'settings/profile');

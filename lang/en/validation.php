@@ -46,6 +46,7 @@ return [
         'admin_email' => 'administrator email',
         'admin_name' => 'administrator name',
         'admin_password' => 'administrator password',
+        'barcode' => 'barcode',
         'city' => 'city',
         'contact_person' => 'contact person',
         'country_code' => 'country',
@@ -57,10 +58,12 @@ return [
         'postcode' => 'postcode',
         'registration_no' => 'registration number',
         'slug' => 'slug',
+        'sku' => 'SKU',
         'sst_registration_no' => 'SST/GST registration number',
         'state_code' => 'state code',
         'tax_id' => 'tax ID',
         'tin' => 'TIN',
+        'unit' => 'unit',
     ],
 
 ];
