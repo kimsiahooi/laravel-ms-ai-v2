@@ -25,6 +25,7 @@ return [
 
     'email' => 'The :attribute field must be a valid email address.',
     'enum' => 'The selected :attribute is invalid.',
+    'exists' => 'The selected :attribute is invalid.',
     'max' => [
         'string' => 'The :attribute field must not be greater than :max characters.',
     ],
@@ -47,6 +48,7 @@ return [
         'admin_name' => 'administrator name',
         'admin_password' => 'administrator password',
         'barcode' => 'barcode',
+        'category_id' => 'category',
         'city' => 'city',
         'contact_person' => 'contact person',
         'country_code' => 'country',
@@ -57,10 +59,11 @@ return [
         'phone' => 'phone',
         'postcode' => 'postcode',
         'registration_no' => 'registration number',
-        'slug' => 'slug',
         'sku' => 'SKU',
+        'slug' => 'slug',
         'sst_registration_no' => 'SST/GST registration number',
         'state_code' => 'state code',
+        'supplier_id' => 'supplier',
         'tax_id' => 'tax ID',
         'tin' => 'TIN',
         'unit' => 'unit',

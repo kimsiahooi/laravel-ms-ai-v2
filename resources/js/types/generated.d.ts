@@ -30,6 +30,24 @@ notes: string | null,
 created_at: string,
 creator: string | null,
 };
+export type OptionData = {
+id: number,
+name: string,
+};
+export type ProductData = {
+id: number,
+name: string,
+sku: string,
+barcode: string | null,
+description: string | null,
+category_id: number | null,
+category: string | null,
+supplier_id: number | null,
+supplier: string | null,
+unit: App.Enums.Unit,
+created_at: string,
+creator: string | null,
+};
 export type RawMaterialData = {
 id: number,
 name: string,

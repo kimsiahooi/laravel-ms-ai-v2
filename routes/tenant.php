@@ -7,6 +7,7 @@ use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\Settings\SecurityController;
 use App\Http\Controllers\Tenant\CategoryController;
 use App\Http\Controllers\Tenant\CustomerController;
+use App\Http\Controllers\Tenant\ProductController;
 use App\Http\Controllers\Tenant\RawMaterialController;
 use App\Http\Controllers\Tenant\SupplierController;
 use App\Http\Middleware\AuthorizeTenantRoute;
@@ -96,6 +97,13 @@ Route::middleware(['web', InitializeTenancyByPath::class, SetTenantUrlDefault::c
                 Route::post('/', [RawMaterialController::class, 'store'])->name('store');
                 Route::patch('{rawMaterial}', [RawMaterialController::class, 'update'])->name('update');
                 Route::delete('{rawMaterial}', [RawMaterialController::class, 'destroy'])->name('destroy');
+            });
+
+            Route::prefix('products')->name('products.')->group(function (): void {
+                Route::get('/', [ProductController::class, 'index'])->name('index');
+                Route::post('/', [ProductController::class, 'store'])->name('store');
+                Route::patch('{product}', [ProductController::class, 'update'])->name('update');
+                Route::delete('{product}', [ProductController::class, 'destroy'])->name('destroy');
             });
 
             Route::redirect('settings', 'settings/profile');

@@ -171,6 +171,41 @@ export function optionalOneOf({
 }
 
 /**
+ * An optional reference to a row the workspace owns — `['nullable', ActiveExists::of(…)]`.
+ *
+ * The browser cannot answer the question the server is asking. Whether row 7 still
+ * exists, and is not trashed, is a fact about the database at the moment of the request.
+ * What this checks is the honest browser-side half: the value is one of the ids that
+ * were sent to the picker. That catches the ordinary failure — a stale page offering a
+ * category somebody deleted in another tab — and leaves the authoritative answer to
+ * `ActiveExists`.
+ *
+ * The message is `validation.exists`, not `validation.enum`, because the rule it mirrors
+ * is `exists`. The two have identical English today and would diverge the moment either
+ * is reworded — the same trap `Rule::enum` set earlier.
+ *
+ * Ids arrive as strings because that is what a form submits, empty string included.
+ */
+export function optionalId({
+    ids,
+    attribute,
+}: {
+    ids: readonly number[];
+    attribute: TranslationKey;
+}) {
+    const known = new Set(ids.map(String));
+
+    return z
+        .string(message('validation.string', attribute))
+        .trim()
+        .refine(
+            (value) => value === '' || known.has(value),
+            message('validation.exists', attribute),
+        )
+        .optional();
+}
+
+/**
  * The address shape itself, with no message of its own — {@see optionalEmail} supplies
  * one. Built once at module scope because it carries no locale and never changes.
  */

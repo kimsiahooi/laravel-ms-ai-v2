@@ -1,0 +1,95 @@
+<?php
+
+declare(strict_types=1);
+
+/*
+| Produk — apa yang ruang kerja ini jual. Kroma yang dikongsi dengan senarai lain
+| (carian, penomboran, Batal, Edit, Padam) berada dalam common.php; nama unit
+| berada dalam units.php.
+*/
+
+return [
+    'title' => 'Produk',
+    'subtitle' => 'Apa yang anda jual, dan cara ia difailkan.',
+
+    'search_placeholder' => 'Cari nama, SKU atau kod bar…',
+
+    'column' => [
+        'name' => 'Produk',
+        'sku' => 'SKU',
+        'category' => 'Kategori',
+        'supplier' => 'Pembekal',
+        'created' => 'Ditambah',
+        'creator' => 'Ditambah oleh',
+        'view_category' => 'Lihat :name dalam kategori',
+        'view_supplier' => 'Lihat :name dalam pembekal',
+    ],
+
+    'empty' => [
+        'title' => 'Belum ada produk',
+        'description' => 'Tambah yang pertama dan ia akan sedia untuk dijual, dikira dan dibina daripada bahan mentah anda.',
+    ],
+
+    'no_match' => [
+        'title' => 'Tiada produk sepadan',
+        'description' => 'Tiada apa-apa di sini sepadan dengan “:term”.',
+    ],
+
+    'create' => [
+        'trigger' => 'Produk baharu',
+        'title' => 'Produk baharu',
+        'description' => 'Satu kod untuk merujuknya, dan unit yang anda gunakan untuk menjualnya.',
+        'submit' => 'Cipta produk',
+        'submitting' => 'Mencipta…',
+    ],
+
+    'edit' => [
+        'title' => 'Edit produk',
+        'description' => 'Perubahan digunakan di semua tempat produk ini digunakan.',
+        'submit' => 'Simpan perubahan',
+        'submitting' => 'Menyimpan…',
+    ],
+
+    'group' => [
+        'identity' => 'Apa produk ini',
+        'filing' => 'Cara ia difailkan',
+        'filing_hint' => 'Kedua-duanya pilihan — ia mengumpulkan produk dalam senarai dan laporan, dan boleh ditetapkan kemudian.',
+    ],
+
+    'field' => [
+        'name' => 'Nama',
+        'name_placeholder' => 'cth. Bangku lipat',
+        'sku' => 'SKU',
+        'sku_placeholder' => 'cth. P-001',
+        'sku_hint' => 'Kod anda sendiri untuk produk ini. Ia muncul pada pesanan jualan dan invois, dan tiada dua produk boleh berkongsi kod yang sama.',
+        'barcode' => 'Kod bar',
+        'barcode_placeholder' => 'Imbas atau taip kod bar',
+        'barcode_hint' => 'Diimbas untuk mencari produk ini semasa kiraan stok, pergerakan dan pemindahan.',
+        'unit' => 'Unit',
+        'unit_placeholder' => 'Pilih unit',
+        'unit_hint' => 'Unit yang anda gunakan untuk menjualnya. Setiap kuantiti yang direkodkan untuk produk ini ialah bilangan unit ini.',
+        'description' => 'Keterangan',
+        'description_placeholder' => 'Apa produk ini, dalam satu atau dua baris',
+        'category' => 'Kategori',
+        'category_placeholder' => 'Pilih kategori',
+        'category_search' => 'Cari kategori…',
+        'category_empty' => 'Tiada kategori sepadan.',
+        'supplier' => 'Pembekal',
+        'supplier_placeholder' => 'Pilih pembekal',
+        'supplier_search' => 'Cari pembekal…',
+        'supplier_empty' => 'Tiada pembekal sepadan.',
+    ],
+
+    'confirm' => [
+        'delete_title' => 'Padam :name?',
+        'delete_description' => 'Pesanan yang sudah dibuat untuk produk ini mengekalkan rekodnya — anda cuma tidak lagi boleh memilihnya untuk pesanan baharu.',
+        'delete_submit' => 'Padam produk',
+        'delete_submitting' => 'Memadam…',
+    ],
+
+    'toast' => [
+        'created' => ':name telah dicipta.',
+        'updated' => ':name telah dikemas kini.',
+        'deleted' => ':name telah dipadam.',
+    ],
+];

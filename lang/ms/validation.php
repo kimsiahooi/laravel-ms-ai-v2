@@ -11,6 +11,7 @@ return [
 
     'email' => 'Ruangan :attribute mestilah alamat e-mel yang sah.',
     'enum' => ':attribute yang dipilih tidak sah.',
+    'exists' => ':attribute yang dipilih tidak sah.',
     'max' => [
         'string' => 'Ruangan :attribute tidak boleh melebihi :max aksara.',
     ],
@@ -28,6 +29,7 @@ return [
         'admin_name' => 'nama pentadbir',
         'admin_password' => 'kata laluan pentadbir',
         'barcode' => 'kod bar',
+        'category_id' => 'kategori',
         'city' => 'bandar',
         'contact_person' => 'orang untuk dihubungi',
         'country_code' => 'negara',
@@ -38,10 +40,11 @@ return [
         'phone' => 'telefon',
         'postcode' => 'poskod',
         'registration_no' => 'nombor pendaftaran',
-        'slug' => 'alamat',
         'sku' => 'SKU',
+        'slug' => 'alamat',
         'sst_registration_no' => 'nombor pendaftaran SST/GST',
         'state_code' => 'kod negeri',
+        'supplier_id' => 'pembekal',
         'tax_id' => 'nombor cukai',
         'tin' => 'TIN',
         'unit' => 'unit',

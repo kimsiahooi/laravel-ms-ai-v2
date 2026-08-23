@@ -200,6 +200,18 @@ function preview(keys: string[]): string {
 // Laravel's fallback hides this: an untranslated rule renders in English rather than
 // failing, so nothing short of reading every message in every language would catch it.
 
+/**
+ * Rule builders this project wrote, and the Laravel rule each one produces.
+ *
+ * `Rule::*` is recognised by shape; these cannot be, because the name says nothing
+ * about the rule underneath. Without the mapping the message check reads
+ * `ActiveExists::of('categories')` as a rule literally called "categories" — which is
+ * both a false alarm and, worse, silence about the `exists` message it really needs.
+ */
+const OWN_BUILDERS: Record<string, string> = {
+    'ActiveExists::of': 'exists',
+};
+
 /** Rules that never produce a message — they only decide whether others run. */
 const SILENT = new Set([
     'bail',
@@ -264,16 +276,21 @@ function rulesInUse(php: string): Array<[string, string]> {
         const builders = [...block.matchAll(/Rule::(\w+)\s*\(/g)].map((m) =>
             m[1].replace(/([a-z0-9])([A-Z])/g, '$1_$2').toLowerCase(),
         );
-        // Their arguments are table and column names, not rules — drop them before
-        // reading the plain-string rules, or `Rule::unique('tenants', 'id')` reports
-        // two rules called `tenants` and `id`.
+        // Builders this project wrote, which produce a Laravel rule under another name.
+        const ours = Object.entries(OWN_BUILDERS)
+            .filter(([call]) => block.includes(call))
+            .map(([, rule]) => rule);
+        // A builder's arguments are table and column names, not rules — drop every
+        // static call before reading the plain-string rules, or `Rule::unique('tenants',
+        // 'id')` reports two rules called `tenants` and `id`, and
+        // `ActiveExists::of('categories')` reports one called `categories`.
         const strings = [
             ...block
-                .replace(/Rule::\w+\s*\([^)]*\)/g, '')
+                .replace(/\w+::\w+\s*\([^)]*\)/g, '')
                 .matchAll(/'([a-z_]+)(?::[^']*)?'/g),
         ].map((m) => m[1]);
 
-        return [...new Set([...strings, ...builders])].map(
+        return [...new Set([...strings, ...builders, ...ours])].map(
             (rule) => [field, rule] as [string, string],
         );
     });

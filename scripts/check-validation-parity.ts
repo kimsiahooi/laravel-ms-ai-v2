@@ -52,6 +52,7 @@ const EXEMPT = new Set([
 const FACTORY_ARGS: Record<string, unknown[]> = {
     CustomerRequest: [['MY', 'SG']],
     RawMaterialRequest: [['kg']],
+    ProductRequest: [['kg'], [1], [1]],
     UserRequest: [false],
     PurchaseOrderRequest: [['MYR']],
     SalesOrderRequest: [['MYR']],

@@ -29,6 +29,19 @@
     --color-primary: var(--primary);
     --color-primary-foreground: var(--primary-foreground);
 
+    /* Link text.
+     *
+     * Deliberately NOT `primary`. That is a SURFACE colour: it is contrast-checked
+     * against `primary-foreground` sitting on top of it, never against the page behind
+     * it — and in dark mode it is DARKER than its light counterpart (0.424 vs 0.488),
+     * because a button wants to recede there. As text on a 0.145 background that is
+     * around 2.8:1, well under the 4.5:1 a body-sized link needs.
+     *
+     * Same hue, lightness chosen per theme against the background it actually sits on.
+     */
+    --color-link: var(--link);
+    --color-link-hover: var(--link-hover);
+
     --color-secondary: var(--secondary);
     --color-secondary-foreground: var(--secondary-foreground);
 
@@ -64,6 +77,8 @@
 :root {
     --background: oklch(1 0 0);
     --foreground: oklch(0.145 0 0);
+    --link: oklch(0.488 0.243 264.376);
+    --link-hover: oklch(0.38 0.222 264.376);
     --card: oklch(1 0 0);
     --card-foreground: oklch(0.145 0 0);
     --popover: oklch(1 0 0);
@@ -106,6 +121,8 @@
 .dark {
     --background: oklch(0.145 0 0);
     --foreground: oklch(0.985 0 0);
+    --link: oklch(0.78 0.132 264.376);
+    --link-hover: oklch(0.87 0.09 264.376);
     --card: oklch(0.205 0 0);
     --card-foreground: oklch(0.985 0 0);
     --popover: oklch(0.205 0 0);
