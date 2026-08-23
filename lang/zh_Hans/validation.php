@@ -9,6 +9,7 @@ declare(strict_types=1);
 return [
 
     'email' => ':attribute必须是有效的电子邮件地址。',
+    'enum' => '所选的:attribute无效。',
     'max' => [
         'string' => ':attribute不能大于 :max 个字符。',
     ],
@@ -25,14 +26,21 @@ return [
         'admin_email' => '管理员邮箱',
         'admin_name' => '管理员姓名',
         'admin_password' => '管理员密码',
+        'city' => '城市',
         'contact_person' => '联系人',
+        'country_code' => '国家',
         'description' => '描述',
         'email' => '电子邮箱',
         'name' => '名称',
         'notes' => '备注',
         'phone' => '电话',
+        'postcode' => '邮编',
+        'registration_no' => '注册号',
         'slug' => '地址',
+        'sst_registration_no' => 'SST/GST 注册号',
+        'state_code' => '州代码',
         'tax_id' => '税号',
+        'tin' => '税务识别号',
     ],
 
 ];

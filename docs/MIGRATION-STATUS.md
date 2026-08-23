@@ -893,7 +893,7 @@ wrapper rather than an edit — deliberately left.
 |---|---|---|
 | categories | ✅ | Full CRUD, translated, permission-gated. First use of `TenantFormRequest` + `RecordsCreator`. |
 | suppliers | ✅ | Seven fields, a two-column form. Where the shared form kit came from. |
-| customers | ⬜ | |
+| customers | ✅ | Thirteen fields in three groups. First enum, first select. |
 | raw materials | ⬜ | |
 | products (+ BOM, image) | ⬜ | |
 
@@ -1049,11 +1049,75 @@ conditional is still reported, as is bare JSX text.
 - Categories re-verified end to end after being rewritten onto the shared kit.
 - en / ms / zh_Hans, light and dark, 375 / 667 / 1280.
 
+### Customers — the first enum, and the first picker
+
+Thirteen fields, because an invoice has to be addressed to a legal entity rather than to
+a name. MyInvois (MY) and InvoiceNow (SG) both want the buyer's tax identity and a
+broken-out address as separate fields, and a single free-text address cannot be split
+back into them afterwards.
+
+All of it is optional but the name. A customer is usually added mid-conversation, long
+before anyone knows their TIN, and a form that insisted would just be filled with
+rubbish. The three groups — who they are, tax identity, billing address — are the design
+that makes abandoning the last two an informed choice rather than fatigue.
+
+**`App\Enums\Country` is the first enum in the project**, and it earns the transformer
+that was configured for it three phases ago:
+
+- `#[TypeScript]` emits `App.Enums.Country = 'MY' | 'SG'`, so `country_code` on the wire
+  is that union rather than `string`. A typo in the browser is a tsc error.
+- The model casts the column to it, `Rule::enum` validates against it, and
+  `Country::codes()` feeds the picker. One list, four consumers, no drift.
+- The transformer now scans `app/Enums` alongside `app/Data`. The provider's comment
+  already predicted this — "inert until the first enum lands".
+- The NAMES are deliberately not in the enum. A country's name is a user-facing string
+  and lives in `lang/{locale}/countries.php`, keyed by code. The controller sends codes
+  only; sending English labels would put one language's words inside the data.
+
+`components/form/select-field.tsx` joins TextField. Two things about it are worth
+knowing:
+
+- **It submits through a hidden input, not through the Select.** Radix does bubble a
+  native select when it detects a form, but what reaches the server then depends on that
+  detection and on the "not set" sentinel not leaking out of it. A hidden input makes the
+  wire value something the component states outright.
+- **Radix reserves `''` on the root for "nothing selected" but forbids it on an item**, so
+  clearing needs a sentinel entry. First cut mapped `''` to that sentinel, which made an
+  untouched field read "Not set" and meant the placeholder never appeared at all. Passing
+  `''` straight through fixes it: unset shows "Choose a country", and "Not set" is there
+  to undo a choice.
+
+### `check:i18n` caught the rule name
+
+`Rule::enum` emits Laravel's `enum` message, not `in` — the two have identical English,
+so a zod schema pointing at `validation.in` would have looked right until someone
+translated one of them and the two layers started saying different things in Malay. The
+gate refused the commit until `enum` existed, and the primitive now names the same key
+the server does.
+
+### Verified in a real browser (Playwright, SSR on)
+
+- The picker: placeholder when unset, "Malaysia" and `MY` in the hidden input once
+  chosen, back to placeholder and `''` when cleared — and the database stores NULL, not
+  an empty string.
+- All twelve text fields plus the country pre-fill from the row on edit.
+- A forged `country_code` of `ZZ` **and** a lowercase `my` are both refused 422 by
+  `Rule::enum`, in the translated wording. The picker can only offer two values; this is
+  what happens when someone goes around it.
+- Search reaches TIN and registration number — the two identifiers someone pastes off a
+  purchase order — and deliberately not city, which would turn a name search into a
+  region search.
+- **The dialog scroll fix under real pressure:** 1329px of content in a 389px scroll
+  region on a 375x667 phone, in Chinese. Dialog 635px in a 667px viewport, title and
+  submit both reachable, no horizontal scroll. The country popover opens correctly inside
+  the scrolling container, which is the classic place for this to come apart.
+- en / ms / zh_Hans, light and dark, 375 / 667 / 1280.
+
 ## Phases 3–8 — Modules ⬜
 
 | Phase | Modules | Status |
 |---|---|---|
-| 3 · Catalog | **categories ✅ · suppliers ✅** · customers, raw materials, products (+BOM, image) | 🚧 |
+| 3 · Catalog | **categories ✅ · suppliers ✅ · customers ✅** · raw materials, products (+BOM, image) | 🚧 |
 | 4 · Stock | locations, warehouses, StockService, movements, transfers, reorder levels, stock takes | ⬜ |
 | 5 · Orders | purchase orders, purchase returns, sales orders, sales returns, production orders | ⬜ |
 | 6 · Insights | reports, activity log | ⬜ |

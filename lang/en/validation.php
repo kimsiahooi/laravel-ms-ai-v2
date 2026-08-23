@@ -24,6 +24,7 @@ declare(strict_types=1);
 return [
 
     'email' => 'The :attribute field must be a valid email address.',
+    'enum' => 'The selected :attribute is invalid.',
     'max' => [
         'string' => 'The :attribute field must not be greater than :max characters.',
     ],
@@ -45,14 +46,21 @@ return [
         'admin_email' => 'administrator email',
         'admin_name' => 'administrator name',
         'admin_password' => 'administrator password',
+        'city' => 'city',
         'contact_person' => 'contact person',
+        'country_code' => 'country',
         'description' => 'description',
         'email' => 'email',
         'name' => 'name',
         'notes' => 'notes',
         'phone' => 'phone',
+        'postcode' => 'postcode',
+        'registration_no' => 'registration number',
         'slug' => 'slug',
+        'sst_registration_no' => 'SST/GST registration number',
+        'state_code' => 'state code',
         'tax_id' => 'tax ID',
+        'tin' => 'TIN',
     ],
 
 ];

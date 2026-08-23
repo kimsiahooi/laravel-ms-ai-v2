@@ -10,6 +10,7 @@ declare(strict_types=1);
 return [
 
     'email' => 'Ruangan :attribute mestilah alamat e-mel yang sah.',
+    'enum' => ':attribute yang dipilih tidak sah.',
     'max' => [
         'string' => 'Ruangan :attribute tidak boleh melebihi :max aksara.',
     ],
@@ -26,14 +27,21 @@ return [
         'admin_email' => 'e-mel pentadbir',
         'admin_name' => 'nama pentadbir',
         'admin_password' => 'kata laluan pentadbir',
+        'city' => 'bandar',
         'contact_person' => 'orang untuk dihubungi',
+        'country_code' => 'negara',
         'description' => 'keterangan',
         'email' => 'e-mel',
         'name' => 'nama',
         'notes' => 'nota',
         'phone' => 'telefon',
+        'postcode' => 'poskod',
+        'registration_no' => 'nombor pendaftaran',
         'slug' => 'alamat',
+        'sst_registration_no' => 'nombor pendaftaran SST/GST',
+        'state_code' => 'kod negeri',
         'tax_id' => 'nombor cukai',
+        'tin' => 'TIN',
     ],
 
 ];

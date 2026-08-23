@@ -19,6 +19,7 @@ return [
     // Marks a field the form will accept empty. Sits beside the label rather than
     // inside it, so the label stays the thing a screen reader announces.
     'field' => [
+        'none' => 'Not set',
         'optional' => '(optional)',
     ],
 

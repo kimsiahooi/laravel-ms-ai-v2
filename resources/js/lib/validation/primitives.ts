@@ -111,6 +111,38 @@ export function optionalText({
 }
 
 /**
+ * An optional value from a fixed list — `['nullable', Rule::enum(...)]` or
+ * `Rule::in(...)`.
+ *
+ * `values` arrives at call time rather than being baked in, because the list is the
+ * server's: it is sent as a page prop so that adding a country cannot leave the browser
+ * checking against a stale copy. That makes the schema a value built per render, which
+ * is why the caller memoises it.
+ *
+ * Empty is acceptable — an untouched picker submits `''`, and that is what `nullable`
+ * accepts on the server.
+ */
+export function optionalOneOf({
+    values,
+    attribute,
+}: {
+    values: readonly string[];
+    attribute: TranslationKey;
+}) {
+    return z
+        .string(message('validation.string', attribute))
+        .trim()
+        .refine(
+            (value) => value === '' || values.includes(value),
+            // `validation.enum`, not `validation.in`: the server side of this is
+            // Rule::enum, and Laravel picks the message by rule name. Two keys with
+            // identical English would still diverge the moment one is translated.
+            message('validation.enum', attribute),
+        )
+        .optional();
+}
+
+/**
  * The address shape itself, with no message of its own — {@see optionalEmail} supplies
  * one. Built once at module scope because it carries no locale and never changes.
  */

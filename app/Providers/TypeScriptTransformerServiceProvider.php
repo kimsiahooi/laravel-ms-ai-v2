@@ -34,12 +34,12 @@ class TypeScriptTransformerServiceProvider extends BaseServiceProvider
             // than a degradation. Opting a class in by attribute is also what keeps a
             // DTO that has no business on the wire (an export payload, say) off it.
             ->transformer(AttributedClassTransformer::class)
-            // Inert until the first enum lands — `app/Enums/` does not exist yet — but
-            // it is one line, and the alternative is a silently untransformed enum.
             ->transformer(EnumTransformer::class)
-            // `app/Data` only. The package default walks all of `app/`, which means
-            // Roave BetterReflection parsing Models, Http and Tenancy on every run.
-            ->transformDirectories(app_path('Data'))
+            // `app/Data` and `app/Enums` only. The package default walks all of `app/`,
+            // which means Roave BetterReflection parsing Models, Http and Tenancy on
+            // every run. Both directories hold nothing BUT wire types, so scanning them
+            // costs nothing and forgetting to add one is what silently drops a type.
+            ->transformDirectories(app_path('Data'), app_path('Enums'))
             ->outputDirectory($this->outputDirectory())
             // Emits `declare namespace App { namespace Data { … } }` with nothing at
             // file scope. A single top-level `import`/`export` would make the .d.ts a

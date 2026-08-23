@@ -6,6 +6,7 @@ use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\Settings\SecurityController;
 use App\Http\Controllers\Tenant\CategoryController;
+use App\Http\Controllers\Tenant\CustomerController;
 use App\Http\Controllers\Tenant\SupplierController;
 use App\Http\Middleware\AuthorizeTenantRoute;
 use App\Http\Middleware\SetTenantUrlDefault;
@@ -78,6 +79,13 @@ Route::middleware(['web', InitializeTenancyByPath::class, SetTenantUrlDefault::c
                 Route::post('/', [SupplierController::class, 'store'])->name('store');
                 Route::patch('{supplier}', [SupplierController::class, 'update'])->name('update');
                 Route::delete('{supplier}', [SupplierController::class, 'destroy'])->name('destroy');
+            });
+
+            Route::prefix('customers')->name('customers.')->group(function (): void {
+                Route::get('/', [CustomerController::class, 'index'])->name('index');
+                Route::post('/', [CustomerController::class, 'store'])->name('store');
+                Route::patch('{customer}', [CustomerController::class, 'update'])->name('update');
+                Route::delete('{customer}', [CustomerController::class, 'destroy'])->name('destroy');
             });
 
             Route::redirect('settings', 'settings/profile');

@@ -1,6 +1,7 @@
-import { LayoutGrid, Tags, Truck } from 'lucide-react';
+import { Building, LayoutGrid, Tags, Truck } from 'lucide-react';
 import { dashboard } from '@/routes';
 import { index as categories } from '@/routes/categories';
+import { index as customers } from '@/routes/customers';
 import { index as suppliers } from '@/routes/suppliers';
 import type { TenantNavGroup } from '@/types/navigation';
 
@@ -52,6 +53,12 @@ export function tenantNavGroups(
                     href: suppliers(),
                     icon: Truck,
                     permission: 'suppliers.view',
+                },
+                {
+                    title: 'customers.title',
+                    href: customers(),
+                    icon: Building,
+                    permission: 'customers.view',
                 },
             ],
         },
