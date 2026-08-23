@@ -873,6 +873,13 @@ slug.
 Proved by breaking it both ways, plain JSX text and a literal inside a ternary, and by
 confirming a sentinel comparison does not trip it.
 
+`PasswordInput`'s reveal toggle moved from `settings.password.*` to
+`common.password.*` straight after. The component is reached from the sign-in screen
+long before anyone opens account settings, so the settings namespace was simply the
+wrong home — it sat there because the sweep that found the strings happened to be the
+settings one. It now sits beside `common.confirm.*`, which is the same case: shared
+chrome, its own group.
+
 **Known limitation:** it skips `components/ui/**`, so the vendored sidebar's "Toggle
 Sidebar" is untranslated and unreported. That tree is read-only by policy, so the fix is a
 wrapper rather than an edit — deliberately left.

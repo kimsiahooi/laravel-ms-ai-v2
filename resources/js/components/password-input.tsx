@@ -28,8 +28,8 @@ export default function PasswordInput({
                 className="absolute inset-y-0 right-0 flex items-center rounded-r-md px-3 text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring"
                 aria-label={
                     showPassword
-                        ? t('settings.password.hide')
-                        : t('settings.password.show')
+                        ? t('common.password.hide')
+                        : t('common.password.show')
                 }
                 tabIndex={-1}
             >

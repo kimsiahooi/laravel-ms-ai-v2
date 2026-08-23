@@ -13,6 +13,11 @@ return [
         'type_to_confirm' => '输入 :phrase 以确认',
     ],
 
+    'password' => [
+        'hide' => '隐藏密码',
+        'show' => '显示密码',
+    ],
+
     'errors' => [
         'generic' => '出了点问题。',
     ],

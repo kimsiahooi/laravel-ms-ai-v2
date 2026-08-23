@@ -107,8 +107,4 @@ return [
         'back' => 'Back',
         'confirm' => 'Confirm',
     ],
-    'password' => [
-        'hide' => 'Hide password',
-        'show' => 'Show password',
-    ],
 ];

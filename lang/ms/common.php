@@ -13,6 +13,11 @@ return [
         'type_to_confirm' => 'Taip :phrase untuk mengesahkan',
     ],
 
+    'password' => [
+        'hide' => 'Sembunyikan kata laluan',
+        'show' => 'Papar kata laluan',
+    ],
+
     'errors' => [
         'generic' => 'Sesuatu tidak kena.',
     ],

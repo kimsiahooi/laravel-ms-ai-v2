@@ -99,8 +99,4 @@ return [
         'back' => 'Kembali',
         'confirm' => 'Sahkan',
     ],
-    'password' => [
-        'hide' => 'Sembunyikan kata laluan',
-        'show' => 'Papar kata laluan',
-    ],
 ];

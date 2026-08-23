@@ -99,8 +99,4 @@ return [
         'back' => '返回',
         'confirm' => '确认',
     ],
-    'password' => [
-        'hide' => '隐藏密码',
-        'show' => '显示密码',
-    ],
 ];

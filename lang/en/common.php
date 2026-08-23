@@ -20,6 +20,14 @@ return [
         'type_to_confirm' => 'Type :phrase to confirm',
     ],
 
+    // PasswordInput's reveal toggle. Also shared chrome: the sign-in screen shows it
+    // long before anyone reaches account settings, which is where these strings
+    // first, wrongly, lived.
+    'password' => [
+        'hide' => 'Hide password',
+        'show' => 'Show password',
+    ],
+
     'errors' => [
         'generic' => 'Something went wrong.',
     ],
