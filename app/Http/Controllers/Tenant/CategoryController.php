@@ -56,8 +56,6 @@ final class CategoryController
             sortable: self::SORTABLE,
             toData: CategoryData::fromCategory(...),
             searchUsing: self::searchBy(...),
-            defaultSort: 'name',
-            defaultDirection: 'asc',
         );
 
         return Inertia::render('categories/index', [

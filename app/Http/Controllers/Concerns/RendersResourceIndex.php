@@ -46,6 +46,13 @@ trait RendersResourceIndex
      * @param  array<int, string>  $sortable  columns the UI may sort by; this list is the injection guard
      * @param  Closure(TModel): mixed  $toData  maps one row to its wire shape
      * @param  Closure(Builder<TModel>, string): void  $searchUsing  applied only when the term is non-empty
+     * @param  string  $defaultSort  the house default, and lists are expected to take it:
+     *                               newest first is the one ordering that means the same
+     *                               thing on every screen, and it puts what someone just
+     *                               created where they will look for it. Override only
+     *                               where a list has its own notion of recency — the
+     *                               workspace archive sorts by `deleted_at`, which is the
+     *                               same rule applied to the event that list is about.
      * @return array{rows: LengthAwarePaginator<int, mixed>, filters: array{search: string, per_page: int, sort: string, direction: 'asc'|'desc', sortable: array<int, string>}}
      */
     protected function resourceList(
