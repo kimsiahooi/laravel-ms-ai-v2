@@ -828,6 +828,28 @@ hard-coded literal — it verifies that *referenced* keys resolve, so a file wit
 all is invisible to it. That gap is what let nine files sit untranslated behind a green
 tick.
 
+### The settings sweep
+
+`pages/settings/**`, the settings layout, and the nine components those pages pull in —
+86 hard-coded literals across 14 files, now translated through `settings.php` and
+`welcome.php` in three locales. The inventory came from the coverage gate below, built
+first precisely so it could enumerate the work rather than have it enumerated by eye; it
+caught one string the auth sweep had missed (`two-factor-challenge.tsx` still said
+"Continue") and a whole category a JSX pass cannot see —
+`{isLoading ? 'Registering...' : 'Register passkey'}`.
+
+**A hydration mismatch fell out of it.** The settings nav is built at module scope, where
+route helpers run at import time — before `setUrlDefaults` has a tenant. The server
+rendered `href="/$tenant/settings/profile"` against the client's
+`/demo/settings/profile`. It predates this work and survived every gate, and the reason
+is worth keeping: module scope has no locale **and** no tenant, and only the locale half
+had been thought about. The routes are now functions resolved during render.
+
+How it surfaced matters as much as the fix. Earlier visits to settings went through the
+user menu — a client-side Inertia visit, no hydration step, no mismatch. Only a hard page
+load exposes it, which is an argument for navigating to a URL rather than clicking to it
+when checking SSR.
+
 ## Phase 2 — remaining ⬜
 
 ## Phases 3–8 — Modules ⬜

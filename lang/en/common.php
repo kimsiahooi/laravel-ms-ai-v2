@@ -20,6 +20,10 @@ return [
         'type_to_confirm' => 'Type :phrase to confirm',
     ],
 
+    'errors' => [
+        'generic' => 'Something went wrong.',
+    ],
+
     'list' => [
         'no_matches' => 'No matches',
         'no_matches_hint' => 'Nothing matched “:search”.',

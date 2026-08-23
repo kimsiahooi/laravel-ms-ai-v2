@@ -13,6 +13,10 @@ return [
         'type_to_confirm' => 'Taip :phrase untuk mengesahkan',
     ],
 
+    'errors' => [
+        'generic' => 'Sesuatu tidak kena.',
+    ],
+
     'list' => [
         'no_matches' => 'Tiada padanan',
         'no_matches_hint' => 'Tiada apa-apa sepadan dengan “:search”.',
