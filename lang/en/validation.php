@@ -33,6 +33,7 @@ return [
     'regex' => 'The :attribute field format is invalid.',
     'required' => 'The :attribute field is required.',
     'string' => 'The :attribute field must be a string.',
+    'unique' => 'The :attribute has already been taken.',
 
     /*
      * What `:attribute` is replaced with. Laravel reads this automatically, which is
@@ -43,6 +44,7 @@ return [
         'admin_email' => 'administrator email',
         'admin_name' => 'administrator name',
         'admin_password' => 'administrator password',
+        'description' => 'description',
         'name' => 'name',
         'slug' => 'slug',
     ],

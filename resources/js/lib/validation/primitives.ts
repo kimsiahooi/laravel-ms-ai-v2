@@ -82,6 +82,35 @@ export function text({ attribute, max, min, pattern }: TextOptions) {
 }
 
 /**
+ * An optional string — `['nullable', 'string', 'max:N']`.
+ *
+ * No `min(1)`, and that is the whole difference from {@see text}: a field nobody typed
+ * in submits `''`, not `undefined`, and Laravel's `nullable` accepts exactly that. Only
+ * the ceiling is checked, and it is the column's length.
+ *
+ * `.optional()` on top covers the other shape the same field takes — absent entirely,
+ * from a form that does not render it.
+ */
+export function optionalText({
+    attribute,
+    max,
+}: {
+    attribute: TranslationKey;
+    max?: number;
+}) {
+    const schema = z.string(message('validation.string', attribute)).trim();
+
+    return (
+        max === undefined
+            ? schema
+            : schema.max(
+                  max,
+                  message('validation.max.string', attribute, { max }),
+              )
+    ).optional();
+}
+
+/**
  * A required email address — `['required', 'string', 'email', 'max:N']`.
  *
  * Piped rather than chained so the address is checked *after* trimming. Laravel's

@@ -18,11 +18,13 @@ return [
     'regex' => ':attribute格式不正确。',
     'required' => ':attribute不能为空。',
     'string' => ':attribute必须是字符串。',
+    'unique' => ':attribute已被使用。',
 
     'attributes' => [
         'admin_email' => '管理员邮箱',
         'admin_name' => '管理员姓名',
         'admin_password' => '管理员密码',
+        'description' => '描述',
         'name' => '名称',
         'slug' => '地址',
     ],

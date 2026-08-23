@@ -6,7 +6,15 @@ return [
     'actions' => [
         'cancel' => 'Batal',
         'clear_search' => 'Kosongkan carian',
+        'delete' => 'Padam',
+        'edit' => 'Edit',
         'row_actions' => 'Tindakan untuk :name',
+    ],
+
+    // Marks a field the form will accept empty. Sits beside the label rather than
+    // inside it, so the label stays the thing a screen reader announces.
+    'field' => [
+        'optional' => '(pilihan)',
     ],
 
     'confirm' => [

@@ -19,11 +19,13 @@ return [
     'regex' => 'Format ruangan :attribute tidak sah.',
     'required' => 'Ruangan :attribute diperlukan.',
     'string' => 'Ruangan :attribute mestilah rentetan aksara.',
+    'unique' => ':attribute tersebut telah digunakan.',
 
     'attributes' => [
         'admin_email' => 'e-mel pentadbir',
         'admin_name' => 'nama pentadbir',
         'admin_password' => 'kata laluan pentadbir',
+        'description' => 'keterangan',
         'name' => 'nama',
         'slug' => 'alamat',
     ],

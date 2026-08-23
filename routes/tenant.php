@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\Settings\SecurityController;
+use App\Http\Controllers\Tenant\CategoryController;
 use App\Http\Middleware\AuthorizeTenantRoute;
 use App\Http\Middleware\SetTenantUrlDefault;
 use Illuminate\Auth\Middleware\RequirePassword;
@@ -58,6 +59,18 @@ Route::middleware(['web', InitializeTenancyByPath::class, SetTenantUrlDefault::c
         // no mapped permission stay open to any signed-in user.
         Route::middleware(['auth:web', AuthorizeTenantRoute::class])->group(function (): void {
             Route::get('dashboard', fn () => Inertia::render('dashboard'))->name('dashboard');
+
+            // Catalog. Route names are bare — `categories.index`, not `tenant.categories.index`
+            // — because that is the shape TenantPermissions::routeMap() keys on.
+            //
+            // No `show`: the module is a single screen and the form is a dialog over the
+            // list, so there is nothing a detail page would add.
+            Route::prefix('categories')->name('categories.')->group(function (): void {
+                Route::get('/', [CategoryController::class, 'index'])->name('index');
+                Route::post('/', [CategoryController::class, 'store'])->name('store');
+                Route::patch('{category}', [CategoryController::class, 'update'])->name('update');
+                Route::delete('{category}', [CategoryController::class, 'destroy'])->name('destroy');
+            });
 
             Route::redirect('settings', 'settings/profile');
             Route::get('settings/profile', [ProfileController::class, 'edit'])->name('profile.edit');

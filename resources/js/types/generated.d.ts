@@ -5,6 +5,13 @@ slug: string,
 name: string,
 deleted_at: string | null,
 };
+export type CategoryData = {
+id: number,
+name: string,
+description: string | null,
+created_at: string,
+creator: string | null,
+};
 export type TenantData = {
 slug: string,
 name: string,

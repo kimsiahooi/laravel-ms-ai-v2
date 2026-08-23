@@ -250,10 +250,11 @@ literals in the output.
 | Console translated | ✅ | 125 keys × en/ms/zh_Hans. The retrofit debt from Phase 1 is paid. |
 | `DataTable` | ✅ | TanStack v9, server-driven. Absorbed `ListToolbar` + `PaginationBar`; `EmptyState` and `ConfirmDialog` moved to `components/feedback/`. |
 | `scripts/check-structure.sh` | ✅ | The gate CLAUDE.md and ARCHITECTURE.md already claimed existed. |
-| Backend concerns | ⬜ | `RendersResourceIndex`, `SortsResourceQuery`, `ResolvesDateRange`, … |
+| Backend concerns | ✅ | `RendersResourceIndex`, `ResolvesPerPage`, `SortsResourceQuery`, `RespondsWithToast`. The rest arrive with the modules that need them. |
 | `spatie/laravel-data` + TS types | ✅ | `#[TypeScript]` DTOs in `app/Data` → `generated.d.ts`; gated by `check:generated-types`. |
 | zod `primitives.ts` (i18n-aware) | ✅ | Both layers read `lang/{locale}/validation.php`. `check:i18n` now fails on an untranslated rule. |
-| Shell redesign + ⌘K palette | ⬜ | Auth/settings screens get their `t()` pass here, once. |
+| Shell redesign | ✅ | `TenantLayout` + `TenantSidebar` + `tenant-nav.ts`. Auth and settings screens took their `t()` pass here. |
+| ⌘K palette | ⬜ | Needs `cmdk` + `shadcn add command`. Deferred until the nav has more than two entries to filter. |
 
 ### Localization — built first, deliberately
 
@@ -886,11 +887,112 @@ wrapper rather than an edit — deliberately left.
 
 ## Phase 2 — remaining ⬜
 
+## Phase 3 — Catalog 🚧
+
+| Module | Status | Notes |
+|---|---|---|
+| categories | ✅ | Full CRUD, translated, permission-gated. First use of `TenantFormRequest` + `RecordsCreator`. |
+| suppliers | ⬜ | |
+| customers | ⬜ | |
+| raw materials | ⬜ | |
+| products (+ BOM, image) | ⬜ | |
+
+### Categories — what landed
+
+One screen: a server-paginated list, a dialog over it for create and edit, and a
+confirmation for delete. Every write returns `back()`, so the table refreshes in place
+and nobody loses their search or their page.
+
+New shared pieces this module needed, and where they went:
+
+| Piece | Home | Why there |
+|---|---|---|
+| `TenantFormRequest` | `app/Http/Requests/Tenant/` | The base every tenant form request extends. Deliberately minimal — v1's decimal helpers arrive with the stock modules that use them. |
+| `RecordsCreator` | `app/Models/Concerns/` | Stamps `created_by`, exposes `creator`. Both nullable: a seeded row has no author. |
+| `optionalText()` | `lib/validation/primitives.ts` | `['nullable','string','max:N']`. No `min(1)` — an untouched field submits `''`, which is what `nullable` accepts. |
+| `common.actions.edit` / `.delete` / `common.field.optional` | `lang/*/common.php` | Shared chrome, same argument as `cancel`. Every module from here deletes something. |
+| `ui/textarea.tsx` | vendored | `shadcn add textarea`. A 1000-character description in a single-line input is not a field, it is a punishment. |
+
+Kept **inside** `pages/categories/_components/` rather than promoted: the form dialog,
+the row-action menu and the new-category button. All three are on their first consumer,
+and the rule of three says a supplier form is what will reveal the right shared shape —
+not a guess made while writing the only one that exists.
+
+**Row actions own their own dialogs.** Columns are built once at module scope, so a cell
+cannot close over page state. Rather than route around that with a context, each row
+renders its own edit dialog and its own confirm — which is what `WorkspaceActions`
+already does in the console, and it keeps the column array a true constant.
+
+### The bug the built-asset pass caught
+
+Every tenant page shipped **completely unstyled in production**, and had since the shell
+landed. `config/tenancy.php` had `asset_helper_tenancy => true`, which rewrites every
+`asset()` call inside a workspace to `/tenancy/assets/…`. Laravel's Vite helper uses
+`asset()`, so the compiled bundle went through it too — and that route resolves the
+tenant *by domain*, calling `Tenant::domains()`. This app identifies tenants **by path**,
+so there is no such relation: `BadMethodCallException`, a 500 on every script, stylesheet
+and font, and a workspace rendering as bare HTML.
+
+Now `false`, with the reasoning in the config file. Tenant-specific files (product
+images, avatars) will be served by their own controller when medialibrary lands, not by
+`asset()`.
+
+**Why it stayed hidden:** `bun run dev` serves assets from Vite's own origin and never
+consults `asset()`. Nothing in dev mode can see this. It is exactly the failure the
+per-phase checklist's "one pass against built assets" exists to catch, and it is the
+first time that pass has earned its keep.
+
+### Verified in a real browser (Playwright, SSR on)
+
+`data-server-rendered="true"` confirmed on every load; console read after each.
+
+- Empty state → create → the row appears, toast fires, list updates in place.
+- Submitted empty: **no request left the browser** (network log confirms), zod reported
+  "The name field is required." under the field and refocused it.
+- Submitted a duplicate name: the server's `unique` rule came back through the *same*
+  `<InputError>`, in the translated wording.
+- Edit pre-fills from the row, saves unchanged (proving `Rule::unique(...)->ignore()`),
+  and renames — toast and list both follow.
+- Delete: confirm dialog, no type-to-confirm (a soft delete does not warrant one), row
+  gone, total 12 → 11.
+- Search matches the name **and** the description (`pallet` → Packaging); no match shows
+  the module's own copy plus a Clear search button; the term round-trips in the URL.
+- Sortable headers are exactly the controller's allow-list — `name` and `created_at` are
+  buttons, `description` and `creator` are not.
+- **Permission gating, both halves.** A user holding only `categories.view` sees the
+  sidebar entry and the rows, but no New category button and no row menu — and
+  `POST /demo/categories` and `DELETE /demo/categories/2` both return **403** from
+  `AuthorizeTenantRoute`. The UI hiding is convenience; the server is the boundary.
+- en / ms / zh_Hans, light and dark, 375 / 768 / 1024. No horizontal body scroll; at
+  375 the description rides under the name and the table drops to Name + Actions.
+- One pass over **built assets** with `inertia:start-ssr` — the pass that found the
+  tenancy bug above, and clean afterwards.
+
+Two things that looked like bugs and were not: pagination and the sign-in button both
+appeared dead under Playwright's `.click()`, and both worked when driven through the DOM.
+Tooling artifact, not application behaviour — worth recording so the next session does
+not re-chase them.
+
+### Open, and deliberately not fixed here
+
+- **Dates are not localized.** `formatDate` returns `23 Aug 2026` in every locale — the
+  month abbreviations are an English array in `lib/format.ts`. Fixing it properly means
+  either 12 month keys × 3 locales, or a pinned `Intl.DateTimeFormat`, which the SSR rule
+  currently forbids outright. Worth a decision before more modules render dates.
+- **A category's name stays reserved after deletion.** The unique index counts trashed
+  rows, so re-creating a deleted category's name is refused with "already been taken"
+  while nothing by that name is visible. Matching the index is the correct behaviour —
+  excluding trashed rows in validation would pass and then fail the INSERT as a 500 — but
+  the message is confusing. Same tradeoff the tenant `users` table already documents.
+- **`viewer@demo.test` / `password`** and a `Catalog Viewer` role now exist in the demo
+  tenant, created to prove the permission gating above. Kept so the gating can be seen
+  first-hand; delete them whenever.
+
 ## Phases 3–8 — Modules ⬜
 
 | Phase | Modules | Status |
 |---|---|---|
-| 3 · Catalog | categories, suppliers, customers, raw materials, products (+BOM, image) | ⬜ |
+| 3 · Catalog | **categories ✅** · suppliers, customers, raw materials, products (+BOM, image) | 🚧 |
 | 4 · Stock | locations, warehouses, StockService, movements, transfers, reorder levels, stock takes | ⬜ |
 | 5 · Orders | purchase orders, purchase returns, sales orders, sales returns, production orders | ⬜ |
 | 6 · Insights | reports, activity log | ⬜ |

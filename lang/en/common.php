@@ -11,7 +11,15 @@ return [
     'actions' => [
         'cancel' => 'Cancel',
         'clear_search' => 'Clear search',
+        'delete' => 'Delete',
+        'edit' => 'Edit',
         'row_actions' => 'Actions for :name',
+    ],
+
+    // Marks a field the form will accept empty. Sits beside the label rather than
+    // inside it, so the label stays the thing a screen reader announces.
+    'field' => [
+        'optional' => '(optional)',
     ],
 
     // The shared confirm dialog. It is chrome, not console-specific — every module

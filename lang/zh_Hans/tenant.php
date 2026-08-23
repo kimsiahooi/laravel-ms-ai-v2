@@ -12,6 +12,9 @@ return [
     'name' => '工作区',
 
     'nav' => [
+        // Sidebar group headings only. An entry names itself from its own module
+        // file, so 'Categories' has exactly one definition.
+        'catalog' => '目录',
         'dashboard' => '仪表板',
         'settings' => '账户设置',
         'sign_out' => '退出登录',

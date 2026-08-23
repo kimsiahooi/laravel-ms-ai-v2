@@ -12,6 +12,9 @@ return [
     'name' => 'Workspace',
 
     'nav' => [
+        // Sidebar group headings only. An entry names itself from its own module
+        // file, so 'Categories' has exactly one definition.
+        'catalog' => 'Catalog',
         'dashboard' => 'Dashboard',
         'settings' => 'Account settings',
         'sign_out' => 'Sign out',

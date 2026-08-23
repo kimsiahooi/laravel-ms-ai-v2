@@ -6,7 +6,15 @@ return [
     'actions' => [
         'cancel' => '取消',
         'clear_search' => '清除搜索',
+        'delete' => '删除',
+        'edit' => '编辑',
         'row_actions' => ':name 的操作',
+    ],
+
+    // Marks a field the form will accept empty. Sits beside the label rather than
+    // inside it, so the label stays the thing a screen reader announces.
+    'field' => [
+        'optional' => '（选填）',
     ],
 
     'confirm' => [
