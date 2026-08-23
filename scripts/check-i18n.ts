@@ -13,7 +13,13 @@
  *   2. a non-base locale is missing a key the base locale has;
  *   3. a locale carries a key the base locale no longer has (a stale leftover);
  *   4. a `t()` / `tChoice()` call names a key that does not exist;
- *   5. a FormRequest uses a validation rule that has no translated message.
+ *   5. a FormRequest uses a validation rule that has no translated message;
+ *   6. a component renders a hard-coded string instead of calling t().
+ *
+ * Check 6 is the one that closes the gap the other five could not see. Checks 1-5 all
+ * verify that keys which ARE referenced resolve — by construction none of them can fail
+ * on a literal, so a file with no `t()` at all was invisible. Nine auth and settings
+ * files sat untranslated behind a green tick until it existed.
  *
  * That last one exists because of a bug this gate was written after. Laravel falls
  * back to its own English `validation.php` for any rule `lang/{locale}/validation.php`
@@ -36,6 +42,7 @@ import {
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import ts from 'typescript';
 
 const BASE = 'en';
 const BUNDLE_DIR = 'resources/js/lang';
@@ -311,6 +318,190 @@ function phpFiles(dirs: string[]): string[] {
     return found;
 }
 
+// --- 6. no hard-coded user-facing strings -------------------------------------
+//
+// Parsed rather than grepped, and that is not fastidiousness: a regex pass over the
+// same files reported `Promise` out of `() => Promise<void>` and every translation key
+// already being passed as a `label`. A gate that cries wolf gets switched off.
+//
+// What counts as user-facing: JSX text, a string literal given to a prop a person reads
+// (not className/id/variant/href), and a literal inside a rendered expression such as
+// `{busy ? 'Saving…' : 'Save'}`. What does not: a literal that is an operand of a
+// comparison — in `status === 'verification-link-sent' && <p/>` the string is a sentinel,
+// never text. `i18n-allow` on the line opts a genuine non-string out (a product name, an
+// example slug).
+
+const UI_ROOTS = [
+    'resources/js/pages',
+    'resources/js/components',
+    'resources/js/layouts',
+];
+
+// Props whose value someone reads. Everything else is machinery.
+const HUMAN_PROPS = new Set([
+    'title',
+    'placeholder',
+    'label',
+    'description',
+    'alt',
+    'aria-label',
+    'loadingLabel',
+    'separator',
+    'busyLabel',
+    'confirmLabel',
+    'searchPlaceholder',
+    'emptyMessage',
+]);
+
+// A value that is already a translation key, passed through to a component that resolves
+// it (ColumnHeader does this) — not a sentence.
+const KEY_SHAPE = /^[a-z0-9_]+(?:\.[a-z0-9_]+)+$/;
+
+function tsxFiles(dir: string): string[] {
+    const found: string[] = [];
+
+    for (const entry of readdirSync(dir)) {
+        // Vendored shadcn. Not ours to translate, and not ours to edit.
+        if (entry === 'ui') {
+            continue;
+        }
+
+        const path = join(dir, entry);
+
+        if (statSync(path).isDirectory()) {
+            found.push(...tsxFiles(path));
+        } else if (path.endsWith('.tsx')) {
+            found.push(path);
+        }
+    }
+
+    return found;
+}
+
+for (const root of UI_ROOTS) {
+    for (const file of tsxFiles(root)) {
+        const contents = readFileSync(file, 'utf8');
+        const lines = contents.split('\n');
+        const source = ts.createSourceFile(
+            file,
+            contents,
+            ts.ScriptTarget.Latest,
+            true,
+            ts.ScriptKind.TSX,
+        );
+
+        const lineOf = (node: ts.Node): number =>
+            source.getLineAndCharacterOfPosition(node.getStart(source)).line;
+
+        const report = (node: ts.Node, what: string): void => {
+            const line = lineOf(node);
+
+            if (lines[line]?.includes('i18n-allow')) {
+                return;
+            }
+
+            problems.push(
+                `${file}:${line + 1}: ${what} — use t() (or mark the line 'i18n-allow').`,
+            );
+        };
+
+        // A JSX expression renders text only as a CHILD of an element, or as the value of
+        // a prop a person reads. As an ordinary attribute it is machinery.
+        const isRendered = (node: ts.JsxExpression): boolean => {
+            const parent = node.parent;
+
+            if (ts.isJsxElement(parent) || ts.isJsxFragment(parent)) {
+                return true;
+            }
+
+            return ts.isJsxAttribute(parent)
+                ? HUMAN_PROPS.has(parent.name.getText(source))
+                : false;
+        };
+
+        const visit = (node: ts.Node): void => {
+            if (ts.isJsxText(node) && /[A-Za-z]{2}/.test(node.text)) {
+                report(
+                    node,
+                    `hard-coded text ${JSON.stringify(node.text.trim())}`,
+                );
+            }
+
+            if (
+                ts.isJsxAttribute(node) &&
+                node.initializer &&
+                ts.isStringLiteral(node.initializer) &&
+                HUMAN_PROPS.has(node.name.getText(source)) &&
+                /[A-Za-z]{2}/.test(node.initializer.text) &&
+                !KEY_SHAPE.test(node.initializer.text)
+            ) {
+                report(
+                    node,
+                    `hard-coded ${node.name.getText(source)}=${JSON.stringify(node.initializer.text)}`,
+                );
+            }
+
+            if (
+                ts.isJsxExpression(node) &&
+                node.expression &&
+                isRendered(node)
+            ) {
+                const literals: ts.StringLiteral[] = [];
+
+                const collect = (expression: ts.Node): void => {
+                    if (ts.isStringLiteral(expression)) {
+                        literals.push(expression);
+
+                        return;
+                    }
+
+                    if (ts.isParenthesizedExpression(expression)) {
+                        collect(expression.expression);
+
+                        return;
+                    }
+
+                    // Only the branches that render — never the condition.
+                    if (ts.isConditionalExpression(expression)) {
+                        collect(expression.whenTrue);
+                        collect(expression.whenFalse);
+
+                        return;
+                    }
+
+                    if (ts.isBinaryExpression(expression)) {
+                        const operator = expression.operatorToken.kind;
+
+                        if (
+                            operator ===
+                                ts.SyntaxKind.AmpersandAmpersandToken ||
+                            operator === ts.SyntaxKind.BarBarToken ||
+                            operator === ts.SyntaxKind.QuestionQuestionToken
+                        ) {
+                            collect(expression.right);
+                        }
+                    }
+                };
+
+                collect(node.expression);
+
+                for (const literal of literals) {
+                    if (/[A-Za-z]{2}/.test(literal.text)) {
+                        report(
+                            literal,
+                            `hard-coded ${JSON.stringify(literal.text)}`,
+                        );
+                    }
+                }
+            }
+
+            ts.forEachChild(node, visit);
+        };
+
+        visit(source);
+    }
+}
+
 // --- report -------------------------------------------------------------------
 
 if (problems.length > 0) {
@@ -323,5 +514,5 @@ if (problems.length > 0) {
 
 console.log(
     `✓ i18n: ${baseKeys.length} keys × ${bundles.size} locales agree, every t() key exists, ` +
-        `every validation rule in use is translated.`,
+        `every validation rule in use is translated, no hard-coded strings.`,
 );

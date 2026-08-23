@@ -850,6 +850,33 @@ user menu — a client-side Inertia visit, no hydration step, no mismatch. Only 
 load exposes it, which is an argument for navigating to a URL rather than clicking to it
 when checking SSR.
 
+### `check:i18n` can finally see a hard-coded string
+
+The gate had five checks and none of them could fail on an untranslated literal. All five
+verify that keys which *are* referenced resolve — so by construction, a file with no `t()`
+at all was invisible. That is what let nine auth and settings files sit untranslated
+behind a green tick, and it would have done the same to the next nine.
+
+Check 6 parses rather than greps, and that is not fastidiousness. The regex prototype
+reported `Promise` out of `() => Promise<void>` and flagged every translation key already
+being passed as a `label`. **A gate that cries wolf gets switched off**, so it walks the
+TSX with the TypeScript compiler and asks three narrower questions: is this JSX text; is
+this a string given to a prop a person reads (not `className`/`variant`/`href`); is this a
+literal inside a *rendered* expression. Every one of those narrowings came from a false
+positive the previous version produced.
+
+The subtlest is the last: in `status === 'verification-link-sent' && <p/>` the literal is
+an operand of a comparison, never text, so only the branches that actually render are
+walked. `i18n-allow` on a line opts out a genuine non-string — a product name, an example
+slug.
+
+Proved by breaking it both ways, plain JSX text and a literal inside a ternary, and by
+confirming a sentinel comparison does not trip it.
+
+**Known limitation:** it skips `components/ui/**`, so the vendored sidebar's "Toggle
+Sidebar" is untranslated and unreported. That tree is read-only by policy, so the fix is a
+wrapper rather than an edit — deliberately left.
+
 ## Phase 2 — remaining ⬜
 
 ## Phases 3–8 — Modules ⬜
