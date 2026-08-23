@@ -158,8 +158,23 @@ return [
          * packages that use asset() calls inside the tenant app. To avoid such issues, you can
          * disable asset() helper tenancy and explicitly use tenant_asset() calls in places
          * where you want to use tenant-specific assets (product images, avatars, etc).
+         *
+         * OFF here, and it has to be: this app identifies tenants by URL PATH, not by
+         * domain. With it on, every asset() call inside a workspace is rewritten to
+         * /tenancy/assets/... — including the ones Laravel's Vite helper makes for the
+         * compiled bundle. That route resolves the tenant from the request DOMAIN, so it
+         * calls Tenant::domains(), a relation a path-identified tenant does not have. The
+         * result is a 500 on every script, stylesheet and font, and a workspace that
+         * renders as unstyled HTML.
+         *
+         * Invisible in `bun run dev`, which serves assets from Vite's own origin and never
+         * consults asset(). It shows up only against built assets — which is why the
+         * per-phase checklist insists on a pass over those.
+         *
+         * Tenant-specific files (product images, avatars) get their own controller when
+         * medialibrary lands, not asset().
          */
-        'asset_helper_tenancy' => true,
+        'asset_helper_tenancy' => false,
     ],
 
     /**
