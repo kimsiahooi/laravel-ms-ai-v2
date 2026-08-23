@@ -156,7 +156,7 @@ for (const [locale, bundle] of bundles) {
 
 // --- 4. every t() call names a real key ---------------------------------------
 
-const CALL = /\b(?:t|tChoice)\(\s*'([a-z0-9_]+(?:\.[a-z0-9_]+)+)'/g;
+const CALL = /\b(?:t|tChoice)\(\s*'([a-z0-9_-]+(?:\.[a-z0-9_-]+)+)'/g;
 
 for (const file of sourceFiles(SOURCE)) {
     const contents = readFileSync(file, 'utf8');
@@ -360,7 +360,12 @@ const HUMAN_PROPS = new Set([
 // a rendered expression. The tradeoff is that a genuine sentence shaped like a key would
 // slip through — but lowercase, dotted and spaceless is not a shape English comes in, and
 // one rendered as text would read as `categories.edit.title` on screen.
-const KEY_SHAPE = /^[a-z0-9_]+(?:\.[a-z0-9_]+)+$/;
+// The hyphen is here because a namespace is named after its module, and modules with
+// two words are spelled with one: raw-materials, purchase-orders, stock-takes. Without
+// it `raw-materials.title` fails this shape and gets reported as a hard-coded sentence
+// — and, more quietly, CALL above stops matching it, so nothing checks that the key
+// exists at all. That silent half is the reason both patterns changed together.
+const KEY_SHAPE = /^[a-z0-9_-]+(?:\.[a-z0-9_-]+)+$/;
 
 function tsxFiles(dir: string): string[] {
     const found: string[] = [];
