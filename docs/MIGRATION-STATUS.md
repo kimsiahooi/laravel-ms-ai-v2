@@ -772,6 +772,62 @@ English in Malay and Chinese. `check:i18n` passes green through all of it: it ve
 that referenced keys exist, and cannot report a namespace nobody created. That sweep is
 the next unit.
 
+### The auth screens: translated, and redesigned to match the console
+
+Six screens, plus the two strings that were hiding in `PasskeyVerify`'s `??` defaults
+rather than in any page. `lang/{en,ms,zh_Hans}/auth.php` now carries both Laravel's three
+failure keys — quoted verbatim, so English output is byte-identical to the framework — and
+this app's screen copy, grouped by screen. `passwords.php` joins it for the broker's five.
+
+**The server-side half was the invisible one.** Without `auth.php` and `passwords.php` in
+`ms`/`zh_Hans`, Laravel silently falls back to English, so a fully Malay sign-in screen
+refused a password in English and nothing reported it. Now:
+`Butiran ini tidak sepadan dengan rekod kami.`
+
+**The blocker was the layout contract, not the strings.** Every auth page declares
+`Page.layout = { title, description }` at module scope — evaluated at import time, outside
+React, where `t()` cannot run because it reads the current page's locale. A find-and-replace
+over JSX would have silently skipped all twelve of those. The fix keeps the object static
+and makes its *values* translation keys, resolved by the layout during render; because
+`TranslationKey` is a generated union, a typo there is now a tsc error rather than a blank
+heading. `two-factor-challenge.tsx` is the one screen whose heading changes at runtime, so
+it keeps `setLayoutProps` — and that was a live bug for a moment, since it was still
+passing resolved sentences into a layout that had started calling `t()` on them.
+
+**One string was deleted rather than translated.** Registration is off
+(`config/fortify.php`), so login's "Don't have an account?" had no link after it —
+translating it would have shipped the same orphan into three languages.
+
+**Left alone deliberately:** the `status` strings rendered raw on four screens are
+password-broker and verification messages that Laravel has *already* resolved. Wrapping
+them in `t()` would be wrong; `passwords.php` is where they get translated, and
+`'verification-link-sent'` is a sentinel to compare against, never text.
+
+**The auth screens are now split-screen**, matching the console's own sign-in: a branded
+panel beside the form. `docs/UI-UX-GUIDELINES.md:101` mandated this and it was true only of
+the console; the starter kit's split layout sat unused with zero importers and was deleted
+rather than adopted. The panel is `aria-hidden` — it repeats nothing the form does not say,
+so announcing it only delays reaching the fields — and it disappears below `lg`, where the
+form is the whole job.
+
+**The language switcher now lives on the auth screens**, which is what finally justifies
+registering `tenant.locale.update` outside the auth group. The previous commit's message
+claimed the sign-in screen already offered one; it did not, and that was wrong when
+written.
+
+**Driven** in all three locales: the split panel with its `:workspace` interpolation, a
+deliberately failed sign-in showing Fortify's message in Malay, forgot-password, 375 px
+with the panel dropped and no horizontal scroll, `<html lang>` correct on every switch,
+zero console errors.
+
+**Still to sweep:** `pages/settings/**` and the nine components those pages pull in
+(`delete-user`, `manage-two-factor`, `manage-passkeys`, `two-factor-setup-modal` at 361
+lines, `two-factor-recovery-codes`, `passkey-register`, `passkey-item`, `appearance-tabs`,
+`password-input`), plus `layouts/settings/layout.tsx`. And `check:i18n` still cannot see a
+hard-coded literal — it verifies that *referenced* keys resolve, so a file with no `t()` at
+all is invisible to it. That gap is what let nine files sit untranslated behind a green
+tick.
+
 ## Phase 2 — remaining ⬜
 
 ## Phases 3–8 — Modules ⬜

@@ -9,32 +9,36 @@ import {
     InputOTPGroup,
     InputOTPSlot,
 } from '@/components/ui/input-otp';
+import { useTranslation } from '@/hooks/use-translation';
 import { OTP_MAX_LENGTH } from '@/hooks/use-two-factor-auth';
 import { store } from '@/routes/two-factor/login';
+import type { TranslationKey } from '@/types/lang';
 
 export default function TwoFactorChallenge() {
+    const { t } = useTranslation();
     const [showRecoveryInput, setShowRecoveryInput] = useState<boolean>(false);
     const [code, setCode] = useState<string>('');
 
+    // Keys, not sentences: setLayoutProps feeds AuthLayout, which resolves them. This
+    // is the one auth screen whose heading changes at runtime, so it is also the only
+    // one that cannot use the static `Page.layout` object.
     const authConfigContent = useMemo<{
-        title: string;
-        description: string;
-        toggleText: string;
+        title: TranslationKey;
+        description: TranslationKey;
+        toggleText: TranslationKey;
     }>(() => {
         if (showRecoveryInput) {
             return {
-                title: 'Recovery code',
-                description:
-                    'Please confirm access to your account by entering one of your emergency recovery codes.',
-                toggleText: 'login using an authentication code',
+                title: 'auth.two_factor.recovery_title',
+                description: 'auth.two_factor.recovery_description',
+                toggleText: 'auth.two_factor.recovery_toggle',
             };
         }
 
         return {
-            title: 'Authentication code',
-            description:
-                'Enter the authentication code provided by your authenticator application.',
-            toggleText: 'login using a recovery code',
+            title: 'auth.two_factor.code_title',
+            description: 'auth.two_factor.code_description',
+            toggleText: 'auth.two_factor.code_toggle',
         };
     }, [showRecoveryInput]);
 
@@ -51,7 +55,7 @@ export default function TwoFactorChallenge() {
 
     return (
         <>
-            <Head title="Two-factor authentication" />
+            <Head title={t('auth.two_factor.head')} />
 
             <div className="space-y-6">
                 <Form
@@ -67,7 +71,9 @@ export default function TwoFactorChallenge() {
                                     <Input
                                         name="recovery_code"
                                         type="text"
-                                        placeholder="Enter recovery code"
+                                        placeholder={t(
+                                            'auth.two_factor.recovery_placeholder',
+                                        )}
                                         autoFocus={showRecoveryInput}
                                         required
                                     />
@@ -110,11 +116,11 @@ export default function TwoFactorChallenge() {
                                 className="w-full"
                                 disabled={processing}
                             >
-                                Continue
+                                {t('auth.two_factor.continue')}
                             </Button>
 
                             <div className="text-center text-muted-foreground text-sm">
-                                <span>or you can </span>
+                                <span>{t('auth.two_factor.or')} </span>
                                 <button
                                     type="button"
                                     className="cursor-pointer text-foreground underline decoration-neutral-300 underline-offset-4 transition-colors duration-300 ease-out hover:decoration-current! dark:decoration-neutral-500"
@@ -122,7 +128,7 @@ export default function TwoFactorChallenge() {
                                         toggleRecoveryMode(clearErrors)
                                     }
                                 >
-                                    {authConfigContent.toggleText}
+                                    {t(authConfigContent.toggleText)}
                                 </button>
                             </div>
                         </>

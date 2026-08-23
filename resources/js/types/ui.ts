@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import type { TranslationKey } from '@/types/lang';
 import type { BreadcrumbItem } from '@/types/navigation';
 
 export type AppLayoutProps = {
@@ -45,9 +46,18 @@ export type FlashToast = {
     message: string;
 };
 
+/**
+ * `title` and `description` are translation KEYS, not sentences.
+ *
+ * A page declares them on a module-scope `Page.layout = {...}` object, which is
+ * evaluated at import time — outside React, where `t()` cannot run because it reads the
+ * current page's locale. Carrying the key instead keeps that object static and lets the
+ * layout resolve it during render, and because `TranslationKey` is a generated union, a
+ * typo is a tsc error rather than a blank heading.
+ */
 export type AuthLayoutProps = {
     children?: ReactNode;
     name?: string;
-    title?: string;
-    description?: string;
+    title?: TranslationKey;
+    description?: TranslationKey;
 };
