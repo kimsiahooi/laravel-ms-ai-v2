@@ -42,9 +42,28 @@ readonly_re='^(resources/js/components/ui/|resources/js/routes/|resources/js/act
 modified=$(git diff --cached --name-only --diff-filter=MD)
 blocked=$(printf '%s\n' "$modified" | grep -E "$readonly_re" || true)
 if [ -n "$blocked" ]; then
-    echo "✗ Edits to vendored/generated (read-only) files are not allowed — wrap/compose instead:" >&2
-    printf '   %s\n' "$blocked" >&2
-    fail=1
+    # One legitimate way an EXISTING primitive changes: `shadcn add <name> --overwrite`,
+    # when a newly added component needs a newer generation of one already vendored
+    # (command.tsx needing dialog.tsx's showCloseButton is the case that found this).
+    # That is still "from shadcn" — it is not the hand-edit this rule exists to stop.
+    #
+    # It cannot be told apart by reading the file, so it is told apart by intent:
+    # SHADCN_UPDATE=1 says a person meant it. Deliberately NOT `--no-verify`, which
+    # would also skip biome, pint, tsc and the design-token checks — the point is to
+    # excuse this one rule and keep every other one running.
+    ui_only=$(printf '%s\n' "$blocked" | grep -vE '^resources/js/components/ui/' || true)
+
+    if [ "${SHADCN_UPDATE:-}" = "1" ] && [ -z "$ui_only" ]; then
+        echo "• vendored shadcn update allowed by SHADCN_UPDATE=1 — check the diff is the registry's, not a hand-edit:" >&2
+        printf '   %s\n' "$blocked" >&2
+    else
+        echo "✗ Edits to vendored/generated (read-only) files are not allowed — wrap/compose instead:" >&2
+        printf '   %s\n' "$blocked" >&2
+        if [ -z "$ui_only" ]; then
+            echo "   If this is a deliberate 'shadcn add --overwrite', re-run with SHADCN_UPDATE=1." >&2
+        fi
+        fail=1
+    fi
 fi
 
 # 2/3) Design tokens + SSR determinism, in authored TSX.
