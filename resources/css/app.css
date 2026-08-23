@@ -175,4 +175,13 @@
     body {
         @apply bg-background text-foreground;
     }
+
+    /* Chrome draws its own clear button inside every input[type="search"], and every
+       search box in this app already renders one of its own — so the box showed two.
+       The app's is the one that stays: it is keyboard-reachable, it carries a
+       translated label, and it clears the request rather than only the field. */
+    input[type='search']::-webkit-search-cancel-button {
+        -webkit-appearance: none;
+        appearance: none;
+    }
 }

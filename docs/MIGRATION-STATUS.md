@@ -1413,6 +1413,19 @@ the catalog is grouped. Clickability won.
   combobox filtering correctly from the production bundle.
 - en / ms / zh_Hans, light and dark, 375 / 1280.
 
+### Bug: every search box had two clear buttons
+
+Visible in the same screenshot. Chrome renders its own `::-webkit-search-cancel-button`
+inside any `input[type="search"]`, and the toolbar already draws one — so every list showed
+two. The app's is the one that survives: it is keyboard-reachable, carries a translated
+label, and clears the *request* rather than only the field. One rule in `app.css`, which is
+authored rather than vendored.
+
+**Still open from this exchange:** search treats the whole box as one phrase, so `Wei Lim`
+finds nothing when the contact is `Lim Wei`. Splitting on whitespace and requiring each word
+to match some column would fix it and would also make `acme lim` work — but it changes
+search semantics on every list, so it is offered rather than done.
+
 ## Phases 3–8 — Modules ⬜
 
 | Phase | Modules | Status |
