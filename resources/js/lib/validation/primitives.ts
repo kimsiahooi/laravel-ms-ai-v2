@@ -111,6 +111,48 @@ export function optionalText({
 }
 
 /**
+ * The address shape itself, with no message of its own — {@see optionalEmail} supplies
+ * one. Built once at module scope because it carries no locale and never changes.
+ */
+const EMAIL_SHAPE = z.email();
+
+/**
+ * An optional email address — `['nullable', 'string', 'email', 'max:N']`.
+ *
+ * Not a union with `z.literal('')`, which is the obvious spelling and the wrong one: a
+ * union reports every branch's failure, so a typo would come back as "expected empty
+ * string" alongside the real message. Trimming first and then treating empty as
+ * acceptable produces one sentence, and it is the sentence Laravel would have used.
+ *
+ * Empty is acceptable because that is what an untouched input submits — `''`, never
+ * `undefined` — and it is exactly what `nullable` accepts on the server.
+ */
+export function optionalEmail({
+    attribute,
+    max,
+}: {
+    attribute: TranslationKey;
+    max?: number;
+}) {
+    const address = z
+        .string(message('validation.string', attribute))
+        .trim()
+        .refine(
+            (value) => value === '' || EMAIL_SHAPE.safeParse(value).success,
+            message('validation.email', attribute),
+        );
+
+    return (
+        max === undefined
+            ? address
+            : address.max(
+                  max,
+                  message('validation.max.string', attribute, { max }),
+              )
+    ).optional();
+}
+
+/**
  * A required email address — `['required', 'string', 'email', 'max:N']`.
  *
  * Piped rather than chained so the address is checked *after* trimming. Laravel's

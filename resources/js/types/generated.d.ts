@@ -12,6 +12,18 @@ description: string | null,
 created_at: string,
 creator: string | null,
 };
+export type SupplierData = {
+id: number,
+name: string,
+contact_person: string | null,
+email: string | null,
+tax_id: string | null,
+phone: string | null,
+address: string | null,
+notes: string | null,
+created_at: string,
+creator: string | null,
+};
 export type TenantData = {
 slug: string,
 name: string,

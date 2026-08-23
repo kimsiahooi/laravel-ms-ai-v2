@@ -892,7 +892,7 @@ wrapper rather than an edit — deliberately left.
 | Module | Status | Notes |
 |---|---|---|
 | categories | ✅ | Full CRUD, translated, permission-gated. First use of `TenantFormRequest` + `RecordsCreator`. |
-| suppliers | ⬜ | |
+| suppliers | ✅ | Seven fields, a two-column form. Where the shared form kit came from. |
 | customers | ⬜ | |
 | raw materials | ⬜ | |
 | products (+ BOM, image) | ⬜ | |
@@ -988,11 +988,72 @@ not re-chase them.
   tenant, created to prove the permission gating above. Kept so the gating can be seen
   first-hand; delete them whenever.
 
+### Suppliers — and the promotions it triggered
+
+Categories left three components in `pages/categories/_components/` on the grounds that
+one consumer is not a pattern. Suppliers is the second, and it settled the question:
+the dialog, the menu and the field wiring were identical, so all three moved out.
+
+| Promoted to | What it owns | Why it earned it |
+|---|---|---|
+| `components/form/resource-form-dialog.tsx` | the shell, the submission, the zod gate, the footer | Non-trivial and identical: dual-mode routing, close-on-success, `preserveScroll`, `noValidate`. |
+| `components/form/text-field.tsx` | label + control + error, and the aria wiring between them | `aria-invalid`, `aria-describedby` and the message id have to agree, are invisible when they do not, and are what gets forgotten on the twentieth form. |
+| `components/data/row-actions.tsx` | the edit/delete menu | Identical markup, permission-gated. Reports what was chosen; the module decides what it means. |
+
+Categories was rewritten onto all three in the same change, because an abstraction with
+one user is a guess. Its form dialog went 120 → 77 lines and its actions 86 → 65.
+
+**Not promoted:** each module still owns a thin `XActions`, `XFormDialog` and
+`NewXButton`. What is left in them is genuinely per-resource — the routes, the copy, the
+fields — and a shared component taking all of that as props would just be the same code
+with worse names. The delete wiring (confirm state, `router.delete`, processing) is
+repeated verbatim in both and is the obvious next promotion; a third repeat is what
+should trigger it, not this one.
+
+### Two bugs found by driving it
+
+**A seven-field form did not fit a phone.** `ui/dialog.tsx` centres its content with no
+max-height and no overflow, so the Malay create form at 375×667 rendered 836px tall in a
+760px viewport — clipped at the top, Cancel unreachable at the bottom, and unscrollable
+because the dialog is `position: fixed`. Fixed by composition rather than by editing the
+vendored primitive: `ResourceFormDialog` caps the height, lays the content out as a
+column, and gives the fields their own scroll region between a pinned header and footer.
+Categories benefits for free.
+
+**The optional marker was welded to its label** — `Alamat(pilihan)`. JSX drops whitespace
+between lines, so `{t(label)}` followed by a `<span>` on the next line produces no space.
+A margin fixes it and does not depend on how JSX treats newlines.
+
+### `check:i18n` learned about keys in expressions
+
+The gate flagged `title={editing ? 'suppliers.edit.title' : 'suppliers.create.title'}` as
+hard-coded text. It was already exempting key-shaped literals — but only as plain
+attribute values, never inside an expression, and a key chosen between two branches is
+still a key. `KEY_SHAPE` now applies in both positions.
+
+Verified the narrowing did not open a hole: a sentence in either branch of the same
+conditional is still reported, as is bare JSX text.
+
+### Verified in a real browser (Playwright, SSR on)
+
+- Empty form: only `name` is refused, the other six accept blank. Every error is wired to
+  its field through `aria-describedby`.
+- `not-an-address` in the email field is refused in the browser; a duplicate address is
+  refused by the server, through the same `<InputError>`, in the translated wording.
+- Edit pre-fills all seven fields from the row — the DTO carries the whole record, so
+  opening the form costs no round trip.
+- Search reaches `notes` (`cartons` → Zenith Packaging) and `contact_person` (`Ravi` →
+  Titan Bearings). `tax_id` and `phone` are deliberately not searchable: both are looked
+  up by exact value, and a LIKE would match a fragment of one number inside another.
+- Delete is a soft delete — confirmed in the database, not just on screen.
+- Categories re-verified end to end after being rewritten onto the shared kit.
+- en / ms / zh_Hans, light and dark, 375 / 667 / 1280.
+
 ## Phases 3–8 — Modules ⬜
 
 | Phase | Modules | Status |
 |---|---|---|
-| 3 · Catalog | **categories ✅** · suppliers, customers, raw materials, products (+BOM, image) | 🚧 |
+| 3 · Catalog | **categories ✅ · suppliers ✅** · customers, raw materials, products (+BOM, image) | 🚧 |
 | 4 · Stock | locations, warehouses, StockService, movements, transfers, reorder levels, stock takes | ⬜ |
 | 5 · Orders | purchase orders, purchase returns, sales orders, sales returns, production orders | ⬜ |
 | 6 · Insights | reports, activity log | ⬜ |

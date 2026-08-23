@@ -22,12 +22,18 @@ return [
     'unique' => ':attribute tersebut telah digunakan.',
 
     'attributes' => [
+        'address' => 'alamat',
         'admin_email' => 'e-mel pentadbir',
         'admin_name' => 'nama pentadbir',
         'admin_password' => 'kata laluan pentadbir',
+        'contact_person' => 'orang untuk dihubungi',
         'description' => 'keterangan',
+        'email' => 'e-mel',
         'name' => 'nama',
+        'notes' => 'nota',
+        'phone' => 'telefon',
         'slug' => 'alamat',
+        'tax_id' => 'nombor cukai',
     ],
 
 ];

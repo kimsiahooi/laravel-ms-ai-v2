@@ -41,12 +41,18 @@ return [
      * the same keys, so a field is named identically on both sides of the wire.
      */
     'attributes' => [
+        'address' => 'address',
         'admin_email' => 'administrator email',
         'admin_name' => 'administrator name',
         'admin_password' => 'administrator password',
+        'contact_person' => 'contact person',
         'description' => 'description',
+        'email' => 'email',
         'name' => 'name',
+        'notes' => 'notes',
+        'phone' => 'phone',
         'slug' => 'slug',
+        'tax_id' => 'tax ID',
     ],
 
 ];

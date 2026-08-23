@@ -21,12 +21,18 @@ return [
     'unique' => ':attribute已被使用。',
 
     'attributes' => [
+        'address' => '地址',
         'admin_email' => '管理员邮箱',
         'admin_name' => '管理员姓名',
         'admin_password' => '管理员密码',
+        'contact_person' => '联系人',
         'description' => '描述',
+        'email' => '电子邮箱',
         'name' => '名称',
+        'notes' => '备注',
+        'phone' => '电话',
         'slug' => '地址',
+        'tax_id' => '税号',
     ],
 
 ];
