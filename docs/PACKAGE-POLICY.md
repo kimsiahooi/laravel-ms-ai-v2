@@ -80,6 +80,26 @@ does not exist here. `@lingui/react` was rejected because its Babel macro has to
 with the React Compiler plugin already configured in `vite.config.ts`. Full reasoning:
 [`docs/LOCALIZATION.md`](LOCALIZATION.md).
 
+**Drag and drop — surveyed and declined (2026-09-06).**
+
+The Columns panel reorders columns, and the obvious move was a sortable-list package. The
+survey found no candidate clearing all five bars:
+
+| Package | Downloads/wk | Verdict |
+|---|---|---|
+| `@dnd-kit/core` 6.3.1 | 24.9M | **Fails "maintained"** — last published 2024-12-05, 21 months stale despite being the ecosystem default |
+| `@dnd-kit/react` 0.5.0 | 1.2M | **Fails "stable 1.0+"** — the rewrite, still pre-1.0 after two years. Nicest API, explicit React 19 peer |
+| `@atlaskit/pragmatic-drag-and-drop` 3.1.0 | 1.3M | Clears every bar (Atlassian-maintained, ~5KB gzip) but is *low-level*: it gives drag events, not a sortable list, so the reorder logic gets written either way — and it is native-HTML5 underneath, so touch needs a separate adapter |
+
+Built instead: native HTML5 drag on the row, plus up/down buttons. ~40 lines in
+`components/data/column-row.tsx`, no bundle cost. The buttons are not a consolation —
+native drag events never fire on touch, so they are the only thing that works on a phone,
+and they carry the keyboard path too.
+
+**Worth re-opening for the Phase 5 line-items editor**, where reordering order lines is a
+bigger job than seven rows in a popover. If `@dnd-kit/react` has reached 1.0 by then it
+becomes the obvious pick.
+
 ## Likely upcoming decisions
 
 Flagged now so they get considered at the right moment, not retrofitted:

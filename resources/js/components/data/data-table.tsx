@@ -1,6 +1,8 @@
 import { router } from '@inertiajs/react';
 import type {
     ColumnDef,
+    ColumnOrderState,
+    ColumnVisibilityState,
     PaginationState,
     RowData,
     SortingState,
@@ -8,7 +10,16 @@ import type {
 import { useTable } from '@tanstack/react-table';
 import { ArrowDown, ArrowUp, ArrowUpDown, SearchX } from 'lucide-react';
 import type { ReactNode } from 'react';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
+import type { ColumnLayout } from '@/components/data/column-layout';
+import {
+    configurableColumns,
+    defaultLayout,
+    isDefaultLayout,
+    toColumnOrder,
+    toColumnVisibility,
+} from '@/components/data/column-layout';
+import { ColumnPanel } from '@/components/data/column-panel';
 import { ListToolbar } from '@/components/data/list-toolbar';
 import { PaginationBar } from '@/components/data/pagination-bar';
 import { columnClasses, features } from '@/components/data/table';
@@ -106,6 +117,35 @@ export function DataTable<TRow extends RowData>({
         [filters.sort, filters.direction],
     );
 
+    /**
+     * Which columns this reader looks at, and in what order.
+     *
+     * **The only state this component owns.** Everything above is derived from the
+     * server's answer, because everything above is a fact about the query. This is not:
+     * it is a fact about the screen, SQL has no opinion on it, and no round trip could
+     * answer it better. It is seeded from what the columns declare, which is also what
+     * makes it safe under SSR — the first render is the declarations on both sides, so
+     * there is nothing for hydration to disagree about.
+     *
+     * Not persisted yet, deliberately. It survives search, sort and paging, which
+     * preserve the component, and resets on navigation. See docs/MIGRATION-STATUS.md.
+     */
+    const [layout, setLayout] = useState<ColumnLayout>(() =>
+        defaultLayout(columns),
+    );
+
+    const configurable = useMemo(() => configurableColumns(columns), [columns]);
+
+    const columnOrder = useMemo<ColumnOrderState>(
+        () => toColumnOrder(layout, columns),
+        [layout, columns],
+    );
+
+    const columnVisibility = useMemo<ColumnVisibilityState>(
+        () => toColumnVisibility(layout),
+        [layout],
+    );
+
     const visit = useCallback(
         (
             params: Record<string, string | number | undefined>,
@@ -189,7 +229,30 @@ export function DataTable<TRow extends RowData>({
         // cycle into — a header toggles between ascending and descending.
         enableSortingRemoval: false,
         sortDescFirst: false,
-        state: { pagination, sorting },
+        state: { pagination, sorting, columnOrder, columnVisibility },
+        // Nothing in the app calls the table's own visibility/order setters — the panel
+        // drives `layout` directly. These are wired anyway so that `column.toggleVisibility()`
+        // is not a silent no-op for whoever reaches for it next.
+        onColumnVisibilityChange: (updater) => {
+            const next =
+                typeof updater === 'function'
+                    ? updater(columnVisibility)
+                    : updater;
+
+            setLayout((current) => ({
+                ...current,
+                hidden: current.order.filter((id) => next[id] === false),
+            }));
+        },
+        onColumnOrderChange: (updater) => {
+            const next =
+                typeof updater === 'function' ? updater(columnOrder) : updater;
+
+            setLayout((current) => ({
+                ...current,
+                order: next.filter((id) => current.order.includes(id)),
+            }));
+        },
         onSortingChange: (updater) => {
             // TanStack calls this with the functional form from its own handlers.
             const next =
@@ -229,6 +292,22 @@ export function DataTable<TRow extends RowData>({
                     placeholder={searchPlaceholder}
                     onSearch={onSearch}
                     extra={toolbar?.(filter)}
+                    columns={
+                        // One configurable column is not a choice — there is nothing to
+                        // reorder and hiding it would leave the list blank.
+                        configurable.length > 1 ? (
+                            <ColumnPanel
+                                columns={configurable}
+                                layout={layout}
+                                onChange={setLayout}
+                                onReset={() =>
+                                    setLayout(defaultLayout(columns))
+                                }
+                                canReset={!isDefaultLayout(layout, columns)}
+                                sortedBy={filters.sort}
+                            />
+                        ) : undefined
+                    }
                 />
             )}
 
@@ -306,7 +385,13 @@ export function DataTable<TRow extends RowData>({
                     <TableBody>
                         {rows.map((row) => (
                             <TableRow key={row.id}>
-                                {row.getAllCells().map((cell) => (
+                                {/*
+                                    getVisibleCells, not getAllCells: the header row
+                                    respects visibility and order the moment the features
+                                    are registered, and the body does not. Mismatched,
+                                    every cell sits under the wrong heading.
+                                */}
+                                {row.getVisibleCells().map((cell) => (
                                     <TableCell
                                         key={cell.id}
                                         className={cn(

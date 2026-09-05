@@ -1,6 +1,6 @@
 import { Head, setLayoutProps } from '@inertiajs/react';
 import { Tags } from 'lucide-react';
-import { ColumnHeader } from '@/components/data/column-header';
+import { ColumnHeader, heading } from '@/components/data/column-header';
 import { DataTable } from '@/components/data/data-table';
 import { DateCell } from '@/components/data/date-cell';
 import { columnsFor } from '@/components/data/table';
@@ -33,7 +33,7 @@ const column = columnsFor<Category>();
 
 const columns = column.columns([
     column.accessor('name', {
-        header: () => <ColumnHeader label="categories.column.name" />,
+        ...heading('categories.column.name'),
         cell: ({ row }) => (
             <>
                 <span className="font-medium">{row.original.name}</span>
@@ -48,29 +48,29 @@ const columns = column.columns([
         ),
     }),
     column.accessor('description', {
-        header: () => <ColumnHeader label="categories.column.description" />,
+        ...heading('categories.column.description', {
+            hideBelow: 'sm',
+            width: 'max-w-md truncate',
+        }),
         cell: ({ row }) => (
             <span className="text-muted-foreground">
                 {/* A dash, not a word: nothing here to translate. i18n-allow */}
                 {row.original.description ?? '—'}
             </span>
         ),
-        meta: { hideBelow: 'sm', width: 'max-w-md truncate' },
     }),
     column.accessor('created_at', {
-        header: () => <ColumnHeader label="categories.column.created" />,
+        ...heading('categories.column.created', { hideBelow: 'lg' }),
         cell: ({ row }) => <DateCell iso={row.original.created_at} />,
-        meta: { hideBelow: 'lg' },
     }),
     column.accessor('creator', {
-        header: () => <ColumnHeader label="categories.column.creator" />,
+        ...heading('categories.column.creator', { hideBelow: 'xl' }),
         cell: ({ row }) => (
             <span className="text-muted-foreground">
                 {/* Null for a seeded row, or once the author has been removed. i18n-allow */}
                 {row.original.creator ?? '—'}
             </span>
         ),
-        meta: { hideBelow: 'xl' },
     }),
     column.display({
         id: 'actions',

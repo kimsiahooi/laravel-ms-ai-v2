@@ -50,6 +50,19 @@ return [
         'clear_all' => 'Clear all filters',
     ],
 
+    'columns' => [
+        'trigger' => 'Columns',
+        'description' => 'Choose what this list shows, and drag to reorder.',
+        'reset' => 'Reset to default',
+        'hidden_count' => '{1} 1 hidden|[2,*] :count hidden',
+        'move_up' => 'Move :column earlier',
+        'move_down' => 'Move :column later',
+        'drag' => 'Drag to reorder :column',
+        'narrow_hidden' => 'Also hidden on narrow screens',
+        'sorted_hint' => 'The list is sorted by this',
+        'last_hint' => 'At least one column has to stay',
+    ],
+
     'list' => [
         'no_matches' => 'No matches',
         'no_matches_filtered' => 'Nothing here matches the filters you have applied.',

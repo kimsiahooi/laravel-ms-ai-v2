@@ -1,6 +1,6 @@
 import { Head, setLayoutProps } from '@inertiajs/react';
 import { Package } from 'lucide-react';
-import { ColumnHeader } from '@/components/data/column-header';
+import { ColumnHeader, heading } from '@/components/data/column-header';
 import { ComboboxFilter } from '@/components/data/combobox-filter';
 import { DataTable } from '@/components/data/data-table';
 import { DateCell } from '@/components/data/date-cell';
@@ -45,7 +45,7 @@ const column = columnsFor<Product>();
 
 const columns = column.columns([
     column.accessor('name', {
-        header: () => <ColumnHeader label="products.column.name" />,
+        ...heading('products.column.name', { width: 'max-w-[20rem]' }),
         cell: ({ row }) => (
             <div className="flex items-center gap-3">
                 {/* Empty alt: the name is right there, and a screen reader reading the
@@ -59,31 +59,29 @@ const columns = column.columns([
                 </div>
             </div>
         ),
-        meta: { width: 'max-w-[20rem]' },
     }),
     column.accessor('sku', {
-        header: () => <ColumnHeader label="products.column.sku" />,
+        ...heading('products.column.sku', { hideBelow: 'sm' }),
         cell: ({ row }) => (
             <span className="font-mono text-muted-foreground text-xs">
                 {row.original.sku}
             </span>
         ),
-        meta: { hideBelow: 'sm' },
     }),
     column.accessor('category', {
-        header: () => <ColumnHeader label="products.column.category" />,
+        ...heading('products.column.category', { hideBelow: 'md' }),
         cell: ({ row }) => <CategoryLink name={row.original.category} />,
-        meta: { hideBelow: 'md' },
     }),
     column.accessor('supplier', {
-        header: () => <ColumnHeader label="products.column.supplier" />,
+        ...heading('products.column.supplier', {
+            hideBelow: 'lg',
+            width: 'max-w-[14rem] truncate',
+        }),
         cell: ({ row }) => <SupplierLink name={row.original.supplier} />,
-        meta: { hideBelow: 'lg', width: 'max-w-[14rem] truncate' },
     }),
     column.accessor('created_at', {
-        header: () => <ColumnHeader label="products.column.created" />,
+        ...heading('products.column.created', { hideBelow: 'xl' }),
         cell: ({ row }) => <DateCell iso={row.original.created_at} />,
-        meta: { hideBelow: 'xl' },
     }),
     column.display({
         id: 'actions',

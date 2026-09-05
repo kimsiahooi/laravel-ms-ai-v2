@@ -2818,12 +2818,74 @@ have rendered in English inside Malay and Chinese.
   scrolls a picker of thousands would want it debounced.
 - No barcode scan into the picker yet — v1 has `matchStockItem()`. Phase 8.
 
+### Column preferences — the reader picks the columns ✅
+
+Prompted by a question about the notes field, which turned out to name a real defect: the
+stock-movements search box matches on `notes` and advertises that it does, but there was no
+notes column — **so a row could match on text that was nowhere on screen.** Notes had been
+left out because 1000 characters of prose beside five columns of numbers crushes them, and
+that reasoning is right about the *default* and wrong as a permanent verdict.
+
+The fix is the general one. `DataTable` now carries a **Columns** panel, so all ten lists
+get it with no per-page wiring.
+
+- **A column is configurable if and only if it has `meta.label`.** Everything else is an
+  *anchor*: always rendered, fixed at its declared index. The nine `actions` columns needed
+  no edits at all — a `srOnly` header and no label is exactly what pins them to the end.
+  Anchors are re-inserted at their declared index rather than pushed to the back, so a
+  future select-checkbox column at the *front* works without a second rule.
+- **`heading()` sets the header and the label from one key.** The name used to be trapped
+  inside `header: () => <ColumnHeader label="…" />` — a closure no menu can read — and the
+  alternative was writing the key twice with nothing keeping the copies equal. Converting
+  45 columns across ten pages was a net line reduction.
+- **`hideBelow` and the reader's choice compose as AND, and the panel says so.** Responsive
+  hiding is untouched; a ticked column still obeys its breakpoint, and its row reads "Also
+  hidden on narrow screens". A column meant to be opt-in — notes — declares no `hideBelow`,
+  so ticking it shows it at 375 too.
+- **Two guards, each stating its reason** rather than leaving a checkbox that silently
+  refuses: the sorted column cannot be hidden (an `ORDER BY` in force with no header and no
+  arrow is not a state worth reaching), and neither can the last one standing.
+- **No drag library.** Native HTML5 drag on the row plus up/down buttons — see
+  `docs/PACKAGE-POLICY.md` for the survey that found `@dnd-kit/core` 21 months stale and
+  its successor still pre-1.0. The buttons are the only path that works on touch.
+
+**The bug this nearly shipped with.** Registering `columnVisibilityFeature` makes the
+header row respect visibility immediately; the body kept calling `row.getAllCells()`, which
+does not. Driven deliberately to see it: hiding the SKU column left 5 headers over 6 cells,
+with Category showing the SKU, Supplier showing the category and Actions showing the date —
+every value plausible, every value one column left of its heading, and nothing thrown. One
+line, `getVisibleCells()`, and the same probe then paired every column correctly.
+
+Also fixed: `ListToolbar` keyed its right-hand cluster off `extra` alone, so on the lists
+that pass no filters at all (categories, warehouses) the Columns button would never have
+rendered.
+
+#### Open, carried forward
+
+- **Nothing is persisted.** The layout lives in `DataTable` state, so it survives search,
+  sort and paging — which preserve the component — and resets on navigation. Deferred by
+  decision until the UI settles. The seam is ready: `DataTable` takes `defaultLayout` +
+  `onLayoutChange` and nothing else moves. The candidates are the cookie → server-prop
+  route the sidebar, timezone and appearance already use (right on first paint, per
+  browser) or a `preferences` column mirroring `locale` (follows the user, needs a
+  migration on **both** the tenant and central `users` tables, since two lists are
+  `CentralUser` screens).
+- **The last-column guard cannot currently fire**, and is kept deliberately. The sorted
+  column can never be hidden, so it is always the survivor — meaning `showing === 1` is
+  always already caught by the sort guard. That holds only while every controller sorts by
+  a column its page renders, true of all ten today but not structurally guaranteed.
+- Moving a column past a *hidden* one changes the panel and not the table. The panel is the
+  ordered list of every column, so the row visibly moves; it is the honest reading, but it
+  is the one place the feedback is indirect.
+- `data-table.tsx` is now 506 lines, well past the ~250 signal. The header-row block is the
+  obvious extraction; kept out of this change so the diff stays readable.
+
 ## Phases 3–8 — Modules ⬜
 
 | Phase | Modules | Status |
 |---|---|---|
 | 3 · Catalog | **categories ✅ · suppliers ✅ · customers ✅ · raw materials ✅ · products ✅** (core · image · BOM) | ✅ |
-| 4 · Stock | **locations ✅ · warehouses ✅ · StockService ✅ · movements ✅** · transfers, reorder levels, stock takes | 🚧 |
+| 4 · Stock | **locations ✅ · warehouses ✅ · StockService ✅ · movements ✅** (+ notes column, column preferences) · transfers, reorder levels, stock takes | 🚧 |
 | 5 · Orders | purchase orders, purchase returns, sales orders, sales returns, production orders | ⬜ |
 | 6 · Insights | reports, activity log | ⬜ |
 | 7 · Team & settings | users, roles/RBAC, business settings, document numbering, e-invoice | ⬜ |

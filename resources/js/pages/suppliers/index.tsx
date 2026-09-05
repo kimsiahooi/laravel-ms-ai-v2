@@ -1,6 +1,6 @@
 import { Head, setLayoutProps } from '@inertiajs/react';
 import { Truck } from 'lucide-react';
-import { ColumnHeader } from '@/components/data/column-header';
+import { ColumnHeader, heading } from '@/components/data/column-header';
 import { DataTable } from '@/components/data/data-table';
 import { DateCell } from '@/components/data/date-cell';
 import { columnsFor } from '@/components/data/table';
@@ -31,7 +31,7 @@ const column = columnsFor<Supplier>();
 
 const columns = column.columns([
     column.accessor('name', {
-        header: () => <ColumnHeader label="suppliers.column.name" />,
+        ...heading('suppliers.column.name', { width: 'max-w-[18rem]' }),
         cell: ({ row }) => (
             <>
                 <span className="font-medium">{row.original.name}</span>
@@ -42,42 +42,40 @@ const columns = column.columns([
                 )}
             </>
         ),
-        meta: { width: 'max-w-[18rem]' },
     }),
     column.accessor('email', {
-        header: () => <ColumnHeader label="suppliers.column.email" />,
+        ...heading('suppliers.column.email', {
+            hideBelow: 'sm',
+            width: 'max-w-[16rem] truncate',
+        }),
         cell: ({ row }) => (
             <span className="text-muted-foreground">
                 {/* A dash, not a word: nothing here to translate. i18n-allow */}
                 {row.original.email ?? '—'}
             </span>
         ),
-        meta: { hideBelow: 'sm', width: 'max-w-[16rem] truncate' },
     }),
     column.accessor('phone', {
-        header: () => <ColumnHeader label="suppliers.column.phone" />,
+        ...heading('suppliers.column.phone', { hideBelow: 'md' }),
         cell: ({ row }) => (
             <span className="text-muted-foreground tabular-nums">
                 {/* i18n-allow */}
                 {row.original.phone ?? '—'}
             </span>
         ),
-        meta: { hideBelow: 'md' },
     }),
     column.accessor('created_at', {
-        header: () => <ColumnHeader label="suppliers.column.created" />,
+        ...heading('suppliers.column.created', { hideBelow: 'lg' }),
         cell: ({ row }) => <DateCell iso={row.original.created_at} />,
-        meta: { hideBelow: 'lg' },
     }),
     column.accessor('creator', {
-        header: () => <ColumnHeader label="suppliers.column.creator" />,
+        ...heading('suppliers.column.creator', { hideBelow: 'xl' }),
         cell: ({ row }) => (
             <span className="text-muted-foreground">
                 {/* i18n-allow */}
                 {row.original.creator ?? '—'}
             </span>
         ),
-        meta: { hideBelow: 'xl' },
     }),
     column.display({
         id: 'actions',

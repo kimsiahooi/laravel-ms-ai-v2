@@ -1,6 +1,6 @@
 import { Head, Link } from '@inertiajs/react';
 import { Building2 } from 'lucide-react';
-import { ColumnHeader } from '@/components/data/column-header';
+import { ColumnHeader, heading } from '@/components/data/column-header';
 import { DataTable } from '@/components/data/data-table';
 import { columnsFor } from '@/components/data/table';
 import { EmptyState } from '@/components/feedback/empty-state';
@@ -39,9 +39,9 @@ const column = columnsFor<Workspace>();
 
 const columns = column.columns([
     column.accessor('name', {
-        header: () => (
-            <ColumnHeader label="console.workspaces.column_workspace" />
-        ),
+        ...heading('console.workspaces.column_workspace', {
+            width: 'max-w-[16rem] truncate',
+        }),
         cell: ({ row }) => (
             <>
                 <span className="font-medium">{row.original.name}</span>
@@ -51,27 +51,20 @@ const columns = column.columns([
                 </span>
             </>
         ),
-        meta: { width: 'max-w-[16rem] truncate' },
     }),
     column.accessor('slug', {
         // `id` is the primary key on Tenant, so that is the name the server sorts by.
         id: 'id',
-        header: () => (
-            <ColumnHeader label="console.workspaces.column_address" />
-        ),
+        ...heading('console.workspaces.column_address', { hideBelow: 'sm' }),
         cell: ({ row }) => (
             <Badge variant="secondary" className="font-mono font-normal">
                 /{row.original.slug}
             </Badge>
         ),
-        meta: { hideBelow: 'sm' },
     }),
     column.accessor('created_at', {
-        header: () => (
-            <ColumnHeader label="console.workspaces.column_created" />
-        ),
+        ...heading('console.workspaces.column_created', { hideBelow: 'md' }),
         cell: ({ row }) => <TimeAgo iso={row.original.created_at} />,
-        meta: { hideBelow: 'md' },
     }),
     column.display({
         id: 'actions',

@@ -40,6 +40,19 @@ return [
         'clear_all' => 'Kosongkan semua penapis',
     ],
 
+    'columns' => [
+        'trigger' => 'Lajur',
+        'description' => 'Pilih apa yang disenaraikan, dan seret untuk menyusun semula.',
+        'reset' => 'Kembali kepada asal',
+        'hidden_count' => '{1} 1 disembunyikan|[2,*] :count disembunyikan',
+        'move_up' => 'Alihkan :column ke hadapan',
+        'move_down' => 'Alihkan :column ke belakang',
+        'drag' => 'Seret untuk menyusun :column',
+        'narrow_hidden' => 'Turut disembunyikan pada skrin sempit',
+        'sorted_hint' => 'Senarai ini disusun mengikut lajur ini',
+        'last_hint' => 'Sekurang-kurangnya satu lajur perlu kekal',
+    ],
+
     'list' => [
         'no_matches' => 'Tiada padanan',
         'no_matches_filtered' => 'Tiada apa-apa di sini sepadan dengan penapis yang anda gunakan.',

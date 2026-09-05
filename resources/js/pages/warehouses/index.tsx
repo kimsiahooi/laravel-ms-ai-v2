@@ -1,6 +1,6 @@
 import { Head, Link, setLayoutProps } from '@inertiajs/react';
 import { Warehouse as WarehouseIcon } from 'lucide-react';
-import { ColumnHeader } from '@/components/data/column-header';
+import { ColumnHeader, heading } from '@/components/data/column-header';
 import { ComboboxFilter } from '@/components/data/combobox-filter';
 import { DataTable } from '@/components/data/data-table';
 import { DateCell } from '@/components/data/date-cell';
@@ -37,7 +37,7 @@ const column = columnsFor<Warehouse>();
 
 const columns = column.columns([
     column.accessor('name', {
-        header: () => <ColumnHeader label="warehouses.column.name" />,
+        ...heading('warehouses.column.name'),
         cell: ({ row }) => (
             <>
                 <span className="font-medium">{row.original.name}</span>
@@ -50,34 +50,33 @@ const columns = column.columns([
         ),
     }),
     column.accessor('code', {
-        header: () => <ColumnHeader label="warehouses.column.code" />,
+        ...heading('warehouses.column.code', { hideBelow: 'sm' }),
         cell: ({ row }) => (
             <span className="text-muted-foreground">
                 {/* A dash, not a word: nothing here to translate. i18n-allow */}
                 {row.original.code ?? '—'}
             </span>
         ),
-        meta: { hideBelow: 'sm' },
     }),
     column.accessor('location', {
-        header: () => <ColumnHeader label="warehouses.column.site" />,
+        ...heading('warehouses.column.site', { hideBelow: 'md' }),
         cell: ({ row }) => <SiteLink name={row.original.location} />,
-        meta: { hideBelow: 'md' },
     }),
     column.accessor('address', {
-        header: () => <ColumnHeader label="warehouses.column.address" />,
+        ...heading('warehouses.column.address', {
+            hideBelow: 'lg',
+            width: 'max-w-xs truncate',
+        }),
         cell: ({ row }) => (
             <span className="text-muted-foreground">
                 {/* i18n-allow */}
                 {row.original.address ?? '—'}
             </span>
         ),
-        meta: { hideBelow: 'lg', width: 'max-w-xs truncate' },
     }),
     column.accessor('created_at', {
-        header: () => <ColumnHeader label="warehouses.column.created" />,
+        ...heading('warehouses.column.created', { hideBelow: 'xl' }),
         cell: ({ row }) => <DateCell iso={row.original.created_at} />,
-        meta: { hideBelow: 'xl' },
     }),
     column.display({
         id: 'actions',

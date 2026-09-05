@@ -1,6 +1,6 @@
 import { Head, Link } from '@inertiajs/react';
 import { Archive } from 'lucide-react';
-import { ColumnHeader } from '@/components/data/column-header';
+import { ColumnHeader, heading } from '@/components/data/column-header';
 import { DataTable } from '@/components/data/data-table';
 import { columnsFor } from '@/components/data/table';
 import { EmptyState } from '@/components/feedback/empty-state';
@@ -26,9 +26,9 @@ const column = columnsFor<ArchivedWorkspace>();
 
 const columns = column.columns([
     column.accessor('name', {
-        header: () => (
-            <ColumnHeader label="console.workspaces.column_workspace" />
-        ),
+        ...heading('console.workspaces.column_workspace', {
+            width: 'max-w-[16rem] truncate',
+        }),
         cell: ({ row }) => (
             <>
                 <span className="font-medium">{row.original.name}</span>
@@ -37,24 +37,19 @@ const columns = column.columns([
                 </span>
             </>
         ),
-        meta: { width: 'max-w-[16rem] truncate' },
     }),
     column.accessor('slug', {
         id: 'id',
-        header: () => (
-            <ColumnHeader label="console.workspaces.column_address" />
-        ),
+        ...heading('console.workspaces.column_address', { hideBelow: 'sm' }),
         cell: ({ row }) => (
             <Badge variant="secondary" className="font-mono font-normal">
                 /{row.original.slug}
             </Badge>
         ),
-        meta: { hideBelow: 'sm' },
     }),
     column.accessor('deleted_at', {
-        header: () => <ColumnHeader label="console.archive.column_archived" />,
+        ...heading('console.archive.column_archived', { hideBelow: 'md' }),
         cell: ({ row }) => <TimeAgo iso={row.original.deleted_at} />,
-        meta: { hideBelow: 'md' },
     }),
     column.display({
         id: 'actions',

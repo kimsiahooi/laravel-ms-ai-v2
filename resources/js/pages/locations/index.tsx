@@ -1,6 +1,6 @@
 import { Head, setLayoutProps } from '@inertiajs/react';
 import { MapPin } from 'lucide-react';
-import { ColumnHeader } from '@/components/data/column-header';
+import { ColumnHeader, heading } from '@/components/data/column-header';
 import { DataTable } from '@/components/data/data-table';
 import { DateCell } from '@/components/data/date-cell';
 import { columnsFor } from '@/components/data/table';
@@ -32,7 +32,7 @@ const column = columnsFor<Location>();
 
 const columns = column.columns([
     column.accessor('name', {
-        header: () => <ColumnHeader label="locations.column.name" />,
+        ...heading('locations.column.name'),
         cell: ({ row }) => (
             <>
                 <span className="font-medium">{row.original.name}</span>
@@ -47,39 +47,38 @@ const columns = column.columns([
         ),
     }),
     column.accessor('code', {
-        header: () => <ColumnHeader label="locations.column.code" />,
+        ...heading('locations.column.code', { hideBelow: 'sm' }),
         cell: ({ row }) => (
             <span className="text-muted-foreground">
                 {/* A dash, not a word: nothing here to translate. i18n-allow */}
                 {row.original.code ?? '—'}
             </span>
         ),
-        meta: { hideBelow: 'sm' },
     }),
     column.accessor('address', {
-        header: () => <ColumnHeader label="locations.column.address" />,
+        ...heading('locations.column.address', {
+            hideBelow: 'md',
+            width: 'max-w-xs truncate',
+        }),
         cell: ({ row }) => (
             <span className="text-muted-foreground">
                 {/* i18n-allow */}
                 {row.original.address ?? '—'}
             </span>
         ),
-        meta: { hideBelow: 'md', width: 'max-w-xs truncate' },
     }),
     column.accessor('created_at', {
-        header: () => <ColumnHeader label="locations.column.created" />,
+        ...heading('locations.column.created', { hideBelow: 'lg' }),
         cell: ({ row }) => <DateCell iso={row.original.created_at} />,
-        meta: { hideBelow: 'lg' },
     }),
     column.accessor('creator', {
-        header: () => <ColumnHeader label="locations.column.creator" />,
+        ...heading('locations.column.creator', { hideBelow: 'xl' }),
         cell: ({ row }) => (
             <span className="text-muted-foreground">
                 {/* Null for a seeded row, or once the author has been removed. i18n-allow */}
                 {row.original.creator ?? '—'}
             </span>
         ),
-        meta: { hideBelow: 'xl' },
     }),
     column.display({
         id: 'actions',

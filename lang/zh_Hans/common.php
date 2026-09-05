@@ -40,6 +40,19 @@ return [
         'clear_all' => '清除所有筛选',
     ],
 
+    'columns' => [
+        'trigger' => '列',
+        'description' => '选择这个列表显示哪些列，拖动可调整顺序。',
+        'reset' => '恢复默认',
+        'hidden_count' => '{1} 已隐藏 1 列|[2,*] 已隐藏 :count 列',
+        'move_up' => '把:column往前移',
+        'move_down' => '把:column往后移',
+        'drag' => '拖动以调整:column的位置',
+        'narrow_hidden' => '在窄屏上同样会隐藏',
+        'sorted_hint' => '列表正按此列排序',
+        'last_hint' => '至少要保留一列',
+    ],
+
     'list' => [
         'no_matches' => '没有匹配项',
         'no_matches_filtered' => '没有内容符合你所选的筛选条件。',

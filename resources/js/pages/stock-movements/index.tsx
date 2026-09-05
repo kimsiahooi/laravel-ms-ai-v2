@@ -1,6 +1,6 @@
 import { Head, Link, setLayoutProps } from '@inertiajs/react';
 import { ArrowLeftRight } from 'lucide-react';
-import { ColumnHeader } from '@/components/data/column-header';
+import { heading } from '@/components/data/column-header';
 import { ComboboxFilter } from '@/components/data/combobox-filter';
 import { DataTable } from '@/components/data/data-table';
 import { DateCell } from '@/components/data/date-cell';
@@ -15,6 +15,7 @@ import {
     ReasonCell,
     WarehouseCell,
 } from '@/pages/stock-movements/_components/movement-cells';
+import { NotesCell } from '@/pages/stock-movements/_components/notes-cell';
 import { QuantityCell } from '@/pages/stock-movements/_components/quantity-cell';
 import { RecordMovementButton } from '@/pages/stock-movements/_components/record-movement-button';
 import { index as products } from '@/routes/products';
@@ -37,39 +38,44 @@ const column = columnsFor<Movement>();
 
 const columns = column.columns([
     column.accessor('item', {
-        header: () => <ColumnHeader label="stock-movements.column.item" />,
+        ...heading('stock-movements.column.item', { width: 'max-w-[18rem]' }),
         cell: ({ row }) => <ItemCell movement={row.original} />,
-        meta: { width: 'max-w-[18rem]' },
     }),
     column.accessor('quantity', {
-        header: () => <ColumnHeader label="stock-movements.column.quantity" />,
+        ...heading('stock-movements.column.quantity', { align: 'end' }),
         cell: ({ row }) => <QuantityCell quantity={row.original.quantity} />,
-        meta: { align: 'end' },
     }),
     column.accessor('warehouse', {
-        header: () => <ColumnHeader label="stock-movements.column.warehouse" />,
+        ...heading('stock-movements.column.warehouse', {
+            hideBelow: 'md',
+            width: 'max-w-[12rem]',
+        }),
         cell: ({ row }) => <WarehouseCell movement={row.original} />,
-        meta: { hideBelow: 'md', width: 'max-w-[12rem]' },
     }),
     column.accessor('reason', {
-        header: () => <ColumnHeader label="stock-movements.column.reason" />,
+        ...heading('stock-movements.column.reason', { hideBelow: 'lg' }),
         cell: ({ row }) => <ReasonCell reason={row.original.reason} />,
-        meta: { hideBelow: 'lg' },
+    }),
+    // No `hideBelow`: a column you had to ask for should appear once you have asked.
+    column.accessor('notes', {
+        ...heading('stock-movements.column.notes', {
+            defaultHidden: true,
+            width: 'max-w-[20rem]',
+        }),
+        cell: ({ row }) => <NotesCell notes={row.original.notes} />,
     }),
     column.accessor('created_at', {
-        header: () => <ColumnHeader label="stock-movements.column.recorded" />,
+        ...heading('stock-movements.column.recorded', { hideBelow: 'sm' }),
         cell: ({ row }) => <DateCell iso={row.original.created_at} />,
-        meta: { hideBelow: 'sm' },
     }),
     column.accessor('user', {
-        header: () => <ColumnHeader label="stock-movements.column.user" />,
+        ...heading('stock-movements.column.user', { hideBelow: 'xl' }),
         cell: ({ row }) => (
             <span className="text-muted-foreground">
                 {/* Null once the person has been removed. i18n-allow */}
                 {row.original.user ?? '—'}
             </span>
         ),
-        meta: { hideBelow: 'xl' },
     }),
 ]);
 

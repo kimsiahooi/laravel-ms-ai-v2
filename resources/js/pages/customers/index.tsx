@@ -1,6 +1,6 @@
 import { Head, setLayoutProps } from '@inertiajs/react';
 import { Building } from 'lucide-react';
-import { ColumnHeader } from '@/components/data/column-header';
+import { ColumnHeader, heading } from '@/components/data/column-header';
 import { DataTable } from '@/components/data/data-table';
 import { DateCell } from '@/components/data/date-cell';
 import { columnsFor } from '@/components/data/table';
@@ -31,7 +31,7 @@ const column = columnsFor<Customer>();
 
 const columns = column.columns([
     column.accessor('name', {
-        header: () => <ColumnHeader label="customers.column.name" />,
+        ...heading('customers.column.name', { width: 'max-w-[18rem]' }),
         cell: ({ row }) => (
             <>
                 <span className="font-medium">{row.original.name}</span>
@@ -42,40 +42,38 @@ const columns = column.columns([
                 )}
             </>
         ),
-        meta: { width: 'max-w-[18rem]' },
     }),
     column.accessor('email', {
-        header: () => <ColumnHeader label="customers.column.email" />,
+        ...heading('customers.column.email', {
+            hideBelow: 'sm',
+            width: 'max-w-[16rem] truncate',
+        }),
         cell: ({ row }) => (
             <span className="text-muted-foreground">
                 {/* A dash, not a word: nothing here to translate. i18n-allow */}
                 {row.original.email ?? '—'}
             </span>
         ),
-        meta: { hideBelow: 'sm', width: 'max-w-[16rem] truncate' },
     }),
     column.display({
         // Not a column on the model: city and country read as one fact, and neither is
         // worth a column of its own. Display-only, so nothing offers to sort by it.
         id: 'location',
-        header: () => <ColumnHeader label="customers.column.location" />,
+        ...heading('customers.column.location', { hideBelow: 'md' }),
         cell: ({ row }) => <Location customer={row.original} />,
-        meta: { hideBelow: 'md' },
     }),
     column.accessor('created_at', {
-        header: () => <ColumnHeader label="customers.column.created" />,
+        ...heading('customers.column.created', { hideBelow: 'lg' }),
         cell: ({ row }) => <DateCell iso={row.original.created_at} />,
-        meta: { hideBelow: 'lg' },
     }),
     column.accessor('creator', {
-        header: () => <ColumnHeader label="customers.column.creator" />,
+        ...heading('customers.column.creator', { hideBelow: 'xl' }),
         cell: ({ row }) => (
             <span className="text-muted-foreground">
                 {/* i18n-allow */}
                 {row.original.creator ?? '—'}
             </span>
         ),
-        meta: { hideBelow: 'xl' },
     }),
     column.display({
         id: 'actions',

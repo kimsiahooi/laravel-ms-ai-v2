@@ -12,6 +12,11 @@ type Props = {
     onSearch: (search: string) => void;
     /** Per-resource controls: a status filter, a date range. */
     extra?: ReactNode;
+    /**
+     * The Columns panel. Separate from `extra` because it is the same control on every
+     * list — {@see DataTable} supplies it, rather than ten pages remembering to.
+     */
+    columns?: ReactNode;
 };
 
 /**
@@ -25,7 +30,13 @@ type Props = {
  * {@see DataTable} decides what that means, so the rule about resetting to page 1
  * has exactly one home.
  */
-export function ListToolbar({ search, placeholder, onSearch, extra }: Props) {
+export function ListToolbar({
+    search,
+    placeholder,
+    onSearch,
+    extra,
+    columns,
+}: Props) {
     const { t } = useTranslation();
     const [value, setValue] = useState(search);
 
@@ -74,9 +85,15 @@ export function ListToolbar({ search, placeholder, onSearch, extra }: Props) {
                 )}
             </div>
 
-            {extra && (
+            {/*
+                Both, not just `extra`: a list with no filters of its own still has
+                columns to configure, and keying the cluster off `extra` alone left the
+                control unrendered on exactly those lists.
+            */}
+            {(extra || columns) && (
                 <div className="flex items-center gap-2 sm:ml-auto">
                     {extra}
+                    {columns}
                 </div>
             )}
         </div>

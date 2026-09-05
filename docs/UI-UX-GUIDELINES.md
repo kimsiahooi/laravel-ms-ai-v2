@@ -67,8 +67,15 @@ Reach for `resources/js/components/ui/` before writing raw HTML.
 - **Overlays** — a right-hand **`Sheet`** for multi-field create/edit; a **`Dialog`** for
   focused confirmations. Guard against dismissing mid-submit.
 - **Tables** — reach for the shared **`DataTable`** wrapper. For a one-off, compose the
-  `ui/table` primitives — never a raw `<table>`. Hide non-essential columns below `sm`/`md`,
-  and keep the table in an `overflow-x-auto` container.
+  `ui/table` primitives — never a raw `<table>`. `ui/table` brings its own
+  `overflow-x-auto`, so a wide table scrolls inside its card and the body never does.
+- **Columns declare intent, not Tailwind.** Give every data column a `heading()` — it
+  renders the header *and* registers the column in the Columns panel, from one key. Use
+  `hideBelow` for the screen (`sm`/`md`/`lg`/`xl` are all in use) and `defaultHidden` for
+  the reader: a column worth having and not worth the width is hidden-by-default, **not
+  absent**. Leaving it out entirely is how stock movements ended up searchable on a field
+  it never showed. A column with no label is an *anchor* — always shown, fixed where it
+  was declared, which is what pins row actions to the end.
 - **Icons** — `lucide-react` only, `size-4`/`size-5`, coloured via `currentColor`.
 
 ## 4. UX patterns (required)

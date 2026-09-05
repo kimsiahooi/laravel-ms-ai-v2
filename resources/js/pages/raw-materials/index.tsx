@@ -1,6 +1,6 @@
 import { Head, setLayoutProps } from '@inertiajs/react';
 import { Boxes } from 'lucide-react';
-import { ColumnHeader } from '@/components/data/column-header';
+import { ColumnHeader, heading } from '@/components/data/column-header';
 import { DataTable } from '@/components/data/data-table';
 import { DateCell } from '@/components/data/date-cell';
 import { FilterPanel } from '@/components/data/filter-panel';
@@ -36,17 +36,16 @@ const column = columnsFor<RawMaterial>();
 
 const columns = column.columns([
     column.accessor('name', {
-        header: () => <ColumnHeader label="raw-materials.column.name" />,
+        ...heading('raw-materials.column.name', { width: 'max-w-[20rem]' }),
         cell: ({ row }) => (
             <>
                 <span className="font-medium">{row.original.name}</span>
                 <UnitSymbol unit={row.original.unit} />
             </>
         ),
-        meta: { width: 'max-w-[20rem]' },
     }),
     column.accessor('sku', {
-        header: () => <ColumnHeader label="raw-materials.column.sku" />,
+        ...heading('raw-materials.column.sku', { hideBelow: 'sm' }),
         // Monospaced, because a SKU is read character by character when it is being
         // compared against a delivery note.
         cell: ({ row }) => (
@@ -54,22 +53,19 @@ const columns = column.columns([
                 {row.original.sku}
             </span>
         ),
-        meta: { hideBelow: 'sm' },
     }),
     column.accessor('created_at', {
-        header: () => <ColumnHeader label="raw-materials.column.created" />,
+        ...heading('raw-materials.column.created', { hideBelow: 'lg' }),
         cell: ({ row }) => <DateCell iso={row.original.created_at} />,
-        meta: { hideBelow: 'lg' },
     }),
     column.accessor('creator', {
-        header: () => <ColumnHeader label="raw-materials.column.creator" />,
+        ...heading('raw-materials.column.creator', { hideBelow: 'xl' }),
         cell: ({ row }) => (
             <span className="text-muted-foreground">
                 {/* A dash, not a word: nothing here to translate. i18n-allow */}
                 {row.original.creator ?? '—'}
             </span>
         ),
-        meta: { hideBelow: 'xl' },
     }),
     column.display({
         id: 'actions',

@@ -1,11 +1,14 @@
 import type { RowData } from '@tanstack/react-table';
 import {
+    columnOrderingFeature,
+    columnVisibilityFeature,
     createColumnHelper,
     metaHelper,
     rowPaginationFeature,
     rowSortingFeature,
     tableFeatures,
 } from '@tanstack/react-table';
+import type { TranslationKey } from '@/types/lang';
 
 /**
  * The table vocabulary every list in the app shares: which TanStack features are
@@ -17,10 +20,16 @@ import {
  * client-side processing stages. Sorting and paging happen in SQL, so `data` is
  * already the right page in the right order; registering those models would re-sort
  * the ~25 rows on screen and call it a global sort.
+ *
+ * Visibility and ordering are the exception to that reasoning, and the reason they *are*
+ * registered: which columns you look at and in what order is a question about the screen,
+ * not about the query. SQL has no opinion on it and no round trip could answer it better.
  */
 export const features = tableFeatures({
     rowSortingFeature,
     rowPaginationFeature,
+    columnVisibilityFeature,
+    columnOrderingFeature,
     columnMeta: metaHelper<ColumnMeta>(),
 });
 
@@ -36,6 +45,26 @@ export type Breakpoint = 'sm' | 'md' | 'lg' | 'xl';
  * nothing could tell which was right. Naming the intent makes the answer checkable.
  */
 export type ColumnMeta = {
+    /**
+     * This column's name, somewhere the Columns panel can read it.
+     *
+     * **Its presence is what makes a column configurable at all.** A column with a label
+     * can be hidden and reordered; one without is an *anchor* — always rendered, fixed
+     * where it was declared. That is why the `actions` column needs no flag saying so:
+     * it has no name worth listing, and pinning it is the same fact.
+     *
+     * Set it through {@see heading}, never by hand, so the name the header renders and
+     * the name the panel lists cannot drift apart.
+     */
+    label?: TranslationKey;
+    /**
+     * Off until somebody asks for it.
+     *
+     * For a column worth having and not worth the width by default — free text that
+     * would crush the columns carrying numbers, a secondary date. Distinct from
+     * `hideBelow`, which is about the screen rather than about the reader.
+     */
+    defaultHidden?: boolean;
     /** Hide below this breakpoint. A phone should not scroll to read the first column. */
     hideBelow?: Breakpoint;
     /** Right-align — money, quantities, counts, and anything read by its last digit. */
