@@ -6,9 +6,11 @@ return [
     'actions' => [
         'cancel' => 'Batal',
         'clear_search' => 'Kosongkan carian',
+        'close' => 'Tutup',
         'delete' => 'Padam',
         'edit' => 'Edit',
         'row_actions' => 'Tindakan untuk :name',
+        'toggle_sidebar' => 'Togol bar sisi',
     ],
 
     // Marks a field the form will accept empty. Sits beside the label rather than

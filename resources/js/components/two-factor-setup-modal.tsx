@@ -3,15 +3,15 @@ import { REGEXP_ONLY_DIGITS } from 'input-otp';
 import { Check, Copy, ScanLine } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import AlertError from '@/components/alert-error';
-import InputError from '@/components/input-error';
-import { Button } from '@/components/ui/button';
 import {
     Dialog,
     DialogContent,
     DialogDescription,
     DialogHeader,
     DialogTitle,
-} from '@/components/ui/dialog';
+} from '@/components/feedback/dialog';
+import InputError from '@/components/input-error';
+import { Button } from '@/components/ui/button';
 import {
     InputOTP,
     InputOTPGroup,
@@ -23,6 +23,7 @@ import { useClipboard } from '@/hooks/use-clipboard';
 import { useTranslation } from '@/hooks/use-translation';
 import { OTP_MAX_LENGTH } from '@/hooks/use-two-factor-auth';
 import { confirm } from '@/routes/two-factor';
+import type { TranslationKey } from '@/types/lang';
 
 /** Stable keys for the decorative 5x5 grid overlay behind the QR code. */
 const GRID_LINES = ['a', 'b', 'c', 'd', 'e'];
@@ -62,7 +63,7 @@ function TwoFactorSetupStep({
 }: {
     qrCodeSvg: string | null;
     manualSetupKey: string | null;
-    buttonText: string;
+    buttonText: TranslationKey;
     onNextStep: () => void;
     errors: string[];
 }) {
@@ -103,7 +104,7 @@ function TwoFactorSetupStep({
 
                     <div className="flex w-full space-x-5">
                         <Button className="w-full" onClick={onNextStep}>
-                            {buttonText}
+                            {t(buttonText)}
                         </Button>
                     </div>
 
@@ -261,37 +262,39 @@ export default function TwoFactorSetupModal({
     fetchSetupData,
     errors,
 }: Props) {
+    const { t } = useTranslation();
     const [showVerificationStep, setShowVerificationStep] =
         useState<boolean>(false);
 
+    // Keys, not sentences. This runs in a useMemo that has no business knowing the
+    // locale, and the two places these end up are already rendering — which is where
+    // `t()` belongs. It is also what stops the memo from having to depend on the
+    // translator and rebuild every time the language changes.
     const modalConfig = useMemo<{
-        title: string;
-        description: string;
-        buttonText: string;
+        title: TranslationKey;
+        description: TranslationKey;
+        buttonText: TranslationKey;
     }>(() => {
         if (twoFactorEnabled) {
             return {
-                title: 'Two-factor authentication enabled',
-                description:
-                    'Two-factor authentication is now enabled. Scan the QR code or enter the setup key in your authenticator app.',
-                buttonText: 'Close',
+                title: 'settings.setup.enabled_title',
+                description: 'settings.setup.enabled_description',
+                buttonText: 'common.actions.close',
             };
         }
 
         if (showVerificationStep) {
             return {
-                title: 'Verify authentication code',
-                description:
-                    'Enter the 6-digit code from your authenticator app',
-                buttonText: 'Continue',
+                title: 'settings.setup.verify_title',
+                description: 'settings.setup.verify_description',
+                buttonText: 'settings.setup.continue',
             };
         }
 
         return {
-            title: 'Enable two-factor authentication',
-            description:
-                'To finish enabling two-factor authentication, scan the QR code or enter the setup key in your authenticator app',
-            buttonText: 'Continue',
+            title: 'settings.setup.enable_title',
+            description: 'settings.setup.enable_description',
+            buttonText: 'settings.setup.continue',
         };
     }, [twoFactorEnabled, showVerificationStep]);
 
@@ -336,9 +339,9 @@ export default function TwoFactorSetupModal({
             <DialogContent className="sm:max-w-md">
                 <DialogHeader className="flex items-center justify-center">
                     <GridScanIcon />
-                    <DialogTitle>{modalConfig.title}</DialogTitle>
+                    <DialogTitle>{t(modalConfig.title)}</DialogTitle>
                     <DialogDescription className="text-center">
-                        {modalConfig.description}
+                        {t(modalConfig.description)}
                     </DialogDescription>
                 </DialogHeader>
 

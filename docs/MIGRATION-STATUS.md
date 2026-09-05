@@ -1711,9 +1711,20 @@ promotion point.
   gate in Chinese: `图片不能大于 2048 KB。`
 - Light and dark, 375 / 1280, no horizontal overflow. Hard reload with SSR on:
   `data-server-rendered="true"`, the thumbnail URL in the server HTML, console clean.
+- After the dialog change: the close button reads `Close` / `Tutup` / `关闭`, dismisses the
+  dialog, and measures 36x36. Re-driven across the form dialog, the confirm dialog, the
+  delete-account dialog and the 2FA modal — the four shells that moved to the facade.
 - "Remove photo" now starts on the same vertical line as the hint and the input above it
   (measured: all three at x=425), with the hover surface still surrounding the label and the
   target still 32px tall.
+- The 2FA modal driven through both reachable states in Chinese — `启用两步验证` / `继续`,
+  then `验证身份验证码` / `返回` / `确认`. The third (already-enabled) state was checked by
+  resolving its keys in all three bundles rather than by driving it, because reaching it
+  means enrolling a real TOTP on the demo account; the pending secret that opening the modal
+  created was cleared afterwards, so `owner@demo.test` is as it was.
+- The appearance tabs and the sidebar trigger in en / ms / zh_Hans, both in the accessibility
+  tree and in the **server-rendered HTML** — so they are in the first paint, not swapped in
+  after hydration.
 - `bun run build` and `bun run build:ssr` both succeed.
 
 ### Found while driving: the platform refuses before the rule does
@@ -1730,8 +1741,85 @@ the platform needs to allow a request body comfortably larger than the file limi
 reasonable ceiling for a 2MB rule). Left alone here because php.ini is machine
 configuration, not repository content.
 
+### Every dialog said "Close" in English
+
+Found while checking the photo field's Malay, and it had nothing to do with the photo:
+`ui/dialog.tsx` labels its dismiss button with a hard-coded `sr-only` "Close", so **every
+dialog in the app** announced an English word in Malay and in Chinese. It arrived with the
+vendored update two commits earlier and survived because an `sr-only` label is invisible on
+screen — the exact failure mode `check:i18n` exists for, in the one directory that gate
+deliberately does not read.
+
+The primitive is not edited. It already takes `showCloseButton`, so
+**`components/feedback/dialog.tsx`** turns that button off, re-exports everything else
+untouched, and renders a replacement that reads its label from `lang/`. Every dialog moved
+to it by changing one import line.
+
+Two things improve on the way through, neither of them the point: the replacement is a real
+`Button`, so it inherits the same focus ring and hover as every other control; and it is a
+36px target rather than the primitive's 16px, which was under the 24px minimum.
+
+**A regression that bigger button introduced, caught by measuring rather than looking.**
+The close button is absolutely positioned, so a long title runs underneath it — true of the
+16px original too, but a 36px button widens the band. At 375px, *"Delete Stainless steel
+folding step stool, 3-tread, powder coated?"* overlapped, and its Malay translation wrapped
+to three lines and overlapped twice. The facade now reserves 32px on the **title** — on top
+of the header's own 24px, which clears the button's 49px — and leaves the description, which
+sits below the button and never collides with it, at full width. On a phone, where the header
+centres its text, centring what is left over is where the title belongs anyway.
+
+Reserving it on the title is enforced in one place, and so is using the facade at all:
+`check:structure` now fails on any import of `@/components/ui/dialog` from outside the
+vendored tree. Proven by planting one. Without it, the seventh dialog is untranslated again
+and nothing says so.
+
+### `check:i18n` could not see a string one level up from the JSX
+
+The gate read JSX text and JSX props, so a sentence assigned to an **object property** was
+invisible to it. `two-factor-setup-modal.tsx` keeps its three states in a `useMemo`
+returning `{ title, description, buttonText }` and renders those — which is the ordinary way
+to write a component with three states, and it meant four English sentences shipped in every
+locale with the gate reporting green.
+
+It now also reads a string literal assigned to a property named like something a person
+reads, using the same allow-list as a JSX prop, because it is the same question: `title` and
+`label` are read, `variant` and `href` are not. The same `i18n-allow` escape and the same
+`KEY_SHAPE` exemption apply, so a translation key passed through an object is still fine.
+
+Turning it on found **two** files, not one:
+
+- **The 2FA modal**, as expected — six strings across three states, now `settings.setup.*`
+  keys resolved where they are rendered rather than sentences built inside a `useMemo` that
+  has no business knowing the locale. The "Close" state reuses `common.actions.close`.
+- **`appearance-tabs.tsx`**, which nobody was looking for. The appearance settings page
+  spelled out "Light / Dark / System" while the theme menu two inches above it said
+  "Cerah / Gelap / Sistem" from `common.theme.*` — the same three choices, one translated
+  and one not. It now reads the same keys, and its descriptor moved to module scope like
+  `ThemeToggle`'s.
+
+### The shell's sidebar trigger
+
+`SidebarTrigger` bakes "Toggle sidebar" into an `sr-only` span, so the one control present
+on every screen at every size announced English in Malay and in Chinese. `aria-label` wins
+over element text for the accessible name, so both layouts pass a translated one and the
+vendored file is untouched. Verified in the accessibility tree, not just the DOM:
+`button "Togol bar sisi"` / `button "切换侧边栏"`.
+
 ### Open, carried forward
 
+- **The mobile drawer still says "Sidebar", and it cannot be fixed from outside.** On a
+  phone, `Sidebar` renders `<Sheet {...props}><SheetHeader className="sr-only">
+  <SheetTitle>Sidebar</SheetTitle><SheetDescription>Displays the mobile sidebar.
+  </SheetDescription>` — the props spread reaches the Sheet **root**, and the two strings are
+  literal children, so no prop and no wrapper reaches them. Confirmed live at 375px: the
+  drawer's `aria-labelledby` resolves to "Sidebar" and its `aria-describedby` to "Displays
+  the mobile sidebar." in every locale. Two ways out, and the choice is a structural one:
+  have the app own its mobile drawer (a ~30-line wrapper rendering `Sheet`/`SheetContent`
+  itself, which also means copying the private `SIDEBAR_WIDTH_MOBILE` and the `[&>button]:
+  hidden` trick, and owning that branch's behaviour from then on), or edit the vendored file
+  under an exception. Not taken unilaterally — the second breaks the read-only rule and the
+  first buys two `sr-only` strings with a permanent fork of the sidebar's most
+  behaviour-heavy branch.
 - No image is shown at full size anywhere yet, so `ProductData` carries only `thumb_url`.
   A lightbox or a detail page would add `image_url` alongside it.
 

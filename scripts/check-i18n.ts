@@ -342,11 +342,18 @@ function phpFiles(dirs: string[]): string[] {
 // already being passed as a `label`. A gate that cries wolf gets switched off.
 //
 // What counts as user-facing: JSX text, a string literal given to a prop a person reads
-// (not className/id/variant/href), and a literal inside a rendered expression such as
-// `{busy ? 'Saving…' : 'Save'}`. What does not: a literal that is an operand of a
-// comparison — in `status === 'verification-link-sent' && <p/>` the string is a sentinel,
-// never text. `i18n-allow` on the line opts a genuine non-string out (a product name, an
-// example slug).
+// (not className/id/variant/href), a literal inside a rendered expression such as
+// `{busy ? 'Saving…' : 'Save'}`, and a literal assigned to an object property with one of
+// those same names. What does not: a literal that is an operand of a comparison — in
+// `status === 'verification-link-sent' && <p/>` the string is a sentinel, never text.
+// `i18n-allow` on the line opts a genuine non-string out (a product name, an example slug).
+//
+// That last case was added after this gate reported green on a modal rendering four
+// English sentences in every locale. The strings were not in the JSX — they were in a
+// `useMemo` returning `{ title, description, buttonText }`, which the JSX then rendered.
+// Reading only the JSX means a component can move its words one level up and become
+// invisible, and moving them one level up is the ordinary way to write a component with
+// three states.
 
 const UI_ROOTS = [
     'resources/js/pages',
@@ -383,6 +390,11 @@ const HUMAN_PROPS = new Set([
 // — and, more quietly, CALL above stops matching it, so nothing checks that the key
 // exists at all. That silent half is the reason both patterns changed together.
 const KEY_SHAPE = /^[a-z0-9_-]+(?:\.[a-z0-9_-]+)+$/;
+
+/** `{ title: … }` and `{ 'aria-label': … }` both name a property; nothing else does. */
+function propertyName(name: ts.PropertyName): string {
+    return ts.isIdentifier(name) || ts.isStringLiteral(name) ? name.text : '';
+}
 
 function tsxFiles(dir: string): string[] {
     const found: string[] = [];
@@ -451,6 +463,22 @@ for (const root of UI_ROOTS) {
                 report(
                     node,
                     `hard-coded text ${JSON.stringify(node.text.trim())}`,
+                );
+            }
+
+            // A property named like something a person reads, holding a sentence. Same
+            // allow-list as a JSX prop, because it is the same question: `title` and
+            // `label` are read, `variant` and `href` are not.
+            if (
+                ts.isPropertyAssignment(node) &&
+                ts.isStringLiteral(node.initializer) &&
+                HUMAN_PROPS.has(propertyName(node.name)) &&
+                /[A-Za-z]{2}/.test(node.initializer.text) &&
+                !KEY_SHAPE.test(node.initializer.text)
+            ) {
+                report(
+                    node,
+                    `hard-coded ${propertyName(node.name)}: ${JSON.stringify(node.initializer.text)}`,
                 );
             }
 

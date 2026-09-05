@@ -103,6 +103,13 @@ return [
     ],
 
     'setup' => [
+        'enable_title' => 'Enable two-factor authentication',
+        'enable_description' => 'To finish enabling two-factor authentication, scan the QR code or enter the setup key in your authenticator app',
+        'verify_title' => 'Verify authentication code',
+        'verify_description' => 'Enter the 6-digit code from your authenticator app',
+        'enabled_title' => 'Two-factor authentication enabled',
+        'enabled_description' => 'Two-factor authentication is now enabled. Scan the QR code or enter the setup key in your authenticator app.',
+        'continue' => 'Continue',
         'manual' => 'or enter the code manually',
         'back' => 'Back',
         'confirm' => 'Confirm',

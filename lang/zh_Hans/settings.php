@@ -95,6 +95,13 @@ return [
     ],
 
     'setup' => [
+        'enable_title' => '启用两步验证',
+        'enable_description' => '要完成两步验证的启用，请扫描二维码，或在验证器应用中输入设置密钥',
+        'verify_title' => '验证身份验证码',
+        'verify_description' => '请输入验证器应用中的 6 位验证码',
+        'enabled_title' => '两步验证已启用',
+        'enabled_description' => '两步验证现已启用。请扫描二维码，或在验证器应用中输入设置密钥。',
+        'continue' => '继续',
         'manual' => '或手动输入代码',
         'back' => '返回',
         'confirm' => '确认',

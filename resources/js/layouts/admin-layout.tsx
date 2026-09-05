@@ -34,7 +34,11 @@ export default function AdminLayout({
             <AdminSidebar user={auth.user} />
             <AppContent variant="sidebar" className="min-w-0 overflow-x-clip">
                 <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center gap-2 border-sidebar-border/50 border-b bg-background/80 px-4 backdrop-blur-sm transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 md:px-6">
-                    <SidebarTrigger className="-ml-1" />
+                    {/* aria-label for the same reason as tenant-layout.tsx. */}
+                    <SidebarTrigger
+                        className="-ml-1"
+                        aria-label={t('common.actions.toggle_sidebar')}
+                    />
                     <Breadcrumbs
                         breadcrumbs={[
                             { title: t('console.name'), href: dashboard() },

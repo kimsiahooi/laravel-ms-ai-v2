@@ -11,7 +11,9 @@
 #   2. components/ imports from pages/ — dependencies point pages -> components -> ui.
 #   3. one module reaches into another module's _components/ — those are private until
 #      promoted, which is the whole point of the rule of three.
-#   4. a controller runs a raw query — DB::, ->join( or a SQL string belong in a Service.
+#   4. a dialog imports the vendored primitive instead of components/feedback/dialog,
+#      whose close button is the only translated one.
+#   5. a controller runs a raw query — DB::, ->join( or a SQL string belong in a Service.
 #
 # Warnings (exit 0): size caps. A page over 250 lines or a controller method over 30 is
 # a signal that a piece wants extracting, not a rule — so it prompts rather than blocks.
@@ -63,7 +65,22 @@ while IFS= read -r file; do
     done < <(grep -o "@/pages/[^/]*/_components/[^']*" "$file" 2>/dev/null)
 done < <(find "$JS/pages" -name '*.tsx' -o -name '*.ts' 2>/dev/null)
 
-# --- 4. controllers must not run raw queries ---------------------------------
+# --- 4. dialogs come from feedback/, not from the vendored primitive ---------
+# The vendored DialogContent labels its dismiss button "Close" in hard-coded English,
+# which no screen catches because the label is sr-only. components/feedback/dialog.tsx
+# re-exports the whole primitive with that one button replaced, so importing from there
+# is the only way a dialog is translated. The facade itself is the one exception.
+while IFS= read -r hit; do
+    file="${hit%%:*}"
+
+    case "$file" in
+        "$JS/components/ui/"* | "$JS/components/feedback/dialog.tsx") continue ;;
+    esac
+
+    fail "$file: imports the vendored dialog — use @/components/feedback/dialog, or its close button says \"Close\" in every language."
+done < <(grep -rn "from '@/components/ui/dialog'" "$JS" 2>/dev/null)
+
+# --- 5. controllers must not run raw queries ---------------------------------
 # A controller resolves, delegates and responds. A join in one is a Service trying to
 # get out.
 while IFS= read -r hit; do

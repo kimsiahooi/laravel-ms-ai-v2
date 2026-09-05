@@ -95,6 +95,13 @@ return [
     ],
 
     'setup' => [
+        'enable_title' => 'Dayakan pengesahan dua faktor',
+        'enable_description' => 'Untuk menyelesaikan pendayaan pengesahan dua faktor, imbas kod QR atau masukkan kunci persediaan dalam aplikasi pengesah anda',
+        'verify_title' => 'Sahkan kod pengesahan',
+        'verify_description' => 'Masukkan kod 6 digit daripada aplikasi pengesah anda',
+        'enabled_title' => 'Pengesahan dua faktor didayakan',
+        'enabled_description' => 'Pengesahan dua faktor kini didayakan. Imbas kod QR atau masukkan kunci persediaan dalam aplikasi pengesah anda.',
+        'continue' => 'Teruskan',
         'manual' => 'atau masukkan kod secara manual',
         'back' => 'Kembali',
         'confirm' => 'Sahkan',

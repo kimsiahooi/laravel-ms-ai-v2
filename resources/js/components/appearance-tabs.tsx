@@ -3,19 +3,30 @@ import { Monitor, Moon, Sun } from 'lucide-react';
 import type { HTMLAttributes } from 'react';
 import type { Appearance } from '@/hooks/use-appearance';
 import { useAppearance } from '@/hooks/use-appearance';
+import { useTranslation } from '@/hooks/use-translation';
 import { cn } from '@/lib/utils';
+import type { TranslationKey } from '@/types/lang';
+
+/**
+ * The same three choices the header's ThemeToggle offers, reading the same keys. They
+ * were spelled out in English here, which meant the appearance page said "Light" while
+ * the menu two inches above it said "Cerah".
+ *
+ * Module scope, like ThemeToggle's: it is a static descriptor, and rebuilding it on
+ * every render gives each button a new object for no reason.
+ */
+const TABS: { value: Appearance; icon: LucideIcon; label: TranslationKey }[] = [
+    { value: 'light', icon: Sun, label: 'common.theme.light' },
+    { value: 'dark', icon: Moon, label: 'common.theme.dark' },
+    { value: 'system', icon: Monitor, label: 'common.theme.system' },
+];
 
 export default function AppearanceToggleTab({
     className = '',
     ...props
 }: HTMLAttributes<HTMLDivElement>) {
     const { appearance, updateAppearance } = useAppearance();
-
-    const tabs: { value: Appearance; icon: LucideIcon; label: string }[] = [
-        { value: 'light', icon: Sun, label: 'Light' },
-        { value: 'dark', icon: Moon, label: 'Dark' },
-        { value: 'system', icon: Monitor, label: 'System' },
-    ];
+    const { t } = useTranslation();
 
     return (
         <div
@@ -25,7 +36,7 @@ export default function AppearanceToggleTab({
             )}
             {...props}
         >
-            {tabs.map(({ value, icon: Icon, label }) => (
+            {TABS.map(({ value, icon: Icon, label }) => (
                 <button
                     type="button"
                     key={value}
@@ -38,7 +49,7 @@ export default function AppearanceToggleTab({
                     )}
                 >
                     <Icon className="-ml-1 h-4 w-4" />
-                    <span className="ml-1.5 text-sm">{label}</span>
+                    <span className="ml-1.5 text-sm">{t(label)}</span>
                 </button>
             ))}
         </div>

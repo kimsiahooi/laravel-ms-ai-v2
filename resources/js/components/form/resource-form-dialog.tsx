@@ -1,7 +1,6 @@
 import { Form } from '@inertiajs/react';
 import type { ReactNode } from 'react';
 import type { ZodType } from 'zod';
-import { Button } from '@/components/ui/button';
 import {
     Dialog,
     DialogClose,
@@ -10,7 +9,8 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle,
-} from '@/components/ui/dialog';
+} from '@/components/feedback/dialog';
+import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { useTranslation } from '@/hooks/use-translation';
 import { useZodGate } from '@/hooks/use-zod-gate';

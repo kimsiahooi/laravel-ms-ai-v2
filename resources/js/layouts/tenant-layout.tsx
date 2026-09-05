@@ -37,7 +37,17 @@ export default function TenantLayout({
             <TenantSidebar user={auth.user} tenant={tenant} />
             <AppContent variant="sidebar" className="min-w-0 overflow-x-clip">
                 <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center gap-2 border-sidebar-border/50 border-b bg-background/80 px-4 backdrop-blur-sm transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 md:px-6">
-                    <SidebarTrigger className="-ml-1" />
+                    {/*
+                        The vendored SidebarTrigger has "Toggle sidebar" baked into an
+                        sr-only span, so without this the one control on every screen
+                        announced English in Malay and in Chinese. `aria-label` wins over
+                        element text for the accessible name, which fixes it from outside
+                        rather than by editing a read-only file.
+                    */}
+                    <SidebarTrigger
+                        className="-ml-1"
+                        aria-label={t('common.actions.toggle_sidebar')}
+                    />
                     <Breadcrumbs
                         breadcrumbs={[
                             {
