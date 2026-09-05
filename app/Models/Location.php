@@ -7,7 +7,9 @@ namespace App\Models;
 use App\Models\Concerns\RecordsCreator;
 use App\Models\Concerns\Searchable;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 
@@ -28,6 +30,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon $updated_at
  * @property Carbon|null $deleted_at
  * @property-read User|null $creator
+ * @property-read Collection<int, Warehouse> $warehouses
  */
 #[Fillable(['name', 'code', 'address'])]
 class Location extends Model
@@ -35,6 +38,22 @@ class Location extends Model
     use RecordsCreator;
     use Searchable;
     use SoftDeletes;
+
+    /**
+     * The warehouses standing on this site.
+     *
+     * Read by the delete guard, and by the list so a row can say how many buildings a
+     * site has before anyone opens it. Trashed warehouses are excluded by Warehouse's
+     * own SoftDeletes scope — deliberately: a trashed warehouse holds nothing anyone
+     * can move, so counting it would make a site undeletable with nothing on screen
+     * to explain why. The same trade RawMaterial::products() documents.
+     *
+     * @return HasMany<Warehouse, $this>
+     */
+    public function warehouses(): HasMany
+    {
+        return $this->hasMany(Warehouse::class)->orderBy('name');
+    }
 
     /**
      * What "find a site" means: what it is called, the code it is filed under, and

@@ -56,6 +56,9 @@ return [
     ],
 
     'confirm' => [
+        'blocked_title' => '无法删除:name',
+        'blocked_description' => '{1} 该站点上仍有仓库：:warehouses。请先迁移或删除它，然后才能删除此站点。|[2,*] 该站点上仍有 :count 个仓库（:warehouses）。请先迁移或删除它们，然后才能删除此站点。',
+        'blocked_link' => '{1} 查看该仓库|[2,*] 查看全部 :count 个仓库',
         'delete_title' => '删除:name？',
         'delete_description' => '已记录在该站点的出入库仍保留其历史——你只是无法再为新的单据选择它。',
         'delete_submit' => '删除站点',
@@ -63,6 +66,7 @@ return [
     ],
 
     'toast' => [
+        'in_use' => '{1} 无法删除:name——该站点上仍有仓库：:warehouses。|[2,*] 无法删除:name——该站点上仍有 :count 个仓库（:warehouses）。',
         'created' => ':name已创建。',
         'updated' => ':name已更新。',
         'deleted' => ':name已删除。',

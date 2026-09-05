@@ -52,6 +52,7 @@ return [
         'items' => '物料',
         'items.*.quantity' => '数量',
         'items.*.raw_material_id' => '原材料',
+        'location_id' => '站点',
         'name' => '名称',
         'notes' => '备注',
         'phone' => '电话',

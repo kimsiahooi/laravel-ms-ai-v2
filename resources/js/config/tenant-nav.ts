@@ -6,6 +6,7 @@ import {
     Package,
     Tags,
     Truck,
+    Warehouse,
 } from 'lucide-react';
 import { dashboard } from '@/routes';
 import { index as categories } from '@/routes/categories';
@@ -14,6 +15,7 @@ import { index as locations } from '@/routes/locations';
 import { index as products } from '@/routes/products';
 import { index as rawMaterials } from '@/routes/raw-materials';
 import { index as suppliers } from '@/routes/suppliers';
+import { index as warehouses } from '@/routes/warehouses';
 import type { TenantNavGroup } from '@/types/navigation';
 
 /**
@@ -93,6 +95,12 @@ export function tenantNavGroups(
                     href: locations(),
                     icon: MapPin,
                     permission: 'locations.view',
+                },
+                {
+                    title: 'warehouses.title',
+                    href: warehouses(),
+                    icon: Warehouse,
+                    permission: 'warehouses.view',
                 },
             ],
         },

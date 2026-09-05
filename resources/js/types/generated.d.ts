@@ -41,6 +41,8 @@ id: number,
 name: string,
 code: string | null,
 address: string | null,
+warehouses: string[],
+warehouse_count: number,
 created_at: string,
 creator: string | null,
 };
@@ -91,6 +93,16 @@ export type TenantData = {
 slug: string,
 name: string,
 created_at: string,
+};
+export type WarehouseData = {
+id: number,
+location_id: number,
+location: string,
+name: string,
+code: string | null,
+address: string | null,
+created_at: string,
+creator: string | null,
 };
 }
 namespace Enums {

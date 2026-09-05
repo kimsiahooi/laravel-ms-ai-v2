@@ -53,6 +53,7 @@ return [
         'items' => 'bahan',
         'items.*.quantity' => 'kuantiti',
         'items.*.raw_material_id' => 'bahan mentah',
+        'location_id' => 'tapak',
         'name' => 'nama',
         'notes' => 'nota',
         'phone' => 'telefon',

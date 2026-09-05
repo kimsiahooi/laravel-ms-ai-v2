@@ -56,6 +56,9 @@ return [
     ],
 
     'confirm' => [
+        'blocked_title' => 'Tidak boleh memadam :name',
+        'blocked_description' => '{1} Masih ada gudang di tapak ini: :warehouses. Pindahkan atau buang ia dahulu, barulah tapak ini boleh dipadam.|[2,*] Masih ada :count gudang di tapak ini (:warehouses). Pindahkan atau buang ia dahulu, barulah tapak ini boleh dipadam.',
+        'blocked_link' => '{1} Lihat gudang ini|[2,*] Lihat semua :count gudang',
         'delete_title' => 'Padam :name?',
         'delete_description' => 'Pergerakan yang telah direkodkan di tapak ini mengekalkan sejarahnya — anda cuma tidak boleh memilihnya untuk perkara baharu.',
         'delete_submit' => 'Padam tapak',
@@ -63,6 +66,7 @@ return [
     ],
 
     'toast' => [
+        'in_use' => '{1} :name tidak boleh dipadam — masih ada gudang di atasnya: :warehouses.|[2,*] :name tidak boleh dipadam — masih ada :count gudang di atasnya (:warehouses).',
         'created' => ':name dicipta.',
         'updated' => ':name dikemas kini.',
         'deleted' => ':name dipadam.',

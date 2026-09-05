@@ -24,9 +24,7 @@ use Inertia\Response;
  * Deleting is a soft delete. A movement that happened here names the site it happened
  * at, and a movement that cannot say where it happened is not a record.
  *
- * No delete guard yet. One is coming with warehouses — a site that still owns them
- * cannot go, or the warehouses are orphaned — but the table it would read does not
- * exist yet, and a guard against nothing is a guard nobody can trust.
+ * A site with warehouses on it cannot be deleted — see {@see destroy()}.
  */
 final class LocationController
 {
@@ -48,9 +46,11 @@ final class LocationController
     {
         ['rows' => $locations, 'filters' => $filters] = $this->resourceList(
             request: $request,
-            // Eager-loaded: the "Added by" column reads it on every row, and without
-            // this the list is one query per row.
-            query: Location::query()->with('creator'),
+            // `warehouses` is eager-loaded for the same reason `creator` is — both are
+            // read on every row, and without it the list is two queries per row. The
+            // warehouses are what the delete guard explains itself with, so the row can
+            // say why Delete will refuse before anyone presses it.
+            query: Location::query()->with(['creator', 'warehouses']),
             sortable: self::SORTABLE,
             toData: LocationData::fromLocation(...),
             searchUsing: self::searchBy(...),
@@ -80,8 +80,34 @@ final class LocationController
         return back();
     }
 
+    /**
+     * Delete a site — unless warehouses still stand on it.
+     *
+     * `warehouses.location_id` is NOT NULL and `restrictOnDelete`, so the database
+     * would refuse a hard delete outright. A soft delete slips past that: the row
+     * stays, the constraint is never tested, and the warehouses are left pointing at a
+     * site the workspace believes it removed — visible nowhere, and still holding
+     * stock once there is stock to hold. Refusing here is the cheaper half of that.
+     *
+     * Trashed warehouses do not count; see {@see Location::warehouses()} on why.
+     */
     public function destroy(Location $location): RedirectResponse
     {
+        $standing = $location->warehouses()->pluck('name');
+
+        if ($standing->isNotEmpty()) {
+            $this->toast(
+                trans_choice('locations.toast.in_use', $standing->count(), [
+                    'name' => $location->name,
+                    'count' => $standing->count(),
+                    'warehouses' => $standing->implode(', '),
+                ]),
+                'error',
+            );
+
+            return back();
+        }
+
         $name = $location->name;
 
         $location->delete();

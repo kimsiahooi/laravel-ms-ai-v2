@@ -58,6 +58,9 @@ return [
     ],
 
     'confirm' => [
+        'blocked_title' => 'Cannot delete :name',
+        'blocked_description' => '{1} A warehouse still stands on this site: :warehouses. Move or remove it first, then the site can be deleted.|[2,*] :count warehouses still stand on this site (:warehouses). Move or remove them first, then the site can be deleted.',
+        'blocked_link' => '{1} View this warehouse|[2,*] View all :count warehouses',
         'delete_title' => 'Delete :name?',
         'delete_description' => 'Movements already recorded at this site keep their history — you simply will not be able to pick it for anything new.',
         'delete_submit' => 'Delete site',
@@ -65,6 +68,7 @@ return [
     ],
 
     'toast' => [
+        'in_use' => '{1} :name cannot be deleted — a warehouse still stands on it: :warehouses.|[2,*] :name cannot be deleted — :count warehouses still stand on it (:warehouses).',
         'created' => ':name created.',
         'updated' => ':name updated.',
         'deleted' => ':name deleted.',

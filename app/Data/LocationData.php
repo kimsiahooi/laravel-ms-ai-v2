@@ -22,11 +22,31 @@ use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 #[TypeScript]
 final class LocationData extends Data
 {
+    /**
+     * How many warehouse names travel with a row. Enough to make the refusal concrete
+     * — a name is what someone recognises — without turning a listing into a payload
+     * that scales with somebody else's estate.
+     */
+    private const WAREHOUSES_SHOWN = 5;
+
     public function __construct(
         public int $id,
         public string $name,
         public ?string $code,
         public ?string $address,
+        /**
+         * Names of the warehouses standing on this site — capped, so a site with two
+         * hundred does not put two hundred strings in every row of the listing.
+         * `warehouse_count` carries the real total.
+         *
+         * Here so the screen can say *why* a site cannot be deleted before anyone
+         * presses Delete, rather than only after. The controller refuses it either
+         * way; this is the half that stops the button being a trap.
+         *
+         * @var list<string>
+         */
+        public array $warehouses,
+        public int $warehouse_count,
         public string $created_at,
         public ?string $creator,
     ) {}
@@ -38,6 +58,8 @@ final class LocationData extends Data
             name: $location->name,
             code: $location->code,
             address: $location->address,
+            warehouses: array_values($location->warehouses->take(self::WAREHOUSES_SHOWN)->pluck('name')->all()),
+            warehouse_count: $location->warehouses->count(),
             // ISO 8601 at the boundary. The client formats dates itself and only ever
             // needs a string both renders parse the same way — see lib/format.ts on
             // why that matters under SSR.

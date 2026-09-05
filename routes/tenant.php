@@ -12,6 +12,7 @@ use App\Http\Controllers\Tenant\MediaController;
 use App\Http\Controllers\Tenant\ProductController;
 use App\Http\Controllers\Tenant\RawMaterialController;
 use App\Http\Controllers\Tenant\SupplierController;
+use App\Http\Controllers\Tenant\WarehouseController;
 use App\Http\Middleware\AuthorizeTenantRoute;
 use App\Http\Middleware\SetTenantUrlDefault;
 use Illuminate\Auth\Middleware\RequirePassword;
@@ -118,6 +119,13 @@ Route::middleware(['web', InitializeTenancyByPath::class, SetTenantUrlDefault::c
                 Route::post('/', [LocationController::class, 'store'])->name('store');
                 Route::patch('{location}', [LocationController::class, 'update'])->name('update');
                 Route::delete('{location}', [LocationController::class, 'destroy'])->name('destroy');
+            });
+
+            Route::prefix('warehouses')->name('warehouses.')->group(function (): void {
+                Route::get('/', [WarehouseController::class, 'index'])->name('index');
+                Route::post('/', [WarehouseController::class, 'store'])->name('store');
+                Route::patch('{warehouse}', [WarehouseController::class, 'update'])->name('update');
+                Route::delete('{warehouse}', [WarehouseController::class, 'destroy'])->name('destroy');
             });
 
             // Every uploaded file in the workspace, served from one place: a product

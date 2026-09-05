@@ -72,6 +72,7 @@ return [
         'items' => 'materials',
         'items.*.quantity' => 'quantity',
         'items.*.raw_material_id' => 'material',
+        'location_id' => 'site',
         'name' => 'name',
         'notes' => 'notes',
         'phone' => 'phone',

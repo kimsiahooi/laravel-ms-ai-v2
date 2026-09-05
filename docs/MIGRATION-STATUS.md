@@ -2467,12 +2467,84 @@ than a rule living somewhere else. Verified rather than assumed: two sites now h
   happened; a seeder is still the outstanding ask.
 - No filters on the list — nothing to filter by yet with five columns and no status.
 
+### Warehouses — and the guard sites have been waiting for
+
+A warehouse is a building that belongs to a site, and it is the level everything
+stocked is addressed at: a movement moves through a warehouse, never through a site.
+The table still holds no quantities — those arrive with `warehouse_stocks`.
+
+**What was deliberately left out.** v1's `WarehouseController` has a `show` screen, and
+it is a stock report: a two-leg `UNION ALL` over `products` and `raw_materials`,
+left-joined to on-hand quantities and reorder levels, with `selectRaw` throughout.
+Every table it reads arrives with StockService, so the screen arrives then rather than
+as an empty frame now. `WarehouseData` leaves out `items_in_stock` / `low_stock` /
+`out_of_stock` for the same reason — three numbers on every row that are wrong is worse
+than three that are absent.
+
+| Piece | Note |
+|---|---|
+| `create_warehouses_table` | `location_id` **restrictOnDelete**, name, `code` nullable+unique, address, soft deletes |
+| `Warehouse` | `location()` is `withTrashed`, so a row can always name its site |
+| `Location::warehouses()` | New — read by the guard *and* the list, hence eager-loaded |
+| `WarehouseRequest` + `warehouse.ts` | A **factory** schema, like `productSchema`: the browser can only refuse an unknown site if told which exist |
+| `WarehouseController` | Site filter (multi, ANY) reusing `ComboboxFilter` — its second consumer, and the hint's |
+
+**The site delete guard, finally.** `warehouses.location_id` is NOT NULL and restricted,
+so the database refuses a *hard* delete outright. A soft delete slips straight past
+that: the row stays, the constraint is never tested, and the warehouses are left
+pointing at a site the workspace believes it removed. The controller refuses first,
+naming the buildings in the way, with a "View all N warehouses" link into the filtered
+list — the same shape as the raw-material guard, and the second use of `ConfirmDialog`'s
+blocked `children` slot.
+
+Kept in the controller rather than a model hook, matching raw materials.
+
+#### Verified in a real browser (Playwright, SSR on)
+
+- **Two different nothings.** With no sites at all the empty state says "Add a site
+  first" and offers a link out, with **no New warehouse button** — the form's only
+  required field would have had no valid answer. Checked by soft-deleting every site,
+  loading the page, and restoring exactly the four rows that were live.
+- Empty submit: *both* "The site field is required" and "The name field is required",
+  and **zero requests** — the gate stopped it.
+- Server-only rules, each landing on the right field: duplicate code → `code`; site
+  `99999` → `location_id`; a **trashed** site id → `location_id`, which is `ActiveExists`
+  doing the thing plain `exists` would not.
+- Site filter: `?site=1` → 2 rows, `?site=1,2` → 3 (ANY, widening). `?site=99999`,
+  `?site=abc`, `?site[]=1` and `?site=3` (a real site with no warehouse, so off the
+  offered list) all fall back to no filter — never an empty list, never a 500.
+  `?site=1,1,1` collapses to `1`.
+- **The guard, both halves.** Plural: "2 warehouses still stand on this site (Cold room,
+  Main store)". Singular after deleting one: "A warehouse still stands on this site:
+  Main store." Bypassing the UI with a raw `DELETE` left `deleted_at = NULL`. And
+  `forceDelete()` in tinker was refused by the database — the `restrictOnDelete` backstop
+  proven rather than assumed.
+- 375 / 768 / 1024: no sideways scroll; columns reveal Warehouse → +Code +Site →
+  +Address. At 375 the site rides under the name, and once Site has its own column at
+  768 the duplicate is gone.
+- en / ms / zh_Hans: tab title Warehouses / Gudang / 仓库, and the site link's aria-label
+  translated in each.
+- Console clean, `laravel.log` gained nothing.
+
+#### Open, carried forward
+
+- **No warehouse delete guard.** What makes a warehouse undeletable is stock sitting in
+  it, and there is nowhere to put stock yet. It lands with `warehouse_stocks`, on the
+  same reasoning that kept sites unguarded until this module.
+- `check-validation-parity.ts` needed a `FACTORY_ARGS` entry for `WarehouseRequest`. That
+  is the third factory schema; the list is still hand-maintained, and a missing entry
+  fails loudly rather than silently, so it stays as is.
+- Codes are unique workspace-wide, not per site. Deliberate — a code exists to be
+  written on a transfer note, and one that only means something once you also know the
+  site is not a code — but worth revisiting if anyone wants `A` in every warehouse.
+- Demo data hand-made again: four warehouses typed in, one deleted. Fifth module running.
+
 ## Phases 3–8 — Modules ⬜
 
 | Phase | Modules | Status |
 |---|---|---|
 | 3 · Catalog | **categories ✅ · suppliers ✅ · customers ✅ · raw materials ✅ · products ✅** (core · image · BOM) | ✅ |
-| 4 · Stock | **locations ✅** · warehouses, StockService, movements, transfers, reorder levels, stock takes | 🚧 |
+| 4 · Stock | **locations ✅ · warehouses ✅** · StockService, movements, transfers, reorder levels, stock takes | 🚧 |
 | 5 · Orders | purchase orders, purchase returns, sales orders, sales returns, production orders | ⬜ |
 | 6 · Insights | reports, activity log | ⬜ |
 | 7 · Team & settings | users, roles/RBAC, business settings, document numbering, e-invoice | ⬜ |
