@@ -16,6 +16,7 @@ return [
         // file, so 'Categories' has exactly one definition.
         'catalog' => 'Catalog',
         'dashboard' => 'Dashboard',
+        'stock' => 'Stock',
         'settings' => 'Account settings',
         'sign_out' => 'Sign out',
     ],

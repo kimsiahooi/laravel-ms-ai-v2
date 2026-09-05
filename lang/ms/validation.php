@@ -44,6 +44,7 @@ return [
         'barcode' => 'kod bar',
         'category_id' => 'kategori',
         'city' => 'bandar',
+        'code' => 'kod',
         'contact_person' => 'orang untuk dihubungi',
         'country_code' => 'negara',
         'description' => 'keterangan',

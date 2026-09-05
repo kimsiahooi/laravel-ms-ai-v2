@@ -2349,12 +2349,77 @@ Search and sort re-driven afterwards and unchanged.
   back to 10, so the behaviour is right by accident rather than by intent. Left alone;
   worth folding into the same helper if that trait is touched.
 
+## Phase 4 — Stock 🚧
+
+### Sites — the first stock table, and no quantities on it
+
+`locations` in the schema, **Sites** on screen. The word differs on purpose: the table
+name is v1's and changing it would make every later join read differently from the
+reference, while "location" in a warehouse app already means a bin or a rack, and using
+it for a whole branch would collide with the thing it means one level down.
+
+Nothing is stored *at* a site. A site owns warehouses and a warehouse holds the stock,
+so this table carries a name, a code, an address, and no numbers at all. That is the
+whole reason it lands first: everything below it is addressed through it.
+
+**Ported nearly verbatim from v1** — the columns and rules are unchanged. What is new
+is what every v2 module gets for free: translated strings, a zod schema paired with the
+FormRequest, the shared `resourceList` concern, and the URL hardening from `96f9892`.
+
+| Piece | Note |
+|---|---|
+| `2026_08_23_000700_create_locations_table` | `name`, `code` (nullable **and** unique), `address` text, `created_by` nullOnDelete, soft deletes |
+| `Location` | `searchableColumns()` is name + code + **address** — someone looking for the Penang branch is as likely to type the town |
+| `LocationData` | Same shape as `CategoryData`; `creator` flattened to a name at the boundary |
+| `LocationRequest` + `location.ts` | 3 fields, parity gate green at 8 pairs |
+| `LocationController` | 4 methods, none over 30 lines; `SORTABLE` is name/code/created_at |
+| Nav | A new **Stock** group, `tenant.nav.stock` in all three locales |
+
+**Nullable and unique together.** MySQL permits any number of NULLs in a unique index,
+so "most sites have no code, and the ones that do must not collide" is one index rather
+than a rule living somewhere else. Verified rather than assumed: two sites now hold
+`code = NULL` side by side, and a third was refused for reusing `PEN`.
+
+#### Verified in a real browser (Playwright, SSR on)
+
+- Empty submit: "The name field is required." under the field, and **zero requests to
+  `/locations`** — the zod gate stopped it before the network.
+- Duplicate code: refused by the server, error under `code`, dialog still open with
+  both values kept. Only the database can answer that question, which is why the
+  schema does not try.
+- Create ×4, edit (adding a code to a site that had none), delete — each with its toast
+  and the list refreshed in place.
+- Search: `Shah Alam` by name, `Lebuh Pantai` by **address alone**, `IPH` by **code
+  alone**, `zzz nothing` → 0. All three columns carry.
+- Hostile URLs, the class that used to 500 every list: `?search[]=`, `?sort[]=`,
+  `?per_page[]=`, `?page[]=`, `?sort=name);DROP TABLE locations;--`, `?sort=address`
+  (a real column, off the allow-list), and all of them at once — **eight probes, eight
+  200s**, table intact at 4 rows afterwards.
+- 375 / 768 / 1024: no sideways body scroll at any width; columns reveal as
+  Site → +Code +Address → +Added, and at 375 the code rides under the name rather than
+  vanishing.
+- Light and dark: background `oklch(1 0 0)` → `oklch(0.145 0 0)`, muted foreground
+  `0.556` → `0.708` — lighter in dark, which is the right direction.
+- en / ms / zh_Hans: tab title Sites / Tapak / 站点, nav group Stock / Stok / 库存.
+- Console clean. The four 405s in the transcript are the harness re-issuing PUT after
+  the locale redirect, one per switch — not the app.
+
+#### Open, carried forward
+
+- **No delete guard yet.** A site that still owns warehouses must not go, but the
+  `warehouses` table does not exist yet and a guard against nothing is a guard nobody
+  can trust. It lands with warehouses, next.
+- **Demo data is hand-made again.** Three sites were typed into the browser to have
+  something to attach warehouses to. This is the fourth module in a row where that has
+  happened; a seeder is still the outstanding ask.
+- No filters on the list — nothing to filter by yet with five columns and no status.
+
 ## Phases 3–8 — Modules ⬜
 
 | Phase | Modules | Status |
 |---|---|---|
 | 3 · Catalog | **categories ✅ · suppliers ✅ · customers ✅ · raw materials ✅ · products ✅** (core · image · BOM) | ✅ |
-| 4 · Stock | locations, warehouses, StockService, movements, transfers, reorder levels, stock takes | ⬜ |
+| 4 · Stock | **locations ✅** · warehouses, StockService, movements, transfers, reorder levels, stock takes | 🚧 |
 | 5 · Orders | purchase orders, purchase returns, sales orders, sales returns, production orders | ⬜ |
 | 6 · Insights | reports, activity log | ⬜ |
 | 7 · Team & settings | users, roles/RBAC, business settings, document numbering, e-invoice | ⬜ |

@@ -36,6 +36,14 @@ notes: string | null,
 created_at: string,
 creator: string | null,
 };
+export type LocationData = {
+id: number,
+name: string,
+code: string | null,
+address: string | null,
+created_at: string,
+creator: string | null,
+};
 export type OptionData = {
 id: number,
 name: string,

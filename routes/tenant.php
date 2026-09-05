@@ -7,6 +7,7 @@ use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\Settings\SecurityController;
 use App\Http\Controllers\Tenant\CategoryController;
 use App\Http\Controllers\Tenant\CustomerController;
+use App\Http\Controllers\Tenant\LocationController;
 use App\Http\Controllers\Tenant\MediaController;
 use App\Http\Controllers\Tenant\ProductController;
 use App\Http\Controllers\Tenant\RawMaterialController;
@@ -108,6 +109,15 @@ Route::middleware(['web', InitializeTenancyByPath::class, SetTenantUrlDefault::c
                 // PUT, not PATCH: the whole bill is replaced, never patched. The name
                 // `products.bom` is what TenantPermissions maps to products.update.
                 Route::put('{product}/bom', [ProductController::class, 'updateBom'])->name('bom');
+            });
+
+            // Stock. Sites first: a site owns warehouses and a warehouse holds the
+            // stock, so nothing below can be addressed until this exists.
+            Route::prefix('locations')->name('locations.')->group(function (): void {
+                Route::get('/', [LocationController::class, 'index'])->name('index');
+                Route::post('/', [LocationController::class, 'store'])->name('store');
+                Route::patch('{location}', [LocationController::class, 'update'])->name('update');
+                Route::delete('{location}', [LocationController::class, 'destroy'])->name('destroy');
             });
 
             // Every uploaded file in the workspace, served from one place: a product

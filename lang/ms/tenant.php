@@ -16,6 +16,7 @@ return [
         // file, so 'Categories' has exactly one definition.
         'catalog' => 'Katalog',
         'dashboard' => 'Papan pemuka',
+        'stock' => 'Stok',
         'settings' => 'Tetapan akaun',
         'sign_out' => 'Log keluar',
     ],

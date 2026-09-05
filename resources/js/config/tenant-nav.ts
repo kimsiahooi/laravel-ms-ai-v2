@@ -2,6 +2,7 @@ import {
     Boxes,
     Building,
     LayoutGrid,
+    MapPin,
     Package,
     Tags,
     Truck,
@@ -9,6 +10,7 @@ import {
 import { dashboard } from '@/routes';
 import { index as categories } from '@/routes/categories';
 import { index as customers } from '@/routes/customers';
+import { index as locations } from '@/routes/locations';
 import { index as products } from '@/routes/products';
 import { index as rawMaterials } from '@/routes/raw-materials';
 import { index as suppliers } from '@/routes/suppliers';
@@ -31,7 +33,7 @@ import type { TenantNavGroup } from '@/types/navigation';
  *
  * Each module adds its own line as it lands. Groups arrive with their first member
  * rather than up front — an empty group renders as a heading with nothing under it.
- * Still to come: Stock, Orders, Insights, Team.
+ * Still to come: the rest of Stock, then Orders, Insights, Team.
  */
 export function tenantNavGroups(
     can?: (permission: string) => boolean,
@@ -80,6 +82,17 @@ export function tenantNavGroups(
                     href: products(),
                     icon: Package,
                     permission: 'products.view',
+                },
+            ],
+        },
+        {
+            label: 'tenant.nav.stock',
+            items: [
+                {
+                    title: 'locations.title',
+                    href: locations(),
+                    icon: MapPin,
+                    permission: 'locations.view',
                 },
             ],
         },

@@ -63,6 +63,7 @@ return [
         'barcode' => 'barcode',
         'category_id' => 'category',
         'city' => 'city',
+        'code' => 'code',
         'contact_person' => 'contact person',
         'country_code' => 'country',
         'description' => 'description',

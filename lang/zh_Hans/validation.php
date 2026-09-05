@@ -43,6 +43,7 @@ return [
         'barcode' => '条码',
         'category_id' => '分类',
         'city' => '城市',
+        'code' => '代码',
         'contact_person' => '联系人',
         'country_code' => '国家',
         'description' => '描述',
