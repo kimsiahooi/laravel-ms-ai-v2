@@ -13,11 +13,15 @@ import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { useTranslation } from '@/hooks/use-translation';
 
-type Props = {
+type Common = {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     title: string;
     description: string;
+};
+
+type Confirmable = Common & {
+    blocked?: false;
     confirmLabel: string;
     busyLabel: string;
     processing: boolean;
@@ -31,18 +35,28 @@ type Props = {
     confirmPhrase?: string;
 };
 
-export function ConfirmDialog({
-    open,
-    onOpenChange,
-    title,
-    description,
-    confirmLabel,
-    busyLabel,
-    processing,
-    onConfirm,
-    variant = 'default',
-    confirmPhrase,
-}: Props) {
+/**
+ * The same dialog explaining why the action is not available, rather than offering it:
+ * no destructive button, and the way out says Close rather than Cancel, because there
+ * is nothing to cancel.
+ *
+ * A union rather than a `blocked` flag beside optional labels, so the compiler refuses
+ * a confirmable dialog with no button and a blocked one carrying an `onConfirm` that
+ * can never run.
+ */
+type Blocked = Common & { blocked: true };
+
+type Props = Confirmable | Blocked;
+
+export function ConfirmDialog(props: Props) {
+    const { open, onOpenChange, title, description } = props;
+    const blocked = props.blocked === true;
+    // Nothing is in flight when there is nothing to send, so a blocked dialog can
+    // always be dismissed.
+    const processing = props.blocked === true ? false : props.processing;
+    const confirmPhrase =
+        props.blocked === true ? undefined : props.confirmPhrase;
+
     const { t } = useTranslation();
     const [typed, setTyped] = useState('');
 
@@ -66,7 +80,13 @@ export function ConfirmDialog({
                 }
             }}
         >
-            <DialogContent>
+            {/*
+                A blocked dialog drops the corner ✕: its footer button already says
+                Close, and two controls with the same accessible name doing the same
+                thing is a thing a screen reader has to disambiguate for no reason.
+                Escape still dismisses it either way.
+            */}
+            <DialogContent showCloseButton={!blocked}>
                 <DialogHeader>
                     <DialogTitle>{title}</DialogTitle>
                     <DialogDescription>{description}</DialogDescription>
@@ -97,17 +117,23 @@ export function ConfirmDialog({
                         disabled={processing}
                         onClick={() => onOpenChange(false)}
                     >
-                        {t('common.actions.cancel')}
+                        {t(
+                            blocked
+                                ? 'common.actions.close'
+                                : 'common.actions.cancel',
+                        )}
                     </Button>
-                    <Button
-                        type="button"
-                        variant={variant}
-                        disabled={processing || !armed}
-                        onClick={onConfirm}
-                    >
-                        {processing && <Spinner />}
-                        {processing ? busyLabel : confirmLabel}
-                    </Button>
+                    {props.blocked !== true && (
+                        <Button
+                            type="button"
+                            variant={props.variant ?? 'default'}
+                            disabled={processing || !armed}
+                            onClick={props.onConfirm}
+                        >
+                            {processing && <Spinner />}
+                            {processing ? props.busyLabel : props.confirmLabel}
+                        </Button>
+                    )}
                 </DialogFooter>
             </DialogContent>
         </Dialog>

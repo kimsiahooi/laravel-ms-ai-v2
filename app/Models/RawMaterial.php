@@ -8,7 +8,9 @@ use App\Enums\Unit;
 use App\Models\Concerns\RecordsCreator;
 use App\Models\Concerns\Searchable;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 
@@ -26,6 +28,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon $updated_at
  * @property Carbon|null $deleted_at
  * @property-read User|null $creator
+ * @property-read Collection<int, Product> $products
  */
 #[Fillable(['name', 'sku', 'barcode', 'unit'])]
 class RawMaterial extends Model
@@ -52,6 +55,26 @@ class RawMaterial extends Model
     protected function searchableColumns(): array
     {
         return ['name', 'sku', 'barcode'];
+    }
+
+    /**
+     * The products whose bill of materials calls for this material.
+     *
+     * `bom_items` is a pivot with a payload — the per-unit quantity — so it has its own
+     * model for the editor to write through ({@see BomItem}). Read the other way it is
+     * an ordinary many-to-many, and that is all this needs to answer: "is anything
+     * still using this?", which is what the delete guard asks.
+     *
+     * Trashed products are excluded, by Product's own SoftDeletes scope. That is
+     * deliberate rather than incidental: a soft-deleted product has no restore or
+     * force-delete route, so counting its bill here would make a material undeletable
+     * forever with nothing on any screen to explain why.
+     *
+     * @return BelongsToMany<Product, $this>
+     */
+    public function products(): BelongsToMany
+    {
+        return $this->belongsToMany(Product::class, 'bom_items')->orderBy('name');
     }
 
     /**

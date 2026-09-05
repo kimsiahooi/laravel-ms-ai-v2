@@ -61,6 +61,8 @@ return [
     ],
 
     'confirm' => [
+        'blocked_title' => 'Cannot delete :name',
+        'blocked_description' => '{1} It is used in the bill of materials for :products. Remove it from that bill first, then the material can be deleted.|[2,*] It is used in the bills of materials for :count products (:products). Remove it from those bills first, then the material can be deleted.',
         'delete_title' => 'Delete :name?',
         'delete_description' => 'Stock already recorded against this material keeps its history — you simply will not be able to pick it for anything new.',
         'delete_submit' => 'Delete material',
@@ -68,6 +70,7 @@ return [
     ],
 
     'toast' => [
+        'in_use' => '{1} :name cannot be deleted — it is used in the bill of materials for :products.|[2,*] :name cannot be deleted — it is used in the bills of materials for :count products (:products).',
         'created' => ':name created.',
         'updated' => ':name updated.',
         'deleted' => ':name deleted.',

@@ -62,6 +62,8 @@ return [
     ],
 
     'confirm' => [
+        'blocked_title' => 'Tidak boleh memadam :name',
+        'blocked_description' => '{1} Ia digunakan dalam senarai bahan untuk :products. Buang ia daripada senarai itu dahulu, barulah bahan ini boleh dipadam.|[2,*] Ia digunakan dalam senarai bahan untuk :count produk (:products). Buang ia daripada senarai tersebut dahulu, barulah bahan ini boleh dipadam.',
         'delete_title' => 'Padam :name?',
         'delete_description' => 'Stok yang sudah direkodkan untuk bahan ini mengekalkan sejarahnya — anda cuma tidak lagi boleh memilihnya untuk perkara baharu.',
         'delete_submit' => 'Padam bahan',
@@ -69,6 +71,7 @@ return [
     ],
 
     'toast' => [
+        'in_use' => '{1} :name tidak boleh dipadam — ia digunakan dalam senarai bahan untuk :products.|[2,*] :name tidak boleh dipadam — ia digunakan dalam senarai bahan untuk :count produk (:products).',
         'created' => ':name telah dicipta.',
         'updated' => ':name telah dikemas kini.',
         'deleted' => ':name telah dipadam.',

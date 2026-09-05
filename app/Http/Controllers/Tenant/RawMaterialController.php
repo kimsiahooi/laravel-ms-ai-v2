@@ -45,7 +45,10 @@ final class RawMaterialController
     {
         ['rows' => $rawMaterials, 'filters' => $filters] = $this->resourceList(
             request: $request,
-            query: RawMaterial::query()->with('creator'),
+            // `products` is the bill-of-materials usage — see RawMaterial::products().
+            // Eager-loaded so the delete guard can be explained on the row rather than
+            // discovered by pressing the button.
+            query: RawMaterial::query()->with(['creator', 'products']),
             sortable: self::SORTABLE,
             toData: RawMaterialData::fromRawMaterial(...),
             searchUsing: self::searchBy(...),
@@ -80,8 +83,35 @@ final class RawMaterialController
         return back();
     }
 
+    /**
+     * Delete a material — unless a product is still built from it.
+     *
+     * The guard exists because `bom_items.raw_material_id` is NOT NULL, unlike the
+     * nullable keys a product uses for its category and supplier. Those can lose their
+     * row and simply show a dash; a bill line cannot. Deleting anyway leaves a bill
+     * pointing at something that is not there, which the editor cannot render and the
+     * validator will not let anyone save — so the bill is stuck, and the reason is two
+     * screens away. Refusing here is the cheaper half of that trade.
+     *
+     * Soft-deleted products do not count; see {@see RawMaterial::products()} on why.
+     */
     public function destroy(RawMaterial $rawMaterial): RedirectResponse
     {
+        $usedBy = $rawMaterial->products()->pluck('name');
+
+        if ($usedBy->isNotEmpty()) {
+            $this->toast(
+                trans_choice('raw-materials.toast.in_use', $usedBy->count(), [
+                    'name' => $rawMaterial->name,
+                    'count' => $usedBy->count(),
+                    'products' => $usedBy->implode(', '),
+                ]),
+                'error',
+            );
+
+            return back();
+        }
+
         $name = $rawMaterial->name;
 
         $rawMaterial->delete();

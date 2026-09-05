@@ -2008,6 +2008,78 @@ phone screen per row.
   all made by hand. A fresh tenant starts empty, which is correct, but it means the
   feature is invisible until somebody adds a material.
 
+### A material a product is built from can no longer be deleted
+
+Asked what happens to a bill when its material is deleted. Measured it, and the answer
+was worse than it looked.
+
+Nothing is lost: the materials screen soft-deletes, and the `ON DELETE CASCADE` on
+`bom_items.raw_material_id` only fires on a real row removal, which the UI never does.
+The bill line survives and restoring the material restores everything.
+
+But the bill became **unusable and unexplained**:
+
+| | |
+|---|---|
+| `bom_items` row | survived |
+| Product list | still counted it — "2 materials" |
+| The editor's line | showed **"Choose a material"** — indistinguishable from an empty row |
+| Saving the bill | refused: "The selected material is invalid." |
+
+Together those are worse than either alone. The line looked like nobody had filled it
+in, gave no hint which material had gone, and blocked the whole bill from saving — even
+an edit to a different line. The name was not even unavailable: `ProductData` already
+sends it, because `BomItem::rawMaterial()` resolves `withTrashed()`. The editor renders
+from the picker's options instead, and those exclude trashed rows.
+
+This is specific to bills. A product's `category_id` and `supplier_id` are nullable and
+show a dash when their row goes; `bom_items.raw_material_id` is NOT NULL and cannot.
+
+**Chosen: refuse the delete.** The materials screen now refuses to delete a material a
+product's bill calls for, and names the products. The alternative considered was to let
+the delete happen and flag the stale line in the editor — easier deleting, something to
+fix later. Refusing keeps bills correct by construction, which matters more once
+production orders start reading them in phase 5.
+
+Two halves, and both are needed:
+
+- **The server is the boundary.** `RawMaterialController::destroy` checks and returns an
+  error toast naming the products. Verified by bypassing the UI entirely with `fetch`:
+  the material survived, its bill lines were intact, and the response carried
+  `{"type":"error","message":"Serbuk kayu cannot be deleted — it is used in the bill of
+  materials for Amos Brennan."}`.
+- **The screen explains before the click.** `RawMaterialData` carries `bom_products`
+  (capped at five names) and `bom_product_count`, so Delete opens a dialog that says why
+  rather than a button that fails. `ConfirmDialog` grew a `blocked` variant for it — a
+  discriminated union, so the compiler refuses a confirmable dialog with no button and a
+  blocked one carrying an `onConfirm` that can never run. It also drops the corner ✕,
+  because its footer already says Close and two controls with one accessible name is
+  something a screen reader has to disambiguate for nothing.
+
+`RawMaterial::products()` is the reverse of `Product::bomItems()` — `bom_items` read as
+an ordinary many-to-many. **Trashed products are excluded, deliberately**: a
+soft-deleted product has no restore or force-delete route (recorded below), so counting
+its bill would make a material undeletable forever with nothing on any screen to explain
+why. The trade is that restoring such a product — which no route currently does — could
+surface a stale line.
+
+#### Verified in a real browser (Playwright, SSR on)
+
+- Blocked: "Cannot delete Serbuk kayu" / "It is used in the bill of materials for Amos
+  Brennan. Remove it from that bill first…", one Close button, no destructive action.
+- Not blocked: the ordinary destructive confirm is untouched, and deleting still works.
+- Bypassed: refused server-side, as above.
+- ms: "Tidak boleh memadam Serbuk kayu" — complete, including the singular branch.
+
+#### Open, carried forward
+
+- **`BomItemData.name` is still unused.** It is sent on every line and nothing reads it.
+  It is what the discarded option would have displayed; it stays because a read-only view
+  of a bill will want it.
+- Materials already stranded by an earlier delete still show a blank line in the editor.
+  There are none in the demo data now, and the guard stops new ones, but nothing repairs
+  an old one.
+
 ## Phases 3–8 — Modules ⬜
 
 | Phase | Modules | Status |

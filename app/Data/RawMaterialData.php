@@ -26,12 +26,28 @@ use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 #[TypeScript]
 final class RawMaterialData extends Data
 {
+    /** How many product names a row carries before the rest become a count. */
+    private const BOM_PRODUCTS_SHOWN = 5;
+
     public function __construct(
         public int $id,
         public string $name,
         public string $sku,
         public ?string $barcode,
         public Unit $unit,
+        /**
+         * Names of the products whose bill of materials calls for this — capped, so a
+         * material used by two hundred products does not put two hundred strings in
+         * every row of the listing. `bom_product_count` carries the real total.
+         *
+         * Here so the screen can say *why* a material cannot be deleted before anyone
+         * presses Delete, rather than only after. The controller refuses it either way;
+         * this is the half that stops the button being a trap.
+         *
+         * @var list<string>
+         */
+        public array $bom_products,
+        public int $bom_product_count,
         public string $created_at,
         public ?string $creator,
     ) {}
@@ -44,6 +60,8 @@ final class RawMaterialData extends Data
             sku: $rawMaterial->sku,
             barcode: $rawMaterial->barcode,
             unit: $rawMaterial->unit,
+            bom_products: array_values($rawMaterial->products->take(self::BOM_PRODUCTS_SHOWN)->pluck('name')->all()),
+            bom_product_count: $rawMaterial->products->count(),
             created_at: $rawMaterial->created_at->toIso8601String(),
             creator: $rawMaterial->creator?->name,
         );

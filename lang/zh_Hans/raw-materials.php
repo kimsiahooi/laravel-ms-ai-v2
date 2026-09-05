@@ -61,6 +61,8 @@ return [
     ],
 
     'confirm' => [
+        'blocked_title' => '无法删除:name',
+        'blocked_description' => '{1} 它被 :products 的物料清单使用。请先将它从该清单中移除，然后才能删除此原材料。|[2,*] 它被 :count 个产品的物料清单使用（:products）。请先将它从这些清单中移除，然后才能删除此原材料。',
         'delete_title' => '删除 :name？',
         'delete_description' => '已经记录在该材料上的库存会保留其历史 —— 只是无法再为新的单据选择它。',
         'delete_submit' => '删除材料',
@@ -68,6 +70,7 @@ return [
     ],
 
     'toast' => [
+        'in_use' => '{1} 无法删除:name — 它被 :products 的物料清单使用。|[2,*] 无法删除:name — 它被 :count 个产品的物料清单使用（:products）。',
         'created' => '已创建 :name。',
         'updated' => '已更新 :name。',
         'deleted' => '已删除 :name。',

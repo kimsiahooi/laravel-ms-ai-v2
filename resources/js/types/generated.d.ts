@@ -62,6 +62,8 @@ name: string,
 sku: string,
 barcode: string | null,
 unit: App.Enums.Unit,
+bom_products: string[],
+bom_product_count: number,
 created_at: string,
 creator: string | null,
 };
