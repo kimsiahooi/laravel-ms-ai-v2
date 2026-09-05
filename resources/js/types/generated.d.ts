@@ -108,6 +108,7 @@ creator: string | null,
 namespace Enums {
 export type Country = 'MY' | 'SG';
 export type Dimension = 'mass' | 'volume' | 'length' | 'count';
+export type StockMovementReason = 'adjustment' | 'stock_take' | 'transfer_in' | 'transfer_out' | 'purchase_receipt' | 'purchase_return' | 'sales_fulfillment' | 'sales_return' | 'production_consume' | 'production_output';
 export type Unit = 'g' | 'kg' | 't' | 'ml' | 'l' | 'mm' | 'cm' | 'm' | 'pcs' | 'box' | 'roll' | 'sheet' | 'pair' | 'set';
 }
 }

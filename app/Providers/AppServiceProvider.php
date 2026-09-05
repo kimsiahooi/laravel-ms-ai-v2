@@ -2,8 +2,11 @@
 
 namespace App\Providers;
 
+use App\Models\Product;
+use App\Models\RawMaterial;
 use App\Support\ReservedSlugs;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
@@ -25,6 +28,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        $this->configureMorphMap();
         $this->configureDefaults();
     }
 
@@ -46,6 +50,26 @@ class AppServiceProvider extends ServiceProvider
     protected function configureRouting(): void
     {
         Route::pattern('tenant', ReservedSlugs::pattern());
+    }
+
+    /**
+     * Short, stable keys in the `*_type` columns instead of class names.
+     *
+     * `stock_movements` and `warehouse_stocks` are the tables that need this. The ledger
+     * is append-only and outlives any refactor, so storing `App\Models\Product` would
+     * mean a data migration the day that class moves namespace — and every row of a
+     * table nobody is allowed to rewrite. `product` costs less to store and cannot go
+     * stale.
+     *
+     * Non-enforcing on purpose: the passkey and permission tables have morphs of their
+     * own that the package writes, and enforcing would make those a runtime error.
+     */
+    protected function configureMorphMap(): void
+    {
+        Relation::morphMap([
+            'product' => Product::class,
+            'raw_material' => RawMaterial::class,
+        ]);
     }
 
     /**

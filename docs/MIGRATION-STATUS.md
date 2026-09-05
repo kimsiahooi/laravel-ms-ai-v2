@@ -2539,12 +2539,113 @@ Kept in the controller rather than a model hook, matching raw materials.
   site is not a code — but worth revisiting if anyone wants `A` in every warehouse.
 - Demo data hand-made again: four warehouses typed in, one deleted. Fifth module running.
 
+### StockService — the first code that can corrupt data
+
+Everything before this was shape: tables with names on them. This is the first module
+where a bug does not look wrong, it *is* wrong — and stays wrong. `StockService` is the
+only writer of `warehouse_stocks` and `stock_movements`, and every public method locks
+the (warehouse, item) row, applies a signed delta, refuses to go below zero, and appends
+exactly one ledger row inside one transaction.
+
+**`quantity` is signed; there is no direction column.** Positive is in, negative is out.
+One column means a total is `SUM(quantity)` and never a `CASE`, and it makes "in" and
+"out" impossible to disagree with each other.
+
+#### Three deliberate departures from v1
+
+**1. Decimal strings, not floats.** v1 works in `float`. It is *nearly* safe, and it is
+worth being precise about why rather than waving at "floats are inexact": every value
+round-trips through a `decimal(15,4)` column, which scrubs the representation error on
+each write, and two equal decimals parse to two equal doubles — so the `< 0` check
+cannot misfire, which I checked before claiming otherwise. What is not safe is
+accumulation. On-hand is not bounded by the per-movement maximum, and past what a double
+carries, PHP's `precision=14` string conversion drops the tail:
+
+```
+(string) ((float) '99999999999' + (float) '0.0001')  ===  '99999999999'
+```
+
+The ledger would record the `0.0001` and on-hand would not move — the two tables
+drifting apart, which is the one thing the class exists to prevent. Unlikely, silent,
+and free to remove. `bcadd`/`bccomp` at scale 4 cannot do it, and the rest of v2 already
+treats decimals as strings. `ext-bcmath` is now declared in `composer.json`.
+
+**2. Locks taken in a fixed order.** v1's `transfer()` locks the source then the
+destination, so A→B and B→A running together each hold what the other needs. v2 locks
+both rows up front, ordered by warehouse id. **Measured, not assumed** — with the
+ordering removed, 7 of 12 processes deadlocked; with it, 0 of 12.
+
+**3. Nothing is fillable.** Both models are fully guarded and the service uses
+`forceCreate` / `forceFill`. Mass-assignment protection guards a request array reaching
+a model, and there is no request array in that file — a fillable list would only make
+the ledger writable by something that has no business writing it. (v1's reason enum also
+carried an English `label()`; here the words live in `lang/`, which is what
+`check:i18n` exists to enforce.)
+
+### `stock:hammer` — the answer to "no tests" for the one class that needs one
+
+Browser driving is this project's safety net and it works because a person clicks one
+button at a time. That is exactly what cannot check a lock. The failures possible here
+are races: two issues of the last unit both succeeding, a ledger that no longer sums to
+on-hand, two transfers deadlocking. None is reachable by clicking.
+
+So: a tool, not a suite. Nothing runs it in CI, it is invoked by hand, and it reports
+what it saw. The parent sets up a scenario and spawns N real `artisan` child processes —
+a loop in one process shares a connection and never contends.
+
+| Command | What it asks | Result |
+|---|---|---|
+| `stock:hammer` | 20 processes each take 1 unit from a shelf of 10 | **10 took, 10 refused, 0 errored, shelf empty** |
+| `stock:hammer --deadlock` | 12 processes transfer A→B and B→A at once | **12 completed, 0 deadlocked, 10000 units still there** |
+| `stock:hammer --ledger` | 16 processes make mixed movements, then reconcile | **321 movements; on-hand 1000.0000 = ledger 1000.0000** |
+
+The deadlock run was checked against a deliberately broken build first, so a pass means
+something — the same discipline as breaking `DateCell` to prove the hydration detector
+fires.
+
+### A demo seeder, at last
+
+`DemoCatalogSeeder` — a furniture maker: 3 categories, 3 suppliers, 6 materials, 4
+products, 2 sites, 3 warehouses. **Not part of provisioning**; a real workspace does not
+want sample products. Run it by hand:
+
+```
+php artisan tenants:seed --class=DemoCatalogSeeder
+```
+
+**Additive and idempotent — it truncates nothing.** Every row is `firstOrCreate`d on the
+column already unique for it, so it is safe to run against the workspace you are
+currently looking at. Verified: two consecutive runs left all seven counts identical,
+and it matched the existing `PEN` site rather than duplicating it.
+
+Fixed data, not faked: a different catalog every run makes "did that change because of
+my code or the seed?" a question you have to stop and answer. Sizes are chosen for what
+they exercise — a product with no bill, one with a single line (so singular strings have
+something to render), one with four; a material used by nothing (so the filter must not
+offer it); quantities at the column's full scale.
+
+#### Open, carried forward
+
+- **No UI yet.** The engine has no screen — movements are next. Nothing in the app calls
+  `StockService` today except `stock:hammer`.
+- `setLevel()` takes a reason so a stock take and an adjustment can be told apart in the
+  ledger; only `Adjustment` and `StockTake` are reachable until phase 5.
+- `StockMovement::stockable()` is a plain `morphTo()`. A movement whose product has been
+  soft-deleted will not resolve it, so the movements list will need `withTrashed` per
+  type when it is built.
+- The reliance on REPEATABLE READ for the gap lock is documented in the migration but
+  not enforced anywhere. If the isolation level is ever lowered, two concurrent
+  first-movements for the same item could both insert; the unique index turns that into
+  an error rather than corruption, but it would be an ugly one.
+- `laravel.log` carries one stale `ERROR` from the first hammer run, before the
+  mass-assignment fix. Left in place rather than truncated.
+
 ## Phases 3–8 — Modules ⬜
 
 | Phase | Modules | Status |
 |---|---|---|
 | 3 · Catalog | **categories ✅ · suppliers ✅ · customers ✅ · raw materials ✅ · products ✅** (core · image · BOM) | ✅ |
-| 4 · Stock | **locations ✅ · warehouses ✅** · StockService, movements, transfers, reorder levels, stock takes | 🚧 |
+| 4 · Stock | **locations ✅ · warehouses ✅ · StockService ✅** · movements, transfers, reorder levels, stock takes | 🚧 |
 | 5 · Orders | purchase orders, purchase returns, sales orders, sales returns, production orders | ⬜ |
 | 6 · Insights | reports, activity log | ⬜ |
 | 7 · Team & settings | users, roles/RBAC, business settings, document numbering, e-invoice | ⬜ |
