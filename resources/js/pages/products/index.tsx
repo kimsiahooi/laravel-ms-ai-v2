@@ -192,6 +192,7 @@ export default function ProductsIndex({
                                           manyLabel="products.filter.materials_selected"
                                           searchPlaceholder="products.filter.material_search"
                                           emptyMessage="products.filter.material_empty"
+                                          hint="products.filter.material_hint"
                                       />
                                   )}
                               </FilterPanel>

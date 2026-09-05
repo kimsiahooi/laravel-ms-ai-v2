@@ -2349,6 +2349,59 @@ Search and sort re-driven afterwards and unchanged.
   back to 10, so the behaviour is right by accident rather than by intent. Left alone;
   worth folding into the same helper if that trait is touched.
 
+### The multi-select filter now says what it does
+
+Raised after using it: a multi-select does not tell you how the several combine, and
+the reasonable guess is the wrong one. Ticking two materials reads as "narrow to
+products with both"; it actually widens to "products with either". The control gave no
+sign either way — it said "2 materials" and left the rest to be reverse-engineered from
+the results.
+
+Two changes, both wording, one component prop.
+
+**The trigger carries the rule.** `:count materials` → `Any of :count materials`. The
+panel is shut whenever someone is looking at the results, so this is the only place the
+rule can be read without opening anything.
+
+**A hint under the control, pluralised on how many are ticked.** `ComboboxFilter` gains
+an optional `hint`, resolved with `tChoice(hint, picked.length)` — so the sentence
+teaches while the list is short and states the reading once it is not:
+
+| Ticked | Sentence |
+|---|---|
+| 0 or 1 | Tick more than one to widen the search — a product needs only one of them. |
+| 2+ | Showing products that use any of these :count materials, not products that use all of them. |
+
+The component does not know that "any" is the rule; it knows there is a sentence worth
+saying and how to pluralise it. Both halves live in `products.php`, so a later filter
+with different semantics writes its own.
+
+Wired through `aria-describedby` on the trigger, matching `TextField` — the hint is
+part of the control, not a paragraph that happens to sit near it.
+
+#### Verified in a real browser (Playwright, SSR on)
+
+- 0 ticked → teaching sentence. 1 ticked → **1 row**, still teaching. 2 ticked → **6
+  rows**, and the sentence switches to the stating form. The row count going *up* is
+  the proof the sentence is true.
+- `aria-describedby` on the trigger resolves to the hint element, checked by id rather
+  than by "a `<p>` is nearby".
+- Trigger reads "Any of 2 materials" / "Mana-mana daripada 2 bahan" / "2 种物料中的任一种".
+- 375: the panel is a bottom sheet there, and the hint fits inside it with no sideways
+  body scroll.
+- zh_Hans used 材料 in the first draft while the rest of the block says 物料; caught and
+  aligned before it shipped.
+
+#### Not done, considered
+
+- **An Any/All toggle.** Still declined — the question "products using all of these
+  materials" is a bill-of-materials query, not a list filter, and a control offering it
+  would need a second server path for a question nobody has asked yet.
+- **Naming the picked materials in the sentence** ("uses Serbuk kayu or Francis Diaz").
+  Reads better, but joining a list with a localised "or" wants `Intl.ListFormat`, and
+  unpinned `Intl` in render output is the exact hydration hazard CLAUDE.md forbids.
+  The count plus the checkmarks in the list carry it.
+
 ## Phase 4 — Stock 🚧
 
 ### Sites — the first stock table, and no quantities on it

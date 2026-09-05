@@ -16,7 +16,8 @@ return [
     'filter' => [
         'material' => 'Built from',
         'all_materials' => 'Any material',
-        'materials_selected' => ':count materials',
+        'materials_selected' => 'Any of :count materials',
+        'material_hint' => '[0,1] Tick more than one to widen the search — a product needs only one of them.|[2,*] Showing products that use any of these :count materials, not products that use all of them.',
         'material_search' => 'Search materials…',
         'material_empty' => 'No materials match.',
         'unit' => 'Unit',

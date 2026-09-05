@@ -16,7 +16,8 @@ return [
     'filter' => [
         'material' => '使用物料',
         'all_materials' => '任何物料',
-        'materials_selected' => ':count 项物料',
+        'materials_selected' => ':count 种物料中的任一种',
+        'material_hint' => '[0,1] 勾选多项可扩大范围——产品只需含其中一种即可。|[2,*] 正在显示使用这 :count 种物料中任一种的产品，而非同时使用全部物料的产品。',
         'material_search' => '搜索物料…',
         'material_empty' => '没有匹配的物料。',
         'unit' => '单位',

@@ -404,6 +404,7 @@ export type TranslationKey =
     | 'products.filter.all_units'
     | 'products.filter.material'
     | 'products.filter.material_empty'
+    | 'products.filter.material_hint'
     | 'products.filter.material_search'
     | 'products.filter.materials_selected'
     | 'products.filter.unit'

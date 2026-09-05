@@ -60,6 +60,7 @@ export function ComboboxFilter({
     manyLabel,
     searchPlaceholder,
     emptyMessage,
+    hint,
 }: {
     /** The ids in force, comma-separated, or `''` for no filter. */
     value: string;
@@ -73,9 +74,20 @@ export function ComboboxFilter({
     manyLabel: TranslationKey;
     searchPlaceholder: TranslationKey;
     emptyMessage: TranslationKey;
+    /**
+     * What ticking several actually does, under the control.
+     *
+     * Pluralised on how many are ticked, not on the data: a multi-select is only
+     * ambiguous once there are two in it, so the sentence is free to teach the
+     * capability while the list is short and state the reading once it is not. Both
+     * halves stay in the module's own lang file — this component does not know that
+     * "any" is the rule, only that there is one worth saying.
+     */
+    hint?: TranslationKey;
 }) {
-    const { t } = useTranslation();
+    const { t, tChoice } = useTranslation();
     const id = useId();
+    const hintId = `${id}-hint`;
     const [open, setOpen] = useState(false);
 
     const applied = useMemo(
@@ -151,6 +163,7 @@ export function ComboboxFilter({
                         size="sm"
                         role="combobox"
                         aria-expanded={open}
+                        aria-describedby={hint ? hintId : undefined}
                         className="w-full justify-between font-normal"
                     >
                         <span className="truncate">{triggerText}</span>
@@ -233,6 +246,17 @@ export function ComboboxFilter({
                     </Command>
                 </PopoverContent>
             </Popover>
+
+            {/*
+                Under the control rather than inside the popover: the popover is shut
+                whenever someone is looking at the results, which is exactly when they
+                are working out what the filter did.
+            */}
+            {hint && (
+                <p id={hintId} className="text-muted-foreground text-xs">
+                    {tChoice(hint, picked.length, { count: picked.length })}
+                </p>
+            )}
         </div>
     );
 }

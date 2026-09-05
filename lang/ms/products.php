@@ -17,7 +17,8 @@ return [
     'filter' => [
         'material' => 'Diperbuat daripada',
         'all_materials' => 'Mana-mana bahan',
-        'materials_selected' => ':count bahan',
+        'materials_selected' => 'Mana-mana daripada :count bahan',
+        'material_hint' => '[0,1] Tandakan lebih daripada satu untuk meluaskan carian — produk hanya perlukan satu daripadanya.|[2,*] Menunjukkan produk yang menggunakan mana-mana daripada :count bahan ini, bukan produk yang menggunakan kesemuanya.',
         'material_search' => 'Cari bahan…',
         'material_empty' => 'Tiada bahan sepadan.',
         'unit' => 'Unit',
