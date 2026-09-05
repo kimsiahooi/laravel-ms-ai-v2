@@ -68,6 +68,7 @@ return [
     'confirm' => [
         'blocked_title' => 'Cannot delete :name',
         'blocked_description' => '{1} It is used in the bill of materials for :products. Remove it from that bill first, then the material can be deleted.|[2,*] It is used in the bills of materials for :count products (:products). Remove it from those bills first, then the material can be deleted.',
+        'blocked_link' => '{1} View this product|[2,*] View all :count products',
         'delete_title' => 'Delete :name?',
         'delete_description' => 'Stock already recorded against this material keeps its history — you simply will not be able to pick it for anything new.',
         'delete_submit' => 'Delete material',

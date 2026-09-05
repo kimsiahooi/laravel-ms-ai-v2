@@ -68,6 +68,7 @@ return [
     'confirm' => [
         'blocked_title' => '无法删除:name',
         'blocked_description' => '{1} 它被 :products 的物料清单使用。请先将它从该清单中移除，然后才能删除此原材料。|[2,*] 它被 :count 个产品的物料清单使用（:products）。请先将它从这些清单中移除，然后才能删除此原材料。',
+        'blocked_link' => '{1} 查看该产品|[2,*] 查看全部 :count 个产品',
         'delete_title' => '删除 :name？',
         'delete_description' => '已经记录在该材料上的库存会保留其历史 —— 只是无法再为新的单据选择它。',
         'delete_submit' => '删除材料',

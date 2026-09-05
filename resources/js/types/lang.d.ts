@@ -390,6 +390,7 @@ export type TranslationKey =
     | 'raw-materials.column.sku'
     | 'raw-materials.column.unit'
     | 'raw-materials.confirm.blocked_description'
+    | 'raw-materials.confirm.blocked_link'
     | 'raw-materials.confirm.blocked_title'
     | 'raw-materials.confirm.delete_description'
     | 'raw-materials.confirm.delete_submit'

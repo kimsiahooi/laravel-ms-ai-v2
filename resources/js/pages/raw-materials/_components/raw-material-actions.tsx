@@ -1,3 +1,4 @@
+import { Link } from '@inertiajs/react';
 import { useState } from 'react';
 import { RowActions } from '@/components/data/row-actions';
 import { ConfirmDialog } from '@/components/feedback/confirm-dialog';
@@ -5,6 +6,7 @@ import { usePermissions } from '@/hooks/use-permissions';
 import { useResourceDelete } from '@/hooks/use-resource-delete';
 import { useTranslation } from '@/hooks/use-translation';
 import { RawMaterialFormDialog } from '@/pages/raw-materials/_components/raw-material-form-dialog';
+import { index as products } from '@/routes/products';
 import { destroy } from '@/routes/raw-materials';
 
 type RawMaterial = App.Data.RawMaterialData;
@@ -23,6 +25,7 @@ export function RawMaterialActions({
     );
 
     const usedByCount = rawMaterial.bom_product_count;
+    const canSeeProducts = can('products.view');
     // The names are capped by the DTO, so say so when the list is short of the count.
     // An ellipsis rather than "and N more": it is punctuation, and the sentence around
     // it already carries the real total.
@@ -65,7 +68,37 @@ export function RawMaterialActions({
                         usedByCount,
                         { products: usedByNames },
                     )}
-                />
+                >
+                    {/*
+                        The way out of the dialog. It names the products but the list
+                        is capped at five, so with more than that the sentence ends in
+                        an ellipsis and there is nowhere to read the rest — this is
+                        where the rest is.
+
+                        The destination is the products list filtered by this material,
+                        which is the filter built for exactly this question. It cannot
+                        land on nothing: the link only renders when a bill uses the
+                        material, which is the same condition the filter matches on.
+
+                        No link without the destination's view permission, the same
+                        trade FilingLink makes — AuthorizeTenantRoute would 403 it, and
+                        a link that 403s is worse than a sentence that stops.
+                    */}
+                    {canSeeProducts && (
+                        <Link
+                            href={products(undefined, {
+                                query: { material: String(rawMaterial.id) },
+                            })}
+                            className="rounded-sm text-link underline underline-offset-4 ring-offset-background transition-colors hover:text-link-hover focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2"
+                        >
+                            {tChoice(
+                                'raw-materials.confirm.blocked_link',
+                                usedByCount,
+                                { count: usedByCount },
+                            )}
+                        </Link>
+                    )}
+                </ConfirmDialog>
             ) : (
                 <ConfirmDialog
                     open={remove.confirming}

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 import {
     Dialog,
     DialogContent,
@@ -44,7 +44,18 @@ type Confirmable = Common & {
  * a confirmable dialog with no button and a blocked one carrying an `onConfirm` that
  * can never run.
  */
-type Blocked = Common & { blocked: true };
+type Blocked = Common & {
+    blocked: true;
+    /**
+     * Somewhere to go instead. A blocked dialog states a problem and then offers no
+     * way to work on it, which is the one thing it can improve on: the row that
+     * caused the block is on another screen, and this is the shortest path to it.
+     *
+     * Only on the blocked variant. A confirmable dialog already has the action
+     * someone opened it for, and a second one beside it competes for the press.
+     */
+    children?: ReactNode;
+};
 
 type Props = Confirmable | Blocked;
 
@@ -91,6 +102,10 @@ export function ConfirmDialog(props: Props) {
                     <DialogTitle>{title}</DialogTitle>
                     <DialogDescription>{description}</DialogDescription>
                 </DialogHeader>
+
+                {props.blocked === true && props.children !== undefined && (
+                    <div className="text-sm">{props.children}</div>
+                )}
 
                 {confirmPhrase !== undefined && (
                     <div className="space-y-2">
