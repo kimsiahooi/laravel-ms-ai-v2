@@ -33,8 +33,16 @@ return [
         'generic' => 'Sesuatu tidak kena.',
     ],
 
+    'filter' => [
+        'trigger' => 'Penapis',
+        'description' => 'Tapiskan senarai kepada apa yang anda cari.',
+        'clear' => 'Kosongkan',
+        'clear_all' => 'Kosongkan semua penapis',
+    ],
+
     'list' => [
         'no_matches' => 'Tiada padanan',
+        'no_matches_filtered' => 'Tiada apa-apa di sini sepadan dengan penapis yang anda gunakan.',
         'no_matches_hint' => 'Tiada apa-apa sepadan dengan “:search”.',
         'page_empty' => 'Tiada apa-apa pada halaman ini',
         'page_empty_hint' => 'Baris itu sudah tiada — senarai mungkin menjadi lebih pendek sejak halaman ini dibuka.',

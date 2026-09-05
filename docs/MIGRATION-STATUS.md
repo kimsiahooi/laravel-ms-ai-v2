@@ -2143,6 +2143,71 @@ column.
 - `per_page` accepts only 10/25/50/100, so a deep link with anything else silently
   becomes 10. Pre-existing, noticed while testing the page reset, not changed.
 
+### Filters moved behind one button, before there were enough to need it
+
+Raised the point that filters will keep arriving and the toolbar row will not hold them.
+Correct: the plan's later lists want warehouse, direction and a date range on stock
+movements; customer, status and date on orders. Three or four controls, which a toolbar
+row cannot hold on a phone — they stack, and push the table they exist to narrow off the
+screen.
+
+Built now rather than when the fourth one arrives, because the shape decides how every
+later list is written. The plumbing did not change: `filters.extra` and `FilterApi` from
+the previous commit are what this renders.
+
+- **`FilterPanel`** — one button holding every filter a list has. A popover on a desk, a
+  bottom sheet on a phone; the same children either way. `useIsMobile` uses
+  `useSyncExternalStore` with a server snapshot, so hydration cannot disagree, and the
+  panel is shut on first render where the difference is invisible anyway.
+- **The count on the button is the load-bearing part.** A filter behind a button is a
+  filter nobody can see; arriving from a link with rows missing and nothing to explain
+  it is the failure this design invites. The badge is server-rendered — it is in the SSR
+  HTML, not painted after hydration.
+- `SelectFilter` gained a real `<Label>`. Stacked in a panel, "All units" says what is
+  selected but not what it selects.
+- `FilterApi` gained `count` and `clear`. Clearing three filters is **one** visit and one
+  history entry, not three of each.
+
+#### Two real bugs, found by driving it
+
+Filtering to zero rows was broken, and had been since the unit filter landed — the
+earlier pass never hit an empty result.
+
+- **The toolbar disappeared.** It rendered on `page.total > 0 || searching`, so a filter
+  matching nothing took away the only control that could undo it. The filter could only
+  be removed by editing the URL. Now `page.total > 0 || narrowed`.
+- **It claimed the list was empty.** Zero rows with a filter applied showed "No products
+  yet — Add the first one…", which is false: there were six, and the filter excluded
+  them. Now it shows the no-match state, with its own sentence when no search term is
+  involved rather than "nothing matches ''".
+
+The no-match state offers one button per thing that can be undone — "Clear search" and
+"Clear all filters" — rather than one compound label that would have to describe every
+combination of the two.
+
+#### Verified in a real browser (Playwright, SSR on)
+
+- Closed: `[ Filters ]`. With `?unit=ml`: `[ Filters 1 ] [ Clear ]`, badge present in the
+  **server** HTML (`Filters<span data-slot="badge"…`), one matching row.
+- Both clear paths work: "Clear all filters" inside the panel, and the toolbar shortcut.
+  Each drops the key from the URL and restores all six rows.
+- 375px: a bottom sheet, full width, anchored to the bottom, titled, with the labelled
+  control inside and no horizontal overflow.
+- **The multi-filter case was proven rather than assumed.** A second filter was added to
+  products temporarily: the badge read 2, the panel stacked two labelled controls, and
+  `?unit=kg&category=1` (zero matches) kept its toolbar and offered both escape hatches.
+  Reverted afterwards — the controller and page are back to one filter.
+- Search with no matches still names the term and offers only "Clear search"; no filter
+  badge. Unchanged.
+- Console: 0 errors.
+
+#### Open, carried forward
+
+- **Products still has one filter.** Category and supplier would now be about ten lines
+  each, and the panel is built for them, but they were not asked for.
+- The panel has no "apply" step — each control visits immediately. Fine for one or two;
+  with four, four visits to set four filters may want batching into one.
+
 ## Phases 3–8 — Modules ⬜
 
 | Phase | Modules | Status |

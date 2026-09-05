@@ -61,6 +61,10 @@ export type ResourceFilters = {
 export type FilterApi = {
     values: Record<string, string>;
     set: (key: string, value: string) => void;
+    /** How many are in force — what the Filters button counts. */
+    count: number;
+    /** Drop all of them in one visit, rather than one request per key. */
+    clear: () => void;
 };
 
 export type FlashToast = {

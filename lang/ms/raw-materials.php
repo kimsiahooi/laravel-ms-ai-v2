@@ -15,7 +15,7 @@ return [
     'search_placeholder' => 'Cari nama, SKU atau kod bar…',
 
     'filter' => [
-        'unit' => 'Tapis mengikut unit',
+        'unit' => 'Unit',
         'all_units' => 'Semua unit',
     ],
 

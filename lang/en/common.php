@@ -43,8 +43,16 @@ return [
         'generic' => 'Something went wrong.',
     ],
 
+    'filter' => [
+        'trigger' => 'Filters',
+        'description' => 'Narrow the list down to what you are looking for.',
+        'clear' => 'Clear',
+        'clear_all' => 'Clear all filters',
+    ],
+
     'list' => [
         'no_matches' => 'No matches',
+        'no_matches_filtered' => 'Nothing here matches the filters you have applied.',
         'no_matches_hint' => 'Nothing matched “:search”.',
         'page_empty' => 'Nothing on this page',
         'page_empty_hint' => 'Those rows are gone — the list may have got shorter since this page was opened.',

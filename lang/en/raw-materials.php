@@ -14,7 +14,7 @@ return [
     'search_placeholder' => 'Search name, SKU or barcode…',
 
     'filter' => [
-        'unit' => 'Filter by unit',
+        'unit' => 'Unit',
         'all_units' => 'All units',
     ],
 

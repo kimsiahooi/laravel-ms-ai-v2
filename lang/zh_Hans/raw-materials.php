@@ -14,7 +14,7 @@ return [
     'search_placeholder' => '搜索名称、SKU 或条码…',
 
     'filter' => [
-        'unit' => '按单位筛选',
+        'unit' => '单位',
         'all_units' => '所有单位',
     ],
 

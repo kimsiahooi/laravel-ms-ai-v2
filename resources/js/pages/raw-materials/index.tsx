@@ -3,6 +3,7 @@ import { Boxes } from 'lucide-react';
 import { ColumnHeader } from '@/components/data/column-header';
 import { DataTable } from '@/components/data/data-table';
 import { DateCell } from '@/components/data/date-cell';
+import { FilterPanel } from '@/components/data/filter-panel';
 import { SelectFilter } from '@/components/data/select-filter';
 import { columnsFor } from '@/components/data/table';
 import { EmptyState } from '@/components/feedback/empty-state';
@@ -136,16 +137,20 @@ export default function RawMaterialsIndex({
                     // should not carry a control that cannot change the answer.
                     unitsInUse.length > 1
                         ? (filter) => (
-                              <SelectFilter
-                                  value={filter.values.unit ?? ''}
-                                  onChange={(unit) => filter.set('unit', unit)}
-                                  options={unitsInUse.map((unit) => ({
-                                      value: unit,
-                                      label: `units.name.${unit}` as const,
-                                  }))}
-                                  allLabel="raw-materials.filter.all_units"
-                                  ariaLabel="raw-materials.filter.unit"
-                              />
+                              <FilterPanel filter={filter}>
+                                  <SelectFilter
+                                      value={filter.values.unit ?? ''}
+                                      onChange={(unit) =>
+                                          filter.set('unit', unit)
+                                      }
+                                      options={unitsInUse.map((unit) => ({
+                                          value: unit,
+                                          label: `units.name.${unit}` as const,
+                                      }))}
+                                      label="raw-materials.filter.unit"
+                                      allLabel="raw-materials.filter.all_units"
+                                  />
+                              </FilterPanel>
                           )
                         : undefined
                 }

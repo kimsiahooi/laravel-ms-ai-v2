@@ -154,8 +154,21 @@ export function DataTable<TRow extends RowData>({
     const filter = useMemo<FilterApi>(
         () => ({
             values: filters.extra,
+            count: Object.keys(filters.extra).length,
             set: (key, value) =>
                 visit({ [key]: value || undefined, page: undefined }),
+            // One visit, not one per key: clearing three filters should be a single
+            // request and a single history entry, not three of each.
+            clear: () =>
+                visit({
+                    ...Object.fromEntries(
+                        Object.keys(filters.extra).map((key) => [
+                            key,
+                            undefined,
+                        ]),
+                    ),
+                    page: undefined,
+                }),
         }),
         [filters.extra, visit],
     );
@@ -202,11 +215,15 @@ export function DataTable<TRow extends RowData>({
 
     const rows = table.getRowModel().rows;
     const searching = filters.search !== '';
+    // Narrowed by anything at all. The distinction matters twice below: a list showing
+    // nothing because of a filter is not an empty list, and hiding the toolbar in that
+    // state would take away the only control that can undo it.
+    const narrowed = searching || filter.count > 0;
 
     return (
         <Card className="gap-0 overflow-hidden py-0">
             {/* Nothing to search when nothing exists — the box would only be furniture. */}
-            {(page.total > 0 || searching) && (
+            {(page.total > 0 || narrowed) && (
                 <ListToolbar
                     search={filters.search}
                     placeholder={searchPlaceholder}
@@ -306,25 +323,46 @@ export function DataTable<TRow extends RowData>({
                         ))}
                     </TableBody>
                 </Table>
-            ) : searching ? (
+            ) : narrowed ? (
                 <div className="px-4 py-12">
                     <EmptyState
                         icon={SearchX}
                         title={noMatch?.title ?? t('common.list.no_matches')}
                         description={
-                            noMatch?.description ??
-                            t('common.list.no_matches_hint', {
-                                search: filters.search,
-                            })
+                            // The search wording names the term, which is only
+                            // meaningful when there is one. A list narrowed by a filter
+                            // alone gets its own sentence rather than "nothing matches
+                            // ''".
+                            searching
+                                ? (noMatch?.description ??
+                                  t('common.list.no_matches_hint', {
+                                      search: filters.search,
+                                  }))
+                                : t('common.list.no_matches_filtered')
                         }
                         action={
-                            <Button
-                                type="button"
-                                variant="outline"
-                                onClick={() => onSearch('')}
-                            >
-                                {t('common.actions.clear_search')}
-                            </Button>
+                            // One button per thing that can be undone, rather than one
+                            // compound label that has to describe every combination.
+                            <>
+                                {searching && (
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={() => onSearch('')}
+                                    >
+                                        {t('common.actions.clear_search')}
+                                    </Button>
+                                )}
+                                {filter.count > 0 && (
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={filter.clear}
+                                    >
+                                        {t('common.filter.clear_all')}
+                                    </Button>
+                                )}
+                            </>
                         }
                     />
                 </div>
