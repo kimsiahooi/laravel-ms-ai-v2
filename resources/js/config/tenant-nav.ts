@@ -1,4 +1,5 @@
 import {
+    ArrowLeftRight,
     Boxes,
     Building,
     LayoutGrid,
@@ -14,6 +15,7 @@ import { index as customers } from '@/routes/customers';
 import { index as locations } from '@/routes/locations';
 import { index as products } from '@/routes/products';
 import { index as rawMaterials } from '@/routes/raw-materials';
+import { index as stockMovements } from '@/routes/stock-movements';
 import { index as suppliers } from '@/routes/suppliers';
 import { index as warehouses } from '@/routes/warehouses';
 import type { TenantNavGroup } from '@/types/navigation';
@@ -101,6 +103,12 @@ export function tenantNavGroups(
                     href: warehouses(),
                     icon: Warehouse,
                     permission: 'warehouses.view',
+                },
+                {
+                    title: 'stock-movements.title',
+                    href: stockMovements(),
+                    icon: ArrowLeftRight,
+                    permission: 'stock-movements.view',
                 },
             ],
         },

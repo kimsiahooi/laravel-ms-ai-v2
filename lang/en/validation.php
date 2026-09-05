@@ -33,7 +33,11 @@ return [
     'gt' => [
         'numeric' => 'The :attribute field must be greater than :value.',
     ],
+    'gte' => [
+        'numeric' => 'The :attribute field must be greater than or equal to :value.',
+    ],
     'image' => 'The :attribute field must be an image.',
+    'in' => 'The selected :attribute is invalid.',
     'max' => [
         'array' => 'The :attribute field must not have more than :max items.',
         'file' => 'The :attribute field must not be greater than :max kilobytes.',
@@ -69,6 +73,7 @@ return [
         'description' => 'description',
         'email' => 'email',
         'image' => 'photo',
+        'item' => 'item',
         'items' => 'materials',
         'items.*.quantity' => 'quantity',
         'items.*.raw_material_id' => 'material',
@@ -77,6 +82,7 @@ return [
         'notes' => 'notes',
         'phone' => 'phone',
         'postcode' => 'postcode',
+        'quantity' => 'quantity',
         'registration_no' => 'registration number',
         'remove_image' => 'remove photo',
         'sku' => 'SKU',
@@ -86,7 +92,9 @@ return [
         'supplier_id' => 'supplier',
         'tax_id' => 'tax ID',
         'tin' => 'TIN',
+        'type' => 'type',
         'unit' => 'unit',
+        'warehouse_id' => 'warehouse',
     ],
 
 ];

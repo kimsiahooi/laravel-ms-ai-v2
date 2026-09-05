@@ -399,8 +399,20 @@ type DecimalOptions = {
     scale?: number;
     /** `max:M`. Defaults to what the column holds. */
     max?: number;
-    /** `gt:N`. The lower bound the value must exceed. */
+    /**
+     * `gt:N`. The lower bound the value must exceed. Defaults to 0, which is the right
+     * bound for a quantity being moved.
+     */
     gt?: number;
+    /**
+     * `gte:N` instead of `gt:N`, when the bound itself is a legitimate answer.
+     *
+     * The two are mutually exclusive and `gte` wins if both are given. It exists for
+     * one real case: a movement that *sets* a level rather than moving an amount, where
+     * zero means "the shelf is empty" and refusing it would make an empty shelf
+     * unrecordable. See `stockMovementSchema`.
+     */
+    gte?: number;
 };
 
 /**
@@ -425,6 +437,7 @@ export function decimal({
     scale = DECIMAL_SCALE,
     max = DECIMAL_MAX,
     gt = 0,
+    gte,
 }: DecimalOptions) {
     // Laravel's own `decimal` rule, verbatim: an optional sign, digits, an optional
     // point, digits. It is what makes `1e3` — which `numeric` accepts — a failure here
@@ -463,7 +476,11 @@ export function decimal({
                 return fail('validation.decimal', { decimal: `0-${scale}` });
             }
 
-            if (parsed <= gt) {
+            if (gte !== undefined) {
+                if (parsed < gte) {
+                    return fail('validation.gte.numeric', { value: gte });
+                }
+            } else if (parsed <= gt) {
                 return fail('validation.gt.numeric', { value: gt });
             }
 

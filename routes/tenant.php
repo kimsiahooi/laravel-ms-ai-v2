@@ -11,6 +11,7 @@ use App\Http\Controllers\Tenant\LocationController;
 use App\Http\Controllers\Tenant\MediaController;
 use App\Http\Controllers\Tenant\ProductController;
 use App\Http\Controllers\Tenant\RawMaterialController;
+use App\Http\Controllers\Tenant\StockMovementController;
 use App\Http\Controllers\Tenant\SupplierController;
 use App\Http\Controllers\Tenant\WarehouseController;
 use App\Http\Middleware\AuthorizeTenantRoute;
@@ -126,6 +127,13 @@ Route::middleware(['web', InitializeTenancyByPath::class, SetTenantUrlDefault::c
                 Route::post('/', [WarehouseController::class, 'store'])->name('store');
                 Route::patch('{warehouse}', [WarehouseController::class, 'update'])->name('update');
                 Route::delete('{warehouse}', [WarehouseController::class, 'destroy'])->name('destroy');
+            });
+
+            // The ledger. No update and no delete: it is append-only, and a mistake is
+            // corrected by recording the opposite movement — see the controller.
+            Route::prefix('stock-movements')->name('stock-movements.')->group(function (): void {
+                Route::get('/', [StockMovementController::class, 'index'])->name('index');
+                Route::post('/', [StockMovementController::class, 'store'])->name('store');
             });
 
             // Every uploaded file in the workspace, served from one place: a product

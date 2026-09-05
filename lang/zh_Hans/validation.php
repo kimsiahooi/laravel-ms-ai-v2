@@ -18,7 +18,11 @@ return [
     'gt' => [
         'numeric' => ':attribute必须大于 :value。',
     ],
+    'gte' => [
+        'numeric' => ':attribute必须大于或等于 :value。',
+    ],
     'image' => ':attribute必须是图片。',
+    'in' => '所选的:attribute无效。',
     'max' => [
         'array' => ':attribute最多只能有 :max 项。',
         'file' => ':attribute不能大于 :max KB。',
@@ -49,6 +53,7 @@ return [
         'description' => '描述',
         'email' => '电子邮箱',
         'image' => '图片',
+        'item' => '项目',
         'items' => '物料',
         'items.*.quantity' => '数量',
         'items.*.raw_material_id' => '原材料',
@@ -57,6 +62,7 @@ return [
         'notes' => '备注',
         'phone' => '电话',
         'postcode' => '邮编',
+        'quantity' => '数量',
         'registration_no' => '注册号',
         'remove_image' => '移除图片',
         'sku' => 'SKU',
@@ -66,7 +72,9 @@ return [
         'supplier_id' => '供应商',
         'tax_id' => '税号',
         'tin' => '税务识别号',
+        'type' => '类型',
         'unit' => '单位',
+        'warehouse_id' => '仓库',
     ],
 
 ];

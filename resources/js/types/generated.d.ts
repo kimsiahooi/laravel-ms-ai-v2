@@ -77,6 +77,25 @@ bom_product_count: number,
 created_at: string,
 creator: string | null,
 };
+export type StockItemOptionData = {
+value: string,
+name: string,
+sku: string,
+type: App.Enums.StockItemType,
+};
+export type StockMovementData = {
+id: number,
+warehouse: string,
+site: string,
+item: string | null,
+item_sku: string | null,
+item_type: App.Enums.StockItemType,
+quantity: string,
+reason: App.Enums.StockMovementReason,
+user: string | null,
+notes: string | null,
+created_at: string,
+};
 export type SupplierData = {
 id: number,
 name: string,
@@ -104,10 +123,16 @@ address: string | null,
 created_at: string,
 creator: string | null,
 };
+export type WarehouseOptionData = {
+id: number,
+name: string,
+site: string,
+};
 }
 namespace Enums {
 export type Country = 'MY' | 'SG';
 export type Dimension = 'mass' | 'volume' | 'length' | 'count';
+export type StockItemType = 'product' | 'raw_material';
 export type StockMovementReason = 'adjustment' | 'stock_take' | 'transfer_in' | 'transfer_out' | 'purchase_receipt' | 'purchase_return' | 'sales_fulfillment' | 'sales_return' | 'production_consume' | 'production_output';
 export type Unit = 'g' | 'kg' | 't' | 'ml' | 'l' | 'mm' | 'cm' | 'm' | 'pcs' | 'box' | 'roll' | 'sheet' | 'pair' | 'set';
 }

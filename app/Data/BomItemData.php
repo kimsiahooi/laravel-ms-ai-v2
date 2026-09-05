@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Data;
 
 use App\Models\BomItem;
+use App\Support\Decimals;
 use Spatie\LaravelData\Data;
 use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
@@ -41,19 +42,7 @@ final class BomItemData extends Data
             // its material, and the relation is withTrashed() so a soft-deleted one
             // still resolves rather than blanking the row.
             name: $item->rawMaterial->name,
-            quantity: self::trim($item->quantity),
+            quantity: Decimals::trim($item->quantity),
         );
-    }
-
-    /**
-     * `2.5000` → `2.5`, `10.0000` → `10`, `0.1000` → `0.1`.
-     *
-     * The `.` guard is load-bearing: trimming zeros off `10` without it gives `1`.
-     */
-    private static function trim(string $quantity): string
-    {
-        return str_contains($quantity, '.')
-            ? rtrim(rtrim($quantity, '0'), '.')
-            : $quantity;
     }
 }

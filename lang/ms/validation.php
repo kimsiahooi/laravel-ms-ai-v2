@@ -19,7 +19,11 @@ return [
     'gt' => [
         'numeric' => 'Ruangan :attribute mestilah lebih besar daripada :value.',
     ],
+    'gte' => [
+        'numeric' => 'Ruangan :attribute mestilah lebih besar daripada atau sama dengan :value.',
+    ],
     'image' => 'Ruangan :attribute mestilah imej.',
+    'in' => ':attribute yang dipilih tidak sah.',
     'max' => [
         'array' => 'Ruangan :attribute tidak boleh mempunyai lebih daripada :max item.',
         'file' => 'Ruangan :attribute tidak boleh melebihi :max kilobait.',
@@ -50,6 +54,7 @@ return [
         'description' => 'keterangan',
         'email' => 'e-mel',
         'image' => 'gambar',
+        'item' => 'item',
         'items' => 'bahan',
         'items.*.quantity' => 'kuantiti',
         'items.*.raw_material_id' => 'bahan mentah',
@@ -58,6 +63,7 @@ return [
         'notes' => 'nota',
         'phone' => 'telefon',
         'postcode' => 'poskod',
+        'quantity' => 'kuantiti',
         'registration_no' => 'nombor pendaftaran',
         'remove_image' => 'buang gambar',
         'sku' => 'SKU',
@@ -67,7 +73,9 @@ return [
         'supplier_id' => 'pembekal',
         'tax_id' => 'nombor cukai',
         'tin' => 'TIN',
+        'type' => 'jenis',
         'unit' => 'unit',
+        'warehouse_id' => 'gudang',
     ],
 
 ];

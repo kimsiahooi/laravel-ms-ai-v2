@@ -2640,12 +2640,103 @@ offer it); quantities at the column's full scale.
 - `laravel.log` carries one stale `ERROR` from the first hammer run, before the
   mass-assignment fix. Left in place rather than truncated.
 
+### Stock movements — the first screen that calls the engine
+
+List and create, and no edit or delete anywhere in the module. That is not an omission:
+the ledger is append-only, a mistake is corrected by recording the opposite movement,
+and an editable ledger is a ledger nobody can rely on.
+
+**One picker over two tables.** A movement is recorded against a product *or* a raw
+material. Two form fields — a type and an id — would mean two error keys for one
+control, and whichever failed, the picker could only underline itself once. So the
+value is a single string, `product:5`, and `App\Support\StockItem` is the only place
+that knows the shape. `decode()` is the validation as well as the parser: it returns
+null for a wrong shape, an unknown type, a missing id **or a soft-deleted row** — that
+last one being why it queries through the model rather than trusting the id, which is
+what `ActiveExists` does for an ordinary foreign key and cannot do here, because the
+table to look in is part of the value.
+
+**Every field on the wire is a value, not a sentence.** v1's `StockMovementData` shipped
+`"KL HQ · Main Store"`, `"Oak board · Raw material"` and an English `reason` label —
+three strings assembled on a server that cannot see the screen, in a language it had to
+pick. Here the site and the warehouse arrive separately, and the type and reason arrive
+as enum values the browser looks up. Same for the warehouse picker: `WarehouseOptionData`
+carries `name` and `site` rather than a joined label.
+
+**The type is a segmented control.** Three options, the first decision, and two of them
+opposites — a dropdown that has to be opened before it will admit it offers "out" is a
+worse way to say that. It also changes what the box below it means, so the schema is
+rebuilt when it changes: `in` and `out` refuse zero, because moving nothing appends a
+row to an append-only ledger saying nothing happened; `set` allows it, because "the
+shelf is empty" is a real correction. The server draws the identical line.
+
+| Piece | Note |
+|---|---|
+| `StockItem` + `StockItemType` | The merged picker value, and the enum whose cases are the morph-map keys |
+| `StockMovementData` | Structured; `quantity` a signed decimal string |
+| `BuildsStockPickers` | Warehouses by site-then-name, items grouped products-then-materials |
+| `StockPickerField` | Two-line rows and group headings — `ComboboxField` can express neither |
+| `QuantityCell` | Explicit `+`, `destructive` only for outward, `tabular-nums` |
+| `decimal()` gained `gte` | For the one case where the bound itself is a legitimate answer |
+
+Two things the driving found and fixed. **Trailing zeros**: `decimal(15,4)` returns
+`40.5000`, so every ledger row read `+40.5000` — four digits of noise saying only how
+the column was declared. `Decimals::trim()` was promoted out of `BomItemData` on its
+second consumer (ARCHITECTURE's rule of three allows the second when the logic is
+non-trivial, and the `.` guard that stops `10` becoming `1` qualifies), and the refusal
+message trims too — "Only 18 available" rather than "Only 18.0000 available". **The
+warehouse vanished on a phone**: below `md` the row said what moved and how much but not
+where, which is half a record. It now rides under the item name, the same trick the
+other lists use.
+
+#### Verified in a real browser (Playwright, SSR on)
+
+- Empty submit: all three required errors, and **zero requests** — the gate held.
+- The refusal path, which is the whole point of the engine: taking 99 of 18 came back on
+  the **quantity field** as "Only 18 available, and this would take 99." Not a toast —
+  that field is the one that is wrong.
+- `out 0` refused ("must be greater than 0"), `set 0` accepted, `1.23456` refused for
+  scale. The type genuinely changes the bound, on both sides.
+- **The invariant, on data made entirely through the UI**: every one of the six
+  `warehouse_stocks` rows equals the sum of its own ledger lines. The `set to 0` case is
+  visible in the list as a `-40.5` — the service showing its working.
+- Picker: two "Raw material store" entries on different sites, distinguishable because
+  the rows are two lines; 19 items under Products / Raw materials headings; searching
+  `RM-OAK` finds the one material by SKU.
+- Search hits item name, SKU, warehouse name and notes — and **not** the reason, which
+  is a stored code like `transfer_out`. Matching English against it would work in one
+  locale and silently not in the other two; the reason filter is the control for that.
+- Hostile URLs: `?warehouse=99999`, `?warehouse[]=6`, `?reason=nonsense` all fall back
+  to no filter. `?warehouse=6,7` widens 5 → 9.
+- 375 / 768 / 1024: no sideways scroll; the phone line appears below `md` and is gone
+  above it rather than doubled.
+- en / ms / zh_Hans: title, reason badge (Adjustment / Pelarasan / 手动调整) and item type
+  (Product / Produk / 产品) all from `lang/`, in the server-rendered HTML.
+- Console clean.
+
+#### Open, carried forward
+
+- **No on-hand shown while recording.** The dialog does not say what is currently in the
+  chosen warehouse, so "take 6" is typed blind and the refusal is the first feedback.
+  The lang file already carries `field.on_hand`; it needs a small endpoint or a prop,
+  and it is the first thing to add.
+- **`check:i18n` mis-parsed the FormRequest.** An inline `$this->input('type') === 'set'`
+  inside the rules literal was read as two rules named `type` and `set`. The condition
+  moved to a variable above the array — a gate that can be confused by the code it
+  checks is a gate that gets ignored — but the parser is still text-based and the next
+  conditional rule will need the same care.
+- `StockPickerField` is module-local. Transfers and stock takes are its second and third
+  consumers, and that is when it moves to `components/form/`.
+- No barcode scanning into the picker; v1 has `matchStockItem()` for it. Phase 8.
+- The preset has no `success` token, so only the outward direction is coloured. Worth
+  revisiting if a green is ever added.
+
 ## Phases 3–8 — Modules ⬜
 
 | Phase | Modules | Status |
 |---|---|---|
 | 3 · Catalog | **categories ✅ · suppliers ✅ · customers ✅ · raw materials ✅ · products ✅** (core · image · BOM) | ✅ |
-| 4 · Stock | **locations ✅ · warehouses ✅ · StockService ✅** · movements, transfers, reorder levels, stock takes | 🚧 |
+| 4 · Stock | **locations ✅ · warehouses ✅ · StockService ✅ · movements ✅** · transfers, reorder levels, stock takes | 🚧 |
 | 5 · Orders | purchase orders, purchase returns, sales orders, sales returns, production orders | ⬜ |
 | 6 · Insights | reports, activity log | ⬜ |
 | 7 · Team & settings | users, roles/RBAC, business settings, document numbering, e-invoice | ⬜ |
