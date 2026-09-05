@@ -18,6 +18,11 @@ declare module '@inertiajs/core' {
             /** The locale the SERVER rendered with. Never read navigator.language. */
             locale: string;
             locales: { code: string; label: string }[];
+            /**
+             * The IANA zone the SERVER formatted dates in, reported by the browser
+             * through a cookie. Never call `resolvedOptions()` during a render.
+             */
+            timezone: string;
             [key: string]: unknown;
         };
     }

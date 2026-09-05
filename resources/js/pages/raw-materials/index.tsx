@@ -2,10 +2,10 @@ import { Head, setLayoutProps } from '@inertiajs/react';
 import { Boxes } from 'lucide-react';
 import { ColumnHeader } from '@/components/data/column-header';
 import { DataTable } from '@/components/data/data-table';
+import { DateCell } from '@/components/data/date-cell';
 import { columnsFor } from '@/components/data/table';
 import { EmptyState } from '@/components/feedback/empty-state';
 import { useTranslation } from '@/hooks/use-translation';
-import { formatDate } from '@/lib/format';
 import { NewRawMaterialButton } from '@/pages/raw-materials/_components/new-raw-material-button';
 import { RawMaterialActions } from '@/pages/raw-materials/_components/raw-material-actions';
 import { index } from '@/routes/raw-materials';
@@ -54,11 +54,7 @@ const columns = column.columns([
     }),
     column.accessor('created_at', {
         header: () => <ColumnHeader label="raw-materials.column.created" />,
-        cell: ({ row }) => (
-            <span className="text-muted-foreground tabular-nums">
-                {formatDate(row.original.created_at)}
-            </span>
-        ),
+        cell: ({ row }) => <DateCell iso={row.original.created_at} />,
         meta: { hideBelow: 'lg' },
     }),
     column.accessor('creator', {

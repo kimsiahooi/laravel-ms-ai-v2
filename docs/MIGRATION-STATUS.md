@@ -979,6 +979,9 @@ not re-chase them.
   month abbreviations are an English array in `lib/format.ts`. Fixing it properly means
   either 12 month keys × 3 locales, or a pinned `Intl.DateTimeFormat`, which the SSR rule
   currently forbids outright. Worth a decision before more modules render dates.
+  *(Superseded: `lib/format.ts` now uses a pinned `Intl` for the numbers, so the second
+  route is open — the month names simply have not been switched. See "Dates now read on
+  the viewer's clock".)*
 - **A category's name stays reserved after deletion.** The unique index counts trashed
   rows, so re-creating a deleted category's name is refused with "already been taken"
   while nothing by that name is visible. Matching the index is the correct behaviour —
@@ -1280,7 +1283,8 @@ what?), which is what earned it.
 
 - **`formatDate` renders English month names in every locale** — `23 Aug 2026` under a
   Malay and a Chinese UI. Now visible on four screens. Fixing it needs either 12 month
-  keys × 3 locales or a pinned `Intl.DateTimeFormat`, which the current SSR rule forbids.
+  keys × 3 locales or a pinned `Intl.DateTimeFormat` — the latter is no longer forbidden,
+  see "Dates now read on the viewer's clock".
 - **A deleted SKU stays reserved.** The unique index counts trashed rows, so re-creating a
   deleted material reports "already been taken" with nothing on screen to explain it.
   Correct behaviour, confusing message — same as categories' and customers'. Reword, or
@@ -1822,6 +1826,74 @@ vendored file is untouched. Verified in the accessibility tree, not just the DOM
   behaviour-heavy branch.
 - No image is shown at full size anywhere yet, so `ProductData` carries only `thumb_url`.
   A lightbox or a detail page would add `image_url` alongside it.
+
+### Dates now read on the viewer's clock, and the database still does not care
+
+Asked whether the date columns followed UTC. They did — `config('app.timezone')` is UTC,
+the columns round-trip the literal PHP writes, the DTOs emit `toIso8601String()`, and
+`formatDate` read `getUTCDate()` on purpose. Correct, and wrong for a person in Malaysia:
+a row created at 02:00 local on the 6th is 18:00 UTC on the 5th, and the table said
+"5 Sep". Everything between midnight and 08:00 was a day early.
+
+**Storage is unchanged.** UTC in the columns, UTC on the wire, UTC in `<time dateTime>`.
+Only the rendered text moved.
+
+The hard part is not the conversion, it is that the server has to do it too. Under SSR the
+same markup is produced twice, so a zone the browser picks for itself is a React #418
+mismatch — the same trap `SetLocale` avoids by refusing `Accept-Language`. So the zone
+takes the same route the locale and the theme already take:
+
+1. an inline script in `app.blade.php`, beside the dark-mode one, writes
+   `Intl.DateTimeFormat().resolvedOptions().timeZone` to a cookie **before first paint**;
+2. `TimeZones::resolve()` validates it against the tzdb — an unknown or oversized value
+   falls back to UTC rather than reaching `Intl` and throwing a RangeError mid-render;
+3. `HandleInertiaRequests` shares the result, `useTimeZone()` reads it back, and both
+   sides format against that one string.
+
+On a browser that has never reported a zone the server has nothing to render with, so the
+script reloads once — from `<head>`, before anything is painted, and only after reading
+the cookie back so a browser with cookies blocked degrades to UTC instead of spinning.
+Measured: setting the cookie to `America/New_York` and reloading gave
+`navigationType: "reload"`, a corrected cookie and correct dates, once. It also means a
+laptop that changes zone corrects itself on the next full load.
+
+**Why `Intl` is now allowed where the rule forbade it.** The rule bans *unpinned* `Intl`,
+and it was right to: ICU data differs between the SSR runtime and the browser, and CLDR 42
+renamed en-GB's short September from "Sep" to "Sept" — two runtimes, two strings, same
+input. So `lib/format.ts` asks Intl only for **numbers**, with both the locale and the zone
+pinned, and composes the text from its own month table. Digits are digits in every ICU
+version. Checked identical across Node 24 and Bun 1.3, including a DST zone
+(`America/New_York` at -04:00 in June and -05:00 in December), a 45-minute one
+(`Asia/Kathmandu`), and midnight, which `hour12: false` renders as "24" in some ICU
+versions and `hourCycle: 'h23'` renders as "00" in all of them.
+
+`DateCell` exists because a TanStack `cell` renderer is called as a function, not mounted,
+so it cannot call a hook. Five column definitions became one line each.
+
+The tooltip behind a relative time now reads `22 Aug 2026, 15:33 (+08:00)` instead of
+`… 14:03 UTC`. The offset is derived from the conversion rather than stored, so it is
+right on both sides of a DST boundary — and it is digits, so it needs no translation.
+
+#### Verified in a real browser (Playwright, SSR on)
+
+- The **server-rendered HTML** — no JavaScript — carries
+  `<time dateTime="2026-09-05T18:35:35+00:00">6 Sep 2026</time>`. It never contains
+  "5 Sep 2026", which is the whole proof: the server formatted in `Asia/Kuala_Lumpur`, so
+  the client's string matches and nothing re-renders.
+- Console: **0 errors**, no #418. The only warnings are Vite font-preload noise.
+- Cookie resolution, by request: absent → `UTC` · `Asia/Kuala_Lumpur` → itself ·
+  `Mars/Olympus` → `UTC` · a 200-character value → `UTC`.
+- Products, categories and the console's workspace list all shifted correctly; morning-UTC
+  rows correctly did **not** move.
+- `bun run build:ssr` clean.
+
+#### Open, carried forward
+
+- **Auto-detected, not chosen.** There is no per-user time-zone setting, because the ask
+  was "follow the PC". The `users` table already carries `locale`; a `timezone` column
+  beside it would slot into `TimeZones::resolve()` above the cookie and change nothing else.
+- **Month names are still English in every locale** — see below; this change did not
+  address it, but it did remove the reason it was blocked.
 
 ## Phases 3–8 — Modules ⬜
 

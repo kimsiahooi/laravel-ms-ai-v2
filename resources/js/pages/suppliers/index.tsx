@@ -2,10 +2,10 @@ import { Head, setLayoutProps } from '@inertiajs/react';
 import { Truck } from 'lucide-react';
 import { ColumnHeader } from '@/components/data/column-header';
 import { DataTable } from '@/components/data/data-table';
+import { DateCell } from '@/components/data/date-cell';
 import { columnsFor } from '@/components/data/table';
 import { EmptyState } from '@/components/feedback/empty-state';
 import { useTranslation } from '@/hooks/use-translation';
-import { formatDate } from '@/lib/format';
 import { NewSupplierButton } from '@/pages/suppliers/_components/new-supplier-button';
 import { SupplierActions } from '@/pages/suppliers/_components/supplier-actions';
 import { index } from '@/routes/suppliers';
@@ -66,11 +66,7 @@ const columns = column.columns([
     }),
     column.accessor('created_at', {
         header: () => <ColumnHeader label="suppliers.column.created" />,
-        cell: ({ row }) => (
-            <span className="text-muted-foreground tabular-nums">
-                {formatDate(row.original.created_at)}
-            </span>
-        ),
+        cell: ({ row }) => <DateCell iso={row.original.created_at} />,
         meta: { hideBelow: 'lg' },
     }),
     column.accessor('creator', {

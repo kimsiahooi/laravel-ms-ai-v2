@@ -4,6 +4,7 @@ use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\InitializeTenancyFromPath;
 use App\Http\Middleware\SetLocale;
+use App\Support\TimeZones;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -18,7 +19,11 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
+        // All three are written by JavaScript before the app boots — the appearance
+        // and time-zone scripts in app.blade.php, and the sidebar primitive — so they
+        // cannot be encrypted: the browser has no key, and Laravel would drop a value
+        // it fails to decrypt rather than complain about it.
+        $middleware->encryptCookies(except: ['appearance', 'sidebar_state', TimeZones::COOKIE]);
 
         // Runs before routing — and therefore before StartSession, which captures
         // the session's cookie name AND database connection when it builds the

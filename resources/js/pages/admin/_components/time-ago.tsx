@@ -1,16 +1,19 @@
 import { useEffect, useState } from 'react';
+import { useTimeZone } from '@/hooks/use-time-zone';
 import { useTranslation } from '@/hooks/use-translation';
 import { formatDate, formatDateTime, relativeTime } from '@/lib/format';
 
 /**
  * A timestamp that reads as "3d ago", with the exact time on hover.
  *
- * The first render — server and hydration alike — shows the absolute UTC date, which
- * is a pure function of the prop. The relative form needs the current clock, so it
- * only appears after mount, where the two renders can no longer disagree.
+ * The first render — server and hydration alike — shows the absolute date on the
+ * viewer's own clock, which is a pure function of the prop and the zone the server
+ * shared. The relative form needs the current clock, so it only appears after mount,
+ * where the two renders can no longer disagree.
  */
 export function TimeAgo({ iso }: { iso: string | null }) {
     const { tChoice } = useTranslation();
+    const timeZone = useTimeZone();
     const [relative, setRelative] = useState<string | null>(null);
 
     useEffect(() => {
@@ -34,8 +37,8 @@ export function TimeAgo({ iso }: { iso: string | null }) {
     }
 
     return (
-        <time dateTime={iso} title={formatDateTime(iso)}>
-            {relative ?? formatDate(iso)}
+        <time dateTime={iso} title={formatDateTime(iso, timeZone)}>
+            {relative ?? formatDate(iso, timeZone)}
         </time>
     );
 }

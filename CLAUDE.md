@@ -38,6 +38,13 @@ preference**: no `Date.now()`, `Math.random()`, or unpinned `Intl`/`toLocaleStri
 render output. Compute in `useEffect` or pin the locale. A nondeterministic render is a
 React #418 hydration mismatch that nothing but your own eyes will catch.
 
+**Timestamps are stored and sent in UTC and displayed on the viewer's clock.** The zone
+is a server prop — `useTimeZone()`, reported by the browser through a cookie set before
+first paint — never `Intl.DateTimeFormat().resolvedOptions()` during a render, for the
+same reason the locale is never `navigator.language`. `lib/format.ts` asks `Intl` only
+for numbers, with both locale and zone pinned, and composes the text itself: ICU month
+names differ between the SSR runtime and the browser.
+
 ## Code standards (enforced)
 
 - **Frontend (JS/TS/TSX/JSON): Biome.** `bun run check` before finalizing any frontend

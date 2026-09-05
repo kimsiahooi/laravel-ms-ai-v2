@@ -7,6 +7,7 @@ namespace App\Http\Middleware;
 use App\Models\User;
 use App\Support\Locales;
 use App\Support\TenantRoles;
+use App\Support\TimeZones;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -70,6 +71,10 @@ class HandleInertiaRequests extends Middleware
             // text on each side and produce a hydration mismatch.
             'locale' => fn (): string => app()->getLocale(),
             'locales' => fn (): array => Locales::options(),
+            // The zone the SERVER formatted dates in, for the same reason as `locale`
+            // directly above: the client must render the string the server already
+            // rendered. Timestamps stay UTC everywhere else — this is display only.
+            'timezone' => TimeZones::resolve($request),
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
             // Identifies the current workspace. The client registers `slug` as the
             // default {tenant} route parameter (see app.tsx), so route helpers
