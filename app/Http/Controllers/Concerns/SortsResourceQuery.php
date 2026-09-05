@@ -27,6 +27,8 @@ use Illuminate\Http\Request;
  */
 trait SortsResourceQuery
 {
+    use ReadsQueryValues;
+
     /**
      * Apply a whitelisted sort and return the resolved pair to echo back in `filters`,
      * so the table can render its indicator on the column the server actually used.
@@ -69,16 +71,15 @@ trait SortsResourceQuery
     }
 
     /**
-     * A request value that is a string or nothing.
+     * A sort key or direction as it was asked for, lowercased, or null for neither.
      *
-     * `$request->string()` fatals on `?sort[]=name` — an array reaches `Str::of()` and
-     * raises a TypeError, which is a 500 rather than a fallback. Reading it raw and
-     * type-checking keeps a hand-edited URL boring.
+     * The array-shaped-URL guard lives in {@see ReadsQueryValues} now — it was found
+     * here and needed everywhere.
      */
     private function requested(Request $request, string $key): ?string
     {
-        $value = $request->query($key);
+        $value = $this->queryValue($request, $key);
 
-        return is_string($value) && $value !== '' ? strtolower(trim($value)) : null;
+        return $value === '' ? null : strtolower($value);
     }
 }

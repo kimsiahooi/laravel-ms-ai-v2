@@ -1,6 +1,7 @@
 import { Head, setLayoutProps } from '@inertiajs/react';
 import { Package } from 'lucide-react';
 import { ColumnHeader } from '@/components/data/column-header';
+import { ComboboxFilter } from '@/components/data/combobox-filter';
 import { DataTable } from '@/components/data/data-table';
 import { DateCell } from '@/components/data/date-cell';
 import { FilterPanel } from '@/components/data/filter-panel';
@@ -26,6 +27,8 @@ type Props = {
     filters: ResourceFilters;
     /** Unit codes in use, for the filter. See the controller's unitsInUse(). */
     unitsInUse: App.Enums.Unit[];
+    /** Materials some bill mentions — see the controller's materialsInBills(). */
+    materialsInBills: App.Data.OptionData[];
 };
 
 /**
@@ -120,8 +123,12 @@ export default function ProductsIndex({
     products,
     filters,
     unitsInUse,
+    materialsInBills,
 }: Props) {
     const { t } = useTranslation();
+
+    const showUnitFilter = unitsInUse.length > 1;
+    const showMaterialFilter = materialsInBills.length > 0;
 
     setLayoutProps({
         breadcrumbs: [{ title: t('products.title'), href: index() }],
@@ -151,24 +158,42 @@ export default function ProductsIndex({
                 getRowId={(product) => String(product.id)}
                 only={['products']}
                 toolbar={
-                    // Hidden below two units: a filter offering one choice narrows
-                    // nothing, and a workspace that measures everything in pieces
-                    // should not carry a control that cannot change the answer.
-                    unitsInUse.length > 1
+                    // Each control earns its place separately, and the panel only
+                    // appears if at least one of them does. A single unit narrows
+                    // nothing — every product has it — while a single material does,
+                    // because the products built from it are a subset.
+                    showUnitFilter || showMaterialFilter
                         ? (filter) => (
                               <FilterPanel filter={filter}>
-                                  <SelectFilter
-                                      value={filter.values.unit ?? ''}
-                                      onChange={(unit) =>
-                                          filter.set('unit', unit)
-                                      }
-                                      options={unitsInUse.map((unit) => ({
-                                          value: unit,
-                                          label: `units.name.${unit}` as const,
-                                      }))}
-                                      label="products.filter.unit"
-                                      allLabel="products.filter.all_units"
-                                  />
+                                  {showUnitFilter && (
+                                      <SelectFilter
+                                          value={filter.values.unit ?? ''}
+                                          onChange={(unit) =>
+                                              filter.set('unit', unit)
+                                          }
+                                          options={unitsInUse.map((unit) => ({
+                                              value: unit,
+                                              label: `units.name.${unit}` as const,
+                                          }))}
+                                          label="products.filter.unit"
+                                          allLabel="products.filter.all_units"
+                                      />
+                                  )}
+
+                                  {showMaterialFilter && (
+                                      <ComboboxFilter
+                                          value={filter.values.material ?? ''}
+                                          onChange={(material) =>
+                                              filter.set('material', material)
+                                          }
+                                          options={materialsInBills}
+                                          label="products.filter.material"
+                                          allLabel="products.filter.all_materials"
+                                          manyLabel="products.filter.materials_selected"
+                                          searchPlaceholder="products.filter.material_search"
+                                          emptyMessage="products.filter.material_empty"
+                                      />
+                                  )}
                               </FilterPanel>
                           )
                         : undefined

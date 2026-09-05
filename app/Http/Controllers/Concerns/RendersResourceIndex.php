@@ -39,6 +39,8 @@ use Illuminate\Pagination\LengthAwarePaginator;
  */
 trait RendersResourceIndex
 {
+    use ReadsQueryValues;
+
     /**
      * @template TModel of Model
      *
@@ -74,7 +76,7 @@ trait RendersResourceIndex
         string $defaultDirection = 'desc',
         array $extra = [],
     ): array {
-        $search = trim((string) $request->string('search'));
+        $search = $this->queryValue($request, 'search');
         $perPage = $this->perPage($request);
 
         // The guard lives here rather than in each search closure: a closure that

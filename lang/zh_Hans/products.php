@@ -14,6 +14,11 @@ return [
     'search_placeholder' => '搜索名称、SKU 或条码…',
 
     'filter' => [
+        'material' => '使用物料',
+        'all_materials' => '任何物料',
+        'materials_selected' => ':count 项物料',
+        'material_search' => '搜索物料…',
+        'material_empty' => '没有匹配的物料。',
         'unit' => '单位',
         'all_units' => '所有单位',
     ],

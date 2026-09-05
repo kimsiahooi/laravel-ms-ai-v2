@@ -8,6 +8,7 @@ use App\Actions\ReplaceBom;
 use App\Data\OptionData;
 use App\Data\ProductData;
 use App\Enums\Unit;
+use App\Http\Controllers\Concerns\ReadsQueryValues;
 use App\Http\Controllers\Concerns\RendersResourceIndex;
 use App\Http\Controllers\Concerns\ResolvesPerPage;
 use App\Http\Controllers\Concerns\RespondsWithToast;
@@ -20,6 +21,7 @@ use App\Models\RawMaterial;
 use App\Models\Supplier;
 use App\Support\TenantPermissions;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
@@ -35,6 +37,7 @@ use Inertia\Response;
  */
 final class ProductController
 {
+    use ReadsQueryValues;
     use RendersResourceIndex;
     use ResolvesPerPage;
     use RespondsWithToast;
@@ -67,7 +70,27 @@ final class ProductController
         // The unit filter. Resolved through the enum, so `?unit=nonsense` is simply no
         // filter rather than an empty list or an error — there is nothing to protect
         // here beyond the column, and tryFrom is the whole of that.
-        $unit = Unit::tryFrom((string) $request->string('unit'));
+        $unit = Unit::tryFrom($this->queryValue($request, 'unit'));
+
+        // The bill-of-materials filter: which products are built from these materials.
+        //
+        // ANY, not ALL — a product qualifies by using one of them. Adding a material
+        // widens the list, which is the shape of the question this answers: "these are
+        // short, what does that hit?". ALL would narrow toward nothing, since few
+        // products share an exact set.
+        //
+        // Ids are checked against the materials the picker was actually offered, so a
+        // stale link — one naming a material since deleted, or an id that never existed
+        // — drops that id rather than returning an empty list. An empty list would read
+        // as "nothing uses it" when the truth is "there is no such thing".
+        $materials = self::materialsInBills();
+        $known = $materials->pluck('id')->all();
+
+        $selected = collect(explode(',', $this->queryValue($request, 'material')))
+            ->map(static fn (string $id): int => (int) trim($id))
+            ->filter(static fn (int $id): bool => in_array($id, $known, true))
+            ->unique()
+            ->values();
 
         // `media` and `bomItems` with the rest: without them every row asks for its
         // own photo and its own bill, and a page of twenty-five products is fifty-one
@@ -80,13 +103,22 @@ final class ProductController
             $query->where('unit', $unit);
         }
 
+        if ($selected->isNotEmpty()) {
+            // whereHas, not a join: a product with three lines must appear once, and a
+            // join would return it once per matching line — twice over with whereIn.
+            $query->whereHas(
+                'bomItems',
+                fn (Builder $bom): Builder => $bom->whereIn('raw_material_id', $selected),
+            );
+        }
+
         ['rows' => $products, 'filters' => $filters] = $this->resourceList(
             request: $request,
             query: $query,
             sortable: self::SORTABLE,
             toData: ProductData::fromProduct(...),
             searchUsing: self::searchBy(...),
-            extra: ['unit' => $unit === null ? '' : $unit->value],
+            extra: ['unit' => $unit === null ? '' : $unit->value, 'material' => $selected->implode(',')],
         );
 
         return Inertia::render('products/index', [
@@ -109,6 +141,11 @@ final class ProductController
             'units' => Unit::grouped(),
             // Just the codes the unit filter may offer — see unitsInUse().
             'unitsInUse' => self::unitsInUse(),
+            // And the materials the bill filter may offer. A narrower list than
+            // `rawMaterials` above on purpose: that one is the editor's picker, where
+            // every material is a legitimate thing to add. Here a material no bill
+            // mentions is a choice that can only return nothing.
+            'materialsInBills' => OptionData::collect($materials),
         ]);
     }
 
@@ -227,5 +264,23 @@ final class ProductController
             array_map(static fn (Unit $unit): string => $unit->value, Unit::cases()),
             static fn (string $code): bool => in_array($code, $used, true),
         ));
+    }
+
+    /**
+     * Raw materials that appear in at least one product's bill.
+     *
+     * `whereHas('products')` reads the same relation the delete guard does — bom_items
+     * as an ordinary many-to-many — so "used by a product" means one thing in both
+     * places. Trashed products do not count there and so do not count here: a bill
+     * belonging to a deleted product is not a reason to offer a filter for it.
+     *
+     * @return Collection<int, RawMaterial>
+     */
+    private static function materialsInBills(): Collection
+    {
+        return RawMaterial::query()
+            ->whereHas('products')
+            ->orderBy('name')
+            ->get();
     }
 }

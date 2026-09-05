@@ -15,6 +15,11 @@ return [
     'search_placeholder' => 'Cari nama, SKU atau kod bar…',
 
     'filter' => [
+        'material' => 'Diperbuat daripada',
+        'all_materials' => 'Mana-mana bahan',
+        'materials_selected' => ':count bahan',
+        'material_search' => 'Cari bahan…',
+        'material_empty' => 'Tiada bahan sepadan.',
         'unit' => 'Unit',
         'all_units' => 'Semua unit',
     ],

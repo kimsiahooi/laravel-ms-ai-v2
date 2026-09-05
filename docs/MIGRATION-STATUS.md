@@ -2208,6 +2208,147 @@ combination of the two.
 - The panel has no "apply" step — each control visits immediately. Fine for one or two;
   with four, four visits to set four filters may want batching into one.
 
+### Products can be filtered by what they are built from, one material or several
+
+Asked for a bill-of-materials filter on products: pick a material, see the products made
+from it. The first filter whose question is about a *related* table rather than a column
+on the row.
+
+`whereHas('bomItems', …)`, not a join. A product with three bill lines must appear once;
+a join returns it once per matching line. Verified with a product carrying two materials
+— filtering by one of them listed it exactly once.
+
+**The picker offers only materials some bill actually mentions**, via
+`whereHas('products')` — the same relation the delete guard reads, so "used by a product"
+means one thing in both places. A material no bill names is a choice that can only return
+nothing. Trashed products do not count, for the same reason they do not count there.
+
+A **searchable** control rather than a select, and that is the point of `ComboboxFilter`
+existing beside `SelectFilter`: a unit is a fixed list of translated words and fits in a
+plain select; a material is workspace data and there can be hundreds. Deliberately
+parallel to `ComboboxField` rather than shared with it — this one is *controlled*
+(a filter's value lives in the URL and must change when something else clears it),
+submits no hidden input, and its clear entry reads "Any material" rather than "Not set".
+Folding the two together would mean a prop deciding which of those it is.
+
+An id that names nothing — one that never existed, or a material since removed from every
+bill — is **no filter**, not an empty list. An empty list would read as "nothing uses it"
+when the truth is "there is no such thing", and the panel would show "Any material" over
+zero rows, which is the UI contradicting itself.
+
+Each control now earns its place separately: the unit filter needs two units to be worth
+showing, the material filter needs one material, and the panel appears if either does.
+
+#### Verified in a real browser (Playwright, SSR on)
+
+- `?material=6` (a material in one bill) → exactly that product. `?material=3` (in six)
+  → all six, with the two-line product listed **once**.
+- Search inside the picker: "serbuk" narrowed to one, "zzz" gave "No materials match.",
+  and "Any material" correctly dropped out of the list while typing.
+- Combined: `?material=3&unit=m` → badge 2, and the one product that is both.
+- `?material=99999` → six rows in the server HTML and no badge: no filter, and the panel
+  agrees with the result.
+- 375px in Malay: bottom sheet, "Penapis 2", both controls labelled ("Unit",
+  "Diperbuat daripada"), "Kosongkan semua penapis", no horizontal overflow.
+- Console: 0 errors.
+
+Then asked for several at once. **ANY, not ALL** — a product qualifies by using one of
+the selected materials, so ticking another widens the result. That is the shape of the
+question this answers ("these are short, what does that hit?"), and ALL would narrow
+toward nothing, since few products share an exact set. The demo data makes the
+difference concrete: `Serbuk kayu` is in six bills and `Francis Diaz` in one, and the
+product using both is the only overlap — so ALL of the two would return 1 where ANY
+returns 6.
+
+`ComboboxFilter` became multi-select outright rather than growing a `multiple` prop. It
+had exactly one consumer, and warehouse and customer filters will want the same OR
+semantics, so a single-select variant would have been built for nobody.
+
+Three details in it that are not obvious:
+
+- **The value is a comma-separated string, not an array.** It is what travels in the
+  URL, and a string keeps the effect dependencies stable — an array prop is a new object
+  every render, so the debounce would restart every render and never fire.
+- **Ticking is debounced by 300ms**, the same as the search box, so three boxes are one
+  request and one history entry rather than three of each. Measured: two rapid ticks
+  produced exactly **1** request, against a counter first proven to count by making one
+  deliberate change and watching it increment.
+- **The popover stays open while ticking** but closes on "Any material" — picking three
+  things and reopening the list twice is not a control either, while clearing is a
+  decision that is finished.
+
+Ids are validated against the materials the picker was offered, so a stale link drops
+what it cannot resolve rather than returning nothing. Measured: `3,99999` → `3`,
+`3,3,6` → `3,6`, `99999` → no filter, `,,` → no filter.
+
+#### Open, carried forward
+
+- **Only "any", with no way to ask "all".** A per-search Any/All toggle was offered and
+  not taken; if "which product uses both of these?" comes up, that is where it goes.
+- The filter is on products only. The reverse — "which products use this material" from
+  the raw-materials screen — is the same question from the other end, and
+  `RawMaterial::products()` already exists for it.
+
+### A hand-edited URL could 500 every list in the app
+
+Asked what happens if a filter names a material that does not exist, or one that has been
+deleted — the values arrive in the query string, so anything can be typed there. The
+answer to the question asked was "nothing"; the answer to the question behind it was a
+real bug, one that predates the filters entirely.
+
+**`?search[]=x` returned a 500 on every list**: categories, suppliers, customers, raw
+materials, products, and the console's workspace list. `$request->string()` hands an
+array to `Str::of()`, which raises a TypeError — "Array to string conversion". The
+`?unit[]=` and `?material[]=` filters had inherited the same fatal.
+
+The galling part: the hazard had already been found. `SortsResourceQuery::requested()`
+documents it in a comment and guards against it, which is why `?sort[]=name` was fine
+while `?search[]=x` was not. The fix existed and had never been applied anywhere else.
+
+Now {@see ReadsQueryValues} is the single definition, used by the search box, the sort
+guard and both filters. `query()` rather than `input()`, so a request body cannot supply
+a filter; anything that is not a string reads as `''`, which every caller already treats
+as no filter.
+
+#### What the deleted-material cases actually do
+
+Both were tested against a throwaway material put into a real bill, then deleted each way:
+
+| | |
+|---|---|
+| Soft-deleted, bill line still present | dropped from the filter, absent from the picker |
+| Hard-deleted | the FK cascade removes the bill line first; same result |
+| Mixed, `?material=7,3` | the dead id is dropped, the **live one survives** — either order |
+
+Dropping rather than filtering is deliberate: an empty list would read as "nothing uses
+it" when the truth is "there is no such thing", and the panel would show "Any material"
+over zero rows — the UI contradicting its own result.
+
+#### The adversarial pass
+
+Sixteen shapes of hostile URL, before and after. Everything now answers 200 and logs
+nothing — measured: eight hostile requests grew `laravel.log` by **0 lines**.
+
+- Arrays and nested arrays on every parameter at once
+  (`search[]=a&sort[]=b&direction[]=c&per_page[]=d&unit[]=e&material[]=f`) — was 500,
+  now 200.
+- `1 OR 1=1`, `1'; DROP TABLE bom_items;--`, `1) OR (1=1`, `1 UNION SELECT * FROM users`,
+  `kg' OR '1'='1` — all no-ops. Two independent reasons: ids are `(int)`-cast and
+  whitelisted against the materials the picker offered before they reach the query, and
+  the query is parameter-bound (`in (?, ?)` with bindings `[3,6]`). Every table was
+  counted afterwards and is intact.
+- Negative, zero, float, scientific notation, letters, null byte, emoji — all no filter.
+- `3,99999` → `3` · `3,3,6` → `3,6` · `99999` → no filter · `,,` → no filter.
+
+Search and sort re-driven afterwards and unchanged.
+
+#### Open, carried forward
+
+- `ResolvesPerPage` still reads `$request->integer('per_page')`, which casts an array to
+  `1` with a PHP warning rather than fatally. It lands outside the allow-list and falls
+  back to 10, so the behaviour is right by accident rather than by intent. Left alone;
+  worth folding into the same helper if that trait is touched.
+
 ## Phases 3–8 — Modules ⬜
 
 | Phase | Modules | Status |

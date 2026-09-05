@@ -14,6 +14,11 @@ return [
     'search_placeholder' => 'Search name, SKU or barcode…',
 
     'filter' => [
+        'material' => 'Built from',
+        'all_materials' => 'Any material',
+        'materials_selected' => ':count materials',
+        'material_search' => 'Search materials…',
+        'material_empty' => 'No materials match.',
         'unit' => 'Unit',
         'all_units' => 'All units',
     ],

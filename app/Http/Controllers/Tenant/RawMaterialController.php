@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Tenant;
 
 use App\Data\RawMaterialData;
 use App\Enums\Unit;
+use App\Http\Controllers\Concerns\ReadsQueryValues;
 use App\Http\Controllers\Concerns\RendersResourceIndex;
 use App\Http\Controllers\Concerns\ResolvesPerPage;
 use App\Http\Controllers\Concerns\RespondsWithToast;
@@ -27,6 +28,7 @@ use Inertia\Response;
  */
 final class RawMaterialController
 {
+    use ReadsQueryValues;
     use RendersResourceIndex;
     use ResolvesPerPage;
     use RespondsWithToast;
@@ -46,7 +48,7 @@ final class RawMaterialController
         // The unit filter. Resolved through the enum, so `?unit=nonsense` is simply no
         // filter rather than an empty list or an error — there is nothing to protect
         // here beyond the column, and tryFrom is the whole of that.
-        $unit = Unit::tryFrom((string) $request->string('unit'));
+        $unit = Unit::tryFrom($this->queryValue($request, 'unit'));
 
         // `products` is the bill-of-materials usage — see RawMaterial::products().
         // Eager-loaded so the delete guard can be explained on the row rather than
