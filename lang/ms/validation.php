@@ -9,12 +9,16 @@ declare(strict_types=1);
 
 return [
 
+    'boolean' => 'Ruangan :attribute mestilah benar atau palsu.',
     'email' => 'Ruangan :attribute mestilah alamat e-mel yang sah.',
     'enum' => ':attribute yang dipilih tidak sah.',
     'exists' => ':attribute yang dipilih tidak sah.',
+    'image' => 'Ruangan :attribute mestilah imej.',
     'max' => [
+        'file' => 'Ruangan :attribute tidak boleh melebihi :max kilobait.',
         'string' => 'Ruangan :attribute tidak boleh melebihi :max aksara.',
     ],
+    'mimes' => 'Ruangan :attribute mestilah fail berjenis: :values.',
     'min' => [
         'string' => 'Ruangan :attribute mestilah sekurang-kurangnya :min aksara.',
     ],
@@ -35,11 +39,13 @@ return [
         'country_code' => 'negara',
         'description' => 'keterangan',
         'email' => 'e-mel',
+        'image' => 'gambar',
         'name' => 'nama',
         'notes' => 'nota',
         'phone' => 'telefon',
         'postcode' => 'poskod',
         'registration_no' => 'nombor pendaftaran',
+        'remove_image' => 'buang gambar',
         'sku' => 'SKU',
         'slug' => 'alamat',
         'sst_registration_no' => 'nombor pendaftaran SST/GST',

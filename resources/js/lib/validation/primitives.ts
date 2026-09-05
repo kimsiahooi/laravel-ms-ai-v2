@@ -206,6 +206,95 @@ export function optionalId({
 }
 
 /**
+ * Whether a value is a file the browser picked. Duck-typed rather than
+ * `z.instanceof(File)`, because these schemas are built during *render*, and render also
+ * happens inside the Node process that server-renders the page.
+ *
+ * `z.instanceof` reads the `File` global when the schema is constructed, so it makes the
+ * page depend on the SSR runtime having a browser global. Node has had one since v20 and
+ * this app runs v24, so nothing is broken today — the point is that a shape check reads
+ * nothing at all until something is parsed, which only ever happens in a browser on
+ * submit. It cannot become a version problem later.
+ */
+function isFile(value: unknown): value is File {
+    return (
+        typeof value === 'object' &&
+        value !== null &&
+        typeof (value as File).name === 'string' &&
+        typeof (value as File).size === 'number' &&
+        typeof (value as File).type === 'string'
+    );
+}
+
+/**
+ * An optional upload — `['nullable', 'image', 'mimes:…', 'max:N']`.
+ *
+ * The checks are the ones worth doing before the bytes leave: a two-megabyte photo that
+ * the server is going to refuse costs an upload, a wait, and a re-pick, and on a phone
+ * it costs them out of a data plan. Everything the server checks *about the file itself*
+ * is checkable here.
+ *
+ * `mimes` and `values` are the same fact in two spellings, and both are needed. A
+ * browser reports what it picked as a mime type (`image/jpeg`) and knows nothing about
+ * the extension, while Laravel's rule matches on the extension and prints that list in
+ * its message. Deriving one from the other would mean either checking something the
+ * browser cannot see or showing a sentence the server would never have written.
+ *
+ * A field nobody touched is *absent*, not empty: Inertia drops an empty file input
+ * before the data is assembled, so `undefined` is the untouched case and `.optional()`
+ * is what accepts it.
+ */
+export function optionalFile({
+    attribute,
+    mimes,
+    values,
+    maxKb,
+}: {
+    attribute: TranslationKey;
+    /** What the browser must report — `['image/jpeg', …]`. */
+    mimes: readonly string[];
+    /** What the message lists — Laravel's `:values`, e.g. `'jpg, jpeg, png, webp'`. */
+    values: string;
+    /** `max:N`, in kilobytes, exactly as the rule counts it. */
+    maxKb: number;
+}) {
+    return (
+        z
+            // First, and its own message: something that is not a file at all is not a
+            // file of the wrong type. zod stops here when this fails, so the two checks
+            // below can assume a file.
+            .custom<File>(isFile, message('validation.image', attribute))
+            .refine(
+                (file) => mimes.includes(file.type),
+                message('validation.mimes', attribute, { values }),
+            )
+            .refine(
+                (file) => file.size <= maxKb * 1024,
+                message('validation.max.file', attribute, { max: maxKb }),
+            )
+            .optional()
+    );
+}
+
+/**
+ * An optional on/off flag — `['nullable', 'boolean']`.
+ *
+ * Not `z.boolean()`. A form submits strings, and the only way a checkbox or a hidden
+ * marker reaches the server is as `'1'`, `'0'`, or not at all — which is also precisely
+ * what Laravel's `boolean` rule accepts from a request. Anything else is a form that has
+ * been tampered with, and it should be refused with the sentence the server would use.
+ */
+export function optionalFlag({ attribute }: { attribute: TranslationKey }) {
+    return z
+        .string(message('validation.boolean', attribute))
+        .refine(
+            (value) => value === '' || value === '0' || value === '1',
+            message('validation.boolean', attribute),
+        )
+        .optional();
+}
+
+/**
  * The address shape itself, with no message of its own — {@see optionalEmail} supplies
  * one. Built once at module scope because it carries no locale and never changes.
  */

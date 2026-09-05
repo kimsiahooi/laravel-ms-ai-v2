@@ -8,12 +8,16 @@ declare(strict_types=1);
 
 return [
 
+    'boolean' => ':attribute必须是真或假。',
     'email' => ':attribute必须是有效的电子邮件地址。',
     'enum' => '所选的:attribute无效。',
     'exists' => '所选的:attribute无效。',
+    'image' => ':attribute必须是图片。',
     'max' => [
+        'file' => ':attribute不能大于 :max KB。',
         'string' => ':attribute不能大于 :max 个字符。',
     ],
+    'mimes' => ':attribute必须是以下类型的文件：:values。',
     'min' => [
         'string' => ':attribute至少需要 :min 个字符。',
     ],
@@ -34,11 +38,13 @@ return [
         'country_code' => '国家',
         'description' => '描述',
         'email' => '电子邮箱',
+        'image' => '图片',
         'name' => '名称',
         'notes' => '备注',
         'phone' => '电话',
         'postcode' => '邮编',
         'registration_no' => '注册号',
+        'remove_image' => '移除图片',
         'sku' => 'SKU',
         'slug' => '地址',
         'sst_registration_no' => 'SST/GST 注册号',

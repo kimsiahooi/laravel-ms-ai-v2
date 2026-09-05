@@ -7,6 +7,7 @@ use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\Settings\SecurityController;
 use App\Http\Controllers\Tenant\CategoryController;
 use App\Http\Controllers\Tenant\CustomerController;
+use App\Http\Controllers\Tenant\MediaController;
 use App\Http\Controllers\Tenant\ProductController;
 use App\Http\Controllers\Tenant\RawMaterialController;
 use App\Http\Controllers\Tenant\SupplierController;
@@ -105,6 +106,17 @@ Route::middleware(['web', InitializeTenancyByPath::class, SetTenantUrlDefault::c
                 Route::patch('{product}', [ProductController::class, 'update'])->name('update');
                 Route::delete('{product}', [ProductController::class, 'destroy'])->name('destroy');
             });
+
+            // Every uploaded file in the workspace, served from one place: a product
+            // photo today, the business logo later. Deliberately outside the module
+            // prefixes — media is addressed by its own id, not by what it hangs off, and
+            // a per-module route would mean a new one for every collection.
+            //
+            // No permission is mapped for it in TenantPermissions. That is not the same
+            // as open: MediaController reads the permission off the row's owner, which is
+            // the only place that knows whether this particular file is a product photo
+            // or next year's payroll scan.
+            Route::get('media/{media}/{conversion?}', MediaController::class)->name('media');
 
             Route::redirect('settings', 'settings/profile');
             Route::get('settings/profile', [ProfileController::class, 'edit'])->name('profile.edit');

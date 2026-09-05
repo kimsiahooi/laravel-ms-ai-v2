@@ -1,10 +1,21 @@
 import { z } from 'zod';
 import {
     oneOf,
+    optionalFile,
+    optionalFlag,
     optionalId,
     optionalText,
     text,
 } from '@/lib/validation/primitives';
+
+/**
+ * The formats the FormRequest's `mimes:jpg,jpeg,png,webp` accepts, said the way each
+ * side can check it: the browser knows the mime type of the file it just opened, the
+ * server knows the extension. `jpg` and `jpeg` are one mime type and two extensions,
+ * which is why neither list can be generated from the other.
+ */
+const IMAGE_MIMES = ['image/jpeg', 'image/png', 'image/webp'] as const;
+const IMAGE_EXTENSIONS = 'jpg, jpeg, png, webp';
 
 /**
  * Mirrors App\Http\Requests\Tenant\ProductRequest and the `products` columns —
@@ -45,5 +56,14 @@ export const productSchema = (
         unit: oneOf({
             values: units,
             attribute: 'validation.attributes.unit',
+        }),
+        image: optionalFile({
+            attribute: 'validation.attributes.image',
+            mimes: IMAGE_MIMES,
+            values: IMAGE_EXTENSIONS,
+            maxKb: 2048,
+        }),
+        remove_image: optionalFlag({
+            attribute: 'validation.attributes.remove_image',
         }),
     });

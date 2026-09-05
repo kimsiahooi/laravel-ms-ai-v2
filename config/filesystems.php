@@ -47,6 +47,33 @@ return [
             'report' => false,
         ],
 
+        /*
+         * Tenant uploads — product photos today, the business logo later.
+         *
+         * Private and NOT symlinked: `public` puts a file in the docroot, where the URL
+         * is the only thing standing between one workspace's photos and anyone who
+         * guesses it. Everything here is read back through the auth-gated media route
+         * instead, one file at a time.
+         *
+         * Central and un-suffixed, deliberately: this disk is absent from
+         * `tenancy.filesystem.disks`, so stancl never repoints its root per workspace
+         * and every tenant shares one tree. What keeps them apart is the path —
+         * `assets/{slug}/…`, written by App\Support\Media\TenantPathGenerator, which
+         * refuses to generate a path outside a workspace at all. That is also the single
+         * folder DeleteTenantAssets removes when a workspace is torn down; a suffixed
+         * disk would scatter the same files across per-tenant storage roots.
+         *
+         * `serve` is off (the default). The `local` disk above sets it, which registers
+         * Laravel's own `/storage/{path}` route; a disk holding one workspace's files
+         * must not answer on an unauthenticated URL.
+         */
+        'assets' => [
+            'driver' => 'local',
+            'root' => storage_path('assets'),
+            'throw' => false,
+            'report' => false,
+        ],
+
         's3' => [
             'driver' => 's3',
             'key' => env('AWS_ACCESS_KEY_ID'),

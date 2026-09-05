@@ -18,6 +18,7 @@ use App\Models\Supplier;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -48,11 +49,22 @@ final class ProductController
      */
     private const SORTABLE = ['name', 'sku', 'created_at'];
 
+    /**
+     * Validated input that is not a column. They describe what should happen to the
+     * photo, and passing them to `create()`/`update()` would be asking Eloquent to write
+     * an uploaded file into a field that does not exist.
+     *
+     * @var array<int, string>
+     */
+    private const IMAGE_FIELDS = ['image', 'remove_image'];
+
     public function index(Request $request): Response
     {
         ['rows' => $products, 'filters' => $filters] = $this->resourceList(
             request: $request,
-            query: Product::query()->with(['category', 'supplier', 'creator']),
+            // `media` with the rest: without it every row asks for its own photo and a
+            // page of twenty-five products is twenty-six queries.
+            query: Product::query()->with(['category', 'supplier', 'creator', 'media']),
             sortable: self::SORTABLE,
             toData: ProductData::fromProduct(...),
             searchUsing: self::searchBy(...),
@@ -77,7 +89,9 @@ final class ProductController
 
     public function store(ProductRequest $request): RedirectResponse
     {
-        $product = Product::create($request->validated());
+        $product = Product::create($request->safe()->except(self::IMAGE_FIELDS));
+
+        $this->syncImage($request, $product);
 
         $this->toast(__('products.toast.created', ['name' => $product->name]));
 
@@ -86,7 +100,9 @@ final class ProductController
 
     public function update(ProductRequest $request, Product $product): RedirectResponse
     {
-        $product->update($request->validated());
+        $product->update($request->safe()->except(self::IMAGE_FIELDS));
+
+        $this->syncImage($request, $product);
 
         $this->toast(__('products.toast.updated', ['name' => $product->name]));
 
@@ -97,6 +113,9 @@ final class ProductController
     {
         $name = $product->name;
 
+        // The photo stays on disk. medialibrary only removes files on a force delete, so
+        // a product that is restored comes back with its picture; DeleteTenantAssets is
+        // what eventually reclaims them, when the whole workspace goes.
         $product->delete();
 
         $this->toast(__('products.toast.deleted', ['name' => $name]));
@@ -113,5 +132,30 @@ final class ProductController
     private static function searchBy(Builder $query, string $term): void
     {
         $query->search($term);
+    }
+
+    /**
+     * Apply whatever the form said about the photo. Nothing, usually.
+     *
+     * A new file wins over the Remove flag, and the early return is what says so: if
+     * somebody presses Remove and then picks a replacement before saving, they meant the
+     * replacement. Handling them in the other order would delete the file they just chose.
+     *
+     * There is no third case. The collection is `singleFile()`, so adding *is* replacing
+     * — the previous row and its file are removed by medialibrary, not by us.
+     */
+    private function syncImage(ProductRequest $request, Product $product): void
+    {
+        $file = $request->file('image');
+
+        if ($file instanceof UploadedFile) {
+            $product->addMedia($file)->toMediaCollection(Product::IMAGE);
+
+            return;
+        }
+
+        if ($request->boolean('remove_image')) {
+            $product->clearMediaCollection(Product::IMAGE);
+        }
     }
 }

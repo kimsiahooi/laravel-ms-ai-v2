@@ -5,6 +5,9 @@
 /public/hot
 /public/storage
 /storage/*.key
+# Conversion scratch space. Created on demand and emptied straight after, so it is
+# ignored outright rather than committed with a .gitignore the way storage/assets is.
+/storage/media-library-temp
 /storage/pail
 /resources/js/actions
 /resources/js/routes

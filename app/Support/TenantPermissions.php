@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Support;
 
+use App\Http\Controllers\Tenant\MediaController;
 use App\Http\Middleware\AuthorizeTenantRoute;
 
 /**
@@ -138,8 +139,12 @@ final class TenantPermissions
 
     /**
      * Route name → the permission it requires. Unmapped routes (dashboard, personal
-     * settings, media, logout) are open to any signed-in tenant user. `export` is
-     * handled dynamically by the middleware.
+     * settings, logout) are open to any signed-in tenant user. `export` is handled
+     * dynamically by the middleware.
+     *
+     * `media` is unmapped but not open: one route serves the files of every kind of
+     * record, so the permission depends on the row rather than the route, and
+     * {@see MediaController} reads it off the owner.
      *
      * @return array<string, string>
      */

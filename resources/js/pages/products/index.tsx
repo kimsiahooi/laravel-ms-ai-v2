@@ -12,6 +12,7 @@ import {
 } from '@/pages/products/_components/filing-links';
 import { NewProductButton } from '@/pages/products/_components/new-product-button';
 import { ProductActions } from '@/pages/products/_components/product-actions';
+import { ProductThumb } from '@/pages/products/_components/product-thumb';
 import { index } from '@/routes/products';
 import type { Paginated, ResourceFilters } from '@/types';
 
@@ -27,11 +28,11 @@ type Props = {
  * Built once at module scope: TanStack treats the array as an input, and a fresh one
  * each render rebuilds every column instance.
  *
- * The category is a badge rather than plain text. It is the one field on this screen
- * whose whole job is grouping, and a badge is what makes a column of them scannable —
- * you see the shape of the catalog without reading it.
+ * The photo rides in the name cell rather than in a column of its own. It identifies the
+ * same thing the name does, and a separate column would be mostly empty frames taking
+ * width from the fields that carry information.
  *
- * Both it and the supplier link through to their own screen — see {@see CategoryLink}.
+ * Category and supplier both link through to their own screen — see {@see CategoryLink}.
  */
 const column = columnsFor<Product>();
 
@@ -39,10 +40,17 @@ const columns = column.columns([
     column.accessor('name', {
         header: () => <ColumnHeader label="products.column.name" />,
         cell: ({ row }) => (
-            <>
-                <span className="font-medium">{row.original.name}</span>
-                <UnitSymbol unit={row.original.unit} />
-            </>
+            <div className="flex items-center gap-3">
+                {/* Empty alt: the name is right there, and a screen reader reading the
+                    product twice per row is worse than not describing the picture. */}
+                <ProductThumb src={row.original.thumb_url} alt="" />
+                <div className="min-w-0">
+                    <span className="block truncate font-medium">
+                        {row.original.name}
+                    </span>
+                    <UnitSymbol unit={row.original.unit} />
+                </div>
+            </div>
         ),
         meta: { width: 'max-w-[20rem]' },
     }),

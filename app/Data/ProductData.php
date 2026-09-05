@@ -32,6 +32,7 @@ final class ProductData extends Data
         public ?int $supplier_id,
         public ?string $supplier,
         public Unit $unit,
+        public ?string $thumb_url,
         public string $created_at,
         public ?string $creator,
     ) {}
@@ -49,8 +50,36 @@ final class ProductData extends Data
             supplier_id: $product->supplier_id,
             supplier: $product->supplier?->name,
             unit: $product->unit,
+            thumb_url: self::thumbUrl($product),
             created_at: $product->created_at->toIso8601String(),
             creator: $product->creator?->name,
         );
+    }
+
+    /**
+     * Where to fetch the product's photo, or null when it has none.
+     *
+     * The resized copy, not the original: every screen that shows this draws it at
+     * 128px or smaller, and the original is up to 2MB of camera JPEG. The fallback to
+     * the original covers a row whose conversion did not generate — a photo at the wrong
+     * size beats an empty square, and it is the only shape of failure this can have.
+     *
+     * The URL carries the media id, and a re-upload makes a new row with a new id, so
+     * this is never a stale address for a file that has since been replaced.
+     */
+    private static function thumbUrl(Product $product): ?string
+    {
+        $media = $product->getFirstMedia(Product::IMAGE);
+
+        if ($media === null) {
+            return null;
+        }
+
+        return route('media', [
+            'media' => $media->getKey(),
+            'conversion' => $media->hasGeneratedConversion(Product::THUMB)
+                ? Product::THUMB
+                : null,
+        ]);
     }
 }

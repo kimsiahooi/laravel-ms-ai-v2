@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Jobs\DeleteTenantAssets;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
@@ -42,6 +43,10 @@ class TenancyServiceProvider extends ServiceProvider
             Events\TenantDeleted::class => [
                 JobPipeline::make([
                     Jobs\DeleteDatabase::class,
+                    // The database first: if dropping it fails the pipeline stops, and
+                    // the workspace's files are still there to go with the data that
+                    // survived. The other order loses the photos either way.
+                    DeleteTenantAssets::class,
                 ])->send(fn (Events\TenantDeleted $event) => $event->tenant)
                     ->shouldBeQueued(false),
             ],

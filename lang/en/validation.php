@@ -23,12 +23,16 @@ declare(strict_types=1);
 
 return [
 
+    'boolean' => 'The :attribute field must be true or false.',
     'email' => 'The :attribute field must be a valid email address.',
     'enum' => 'The selected :attribute is invalid.',
     'exists' => 'The selected :attribute is invalid.',
+    'image' => 'The :attribute field must be an image.',
     'max' => [
+        'file' => 'The :attribute field must not be greater than :max kilobytes.',
         'string' => 'The :attribute field must not be greater than :max characters.',
     ],
+    'mimes' => 'The :attribute field must be a file of type: :values.',
     'min' => [
         'string' => 'The :attribute field must be at least :min characters.',
     ],
@@ -54,11 +58,13 @@ return [
         'country_code' => 'country',
         'description' => 'description',
         'email' => 'email',
+        'image' => 'photo',
         'name' => 'name',
         'notes' => 'notes',
         'phone' => 'phone',
         'postcode' => 'postcode',
         'registration_no' => 'registration number',
+        'remove_image' => 'remove photo',
         'sku' => 'SKU',
         'slug' => 'slug',
         'sst_registration_no' => 'SST/GST registration number',

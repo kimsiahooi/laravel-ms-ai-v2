@@ -9,6 +9,7 @@ import { TextField } from '@/components/form/text-field';
 import { Separator } from '@/components/ui/separator';
 import { useTranslation } from '@/hooks/use-translation';
 import { productSchema } from '@/lib/validation/schemas/product';
+import { ImageField } from '@/pages/products/_components/image-field';
 import { store, update } from '@/routes/products';
 import type { TranslationKey } from '@/types/lang';
 
@@ -21,7 +22,7 @@ type PageProps = {
 };
 
 /**
- * Seven fields in two groups.
+ * Eight fields in two groups.
  *
  * The split is the design: what the product *is* — the part somebody can fill in from
  * the thing in front of them — and how it is *filed*, which is a decision about the
@@ -129,6 +130,26 @@ export function ProductFormDialog({
                                     error={errors.description}
                                     optional
                                     rows={2}
+                                />
+                            </div>
+
+                            {/*
+                                Last in the group, not first. The photo is the most
+                                recognisable thing about a product and the least urgent
+                                to supply — putting it above the name would push the
+                                field that is focused on open, and the two that are
+                                required, below the fold on a phone.
+                            */}
+                            <div className="sm:col-span-2">
+                                <ImageField
+                                    name="image"
+                                    removeName="remove_image"
+                                    label="products.field.image"
+                                    hint="products.field.image_hint"
+                                    removeLabel="products.field.image_remove"
+                                    alt="products.field.image_alt"
+                                    currentUrl={product?.thumb_url}
+                                    error={errors.image}
                                 />
                             </div>
                         </div>

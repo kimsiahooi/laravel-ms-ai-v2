@@ -20,6 +20,10 @@ use Illuminate\Validation\Rule;
  * `Rule::exists` bypasses the SoftDeletes scope, so a product could be filed under a
  * category the workspace has already deleted.
  *
+ * `remove_image` is meaningless on create — there is nothing yet to remove — and is
+ * declared for both anyway. An unused nullable field costs nothing, while a rule that
+ * exists in one mode and not the other is how the two modes drift apart.
+ *
  * Mirrored in the browser by resources/js/lib/validation/schemas/product.ts;
  * `bun run check:validation` fails if the two stop covering the same fields.
  */
@@ -47,6 +51,19 @@ final class ProductRequest extends TenantFormRequest
             'category_id' => ['nullable', ActiveExists::of('categories')],
             'supplier_id' => ['nullable', ActiveExists::of('suppliers')],
             'unit' => ['required', Rule::enum(Unit::class)],
+            // `image` and `mimes` overlap on purpose. `image` refuses anything that is
+            // not a picture and says so in those words; `mimes` narrows to the formats
+            // every browser can actually display, which rules out the tif somebody's
+            // scanner produced. Laravel reports the first failure, so the sentence is
+            // always the more specific one that applies.
+            //
+            // `max` counts kilobytes: 2MB, which is a photo from a phone. The ceiling is
+            // here rather than in the media collection because a collection refuses by
+            // throwing, and a 500 is not an answer to "that file is too big".
+            'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+            // Sent only when somebody presses Remove on an image that is already stored.
+            // Absent is the ordinary case, and it means "leave whatever is there".
+            'remove_image' => ['nullable', 'boolean'],
         ];
     }
 }

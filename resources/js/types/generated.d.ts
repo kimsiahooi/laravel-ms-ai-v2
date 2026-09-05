@@ -45,6 +45,7 @@ category: string | null,
 supplier_id: number | null,
 supplier: string | null,
 unit: App.Enums.Unit,
+thumb_url: string | null,
 created_at: string,
 creator: string | null,
 };

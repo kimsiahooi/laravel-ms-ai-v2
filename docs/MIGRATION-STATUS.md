@@ -1474,11 +1474,272 @@ finds nothing when the contact is `Lim Wei`. Splitting on whitespace and requiri
 to match some column would fix it and would also make `acme lim` work — but it changes
 search semantics on every list, so it is offered rather than done.
 
+### Products B — the photo
+
+`spatie/laravel-medialibrary` **11.23.5**, which was already on the agreed Composer list.
+It brings `spatie/image` 3.9 with it; nothing else was added.
+
+One photo per product. `singleFile()`, so a second upload replaces the first and deletes
+its file — a product cannot quietly accumulate five years of packaging revisions, and
+nobody has to remember to clear the old one.
+
+**Where the files live is the part worth reading.**
+
+    {slug}/products/{ulid}.jpg
+    {slug}/products/conversions/{ulid}-thumb.jpg
+
+on a new private `assets` disk. Four properties, each load-bearing:
+
+- **Private, never symlinked.** The `public` disk puts a file in the docroot, where the URL
+  is the only thing between one workspace's photos and anyone who guesses it. Every read
+  goes through the auth-gated media route instead. The disk also leaves `serve` off — the
+  scaffold's `local` disk sets it, which registers Laravel's own unauthenticated
+  `/storage/{path}` route.
+- **Central and un-suffixed.** It is deliberately absent from `tenancy.filesystem.disks`,
+  so stancl never repoints its root per workspace. What separates workspaces is the path,
+  written by `App\Support\Media\TenantPathGenerator`, which throws rather than generate a
+  path outside a workspace at all.
+- **The slug prefix is not decoration.** Every workspace has its own database, so media ids
+  restart at 1 in each of them. Without the prefix, workspace A's files and workspace B's
+  files are the same tree.
+- **The owner's folder says what the file is**, without a database round trip. `products/`
+  answers "what is this and who has it", which is the question anyone looking at a disk is
+  actually asking. It comes from `App\Support\Media\MediaOwners` — one registry holding
+  both facts the app needs about a media-owning model, its folder and the permission that
+  may read it, so a collection cannot end up storable but unservable. Unregistered models
+  are refused at both ends rather than defaulted.
+- **The filename is a fresh ULID, not what was uploaded.** This is what makes two uploads
+  of `photo.jpg` safe now that files share a folder: uniqueness moved out of the directory
+  and into the name. A ULID rather than `Str::random()` for a reason that shows up on a disk
+  rather than in a threat model — it sorts, so `ls` is upload order. The uploaded name is
+  not lost: medialibrary keeps it in `media.name` while `media.file_name` holds what is on
+  disk. It also means the uploaded name never reaches the filesystem — no unicode, no
+  300-character names, no `../`, and no `supplier-contract-Q3-margins.png` in a listing.
+
+`storage/assets/.gitignore` follows the framework's own convention for `storage/app` —
+`*` plus `!.gitignore` — so the folder exists on a fresh clone and nobody ever commits a
+workspace's uploads.
+
+**A stray `storage/tenantdemo/`, and why it was not the uploads.** medialibrary leaves
+`temporary_directory_path` null and falls back to `storage_path('media-library/temp')` —
+resolved *inside* the request, by which time stancl's FilesystemTenancyBootstrapper has
+repointed `storage_path()` at `storage/tenant{id}`. So every workspace that ever uploaded a
+photo left an empty `storage/tenant<slug>/media-library/temp` at the storage root that
+nothing ever read. Pinning the value in `config/media-library.php` fixes it, because a value
+written there is resolved once at boot, before any tenant exists. Measured inside a live
+tenant context: `storage_path()` returns `…/storage/tenantdemo` while the configured temp
+path stays `…/storage/media-library-temp`, and a real upload through the UI no longer
+creates a `storage/tenant*` directory at all.
+
+Every other `storage_path()` in the app was already in a config file for the same reason —
+swept and confirmed — so this was the only one being resolved late. One shared temp root is
+safe between workspaces: medialibrary appends a `Str::random(32)` segment per operation and
+deletes it afterwards, so concurrent conversions never meet and nothing accumulates.
+
+**Dropping the per-media directory was a trade, and the risk was checked before taking it.**
+medialibrary's default gives every file its own `{media-id}/` folder. Removing it means one
+delete now costs a directory listing — `DefaultFileRemover` calls `allFiles()` on the folder
+— and that listing is over every file in `products/` rather than over one. On a local disk
+that is a readdir; on S3 it would be a paginated LIST per delete, which is worth knowing
+before this disk ever moves to object storage. The important half is that the remover
+deletes only the entry matching the media's own `file_name`, and drops the directory only
+when it is already empty — so a shared folder is safe. Proven rather than read: two products
+uploaded the same `temp-test.jpg`, both landed as different ULIDs side by side, one was
+removed and the other survived untouched with the folder intact.
+
+Paths are **derived, never stored** — the media table has no path column — so changing this
+layout again after go-live orphans every existing file. It would need a move script plus a
+`file_name` rewrite, not just a new generator.
+
+The `media` table is therefore a **tenant** migration, not a central one. Its rows are
+`morphs('model')` — a class and an id — and both halves only mean something inside one
+database. A central table would file "product 7" for every workspace at once.
+
+**Teardown came with it.** `App\Jobs\DeleteTenantAssets` runs on the same pipeline as the
+database drop when a workspace is force-deleted. Without it, reclaiming a workspace's
+database silently leaves every photo anyone ever uploaded on disk, under a slug somebody
+else can now register. The database goes first: if that fails the pipeline stops, and the
+files are still there to go with the data that survived.
+
+### Is the thumbnail necessary? Measured, then answered
+
+Asked whether generating a thumbnail on every upload is worth the second file. Measured on a
+4000x3000 camera photo, resized to what `max:2048` actually accepts:
+
+| file | size |
+|---|---|
+| stored original (2400px) | 954 KB |
+| `thumb` conversion (256px) | 16.5 KB |
+
+The conversion is **1.7%** of the original, and it carries the entire products list: at the
+default ten rows a page transfers 165 KB with it and **9.5 MB** without, because every 40px
+cell would otherwise fetch the full-size photo. It earns its place several times over, and it
+is the package's own work — `Spatie\MediaLibrary\Conversions\FileManipulator::performConversions()`
+generates it, and this app only *declares* it through `registerMediaConversions()`. It stays.
+
+**A 1600px cap on the stored original was tried, and then removed.** It worked — ~970 KB down
+to ~424 KB per product, five times the saving deleting the thumbnail would have given — but it
+was the one piece of this feature that processed an image *outside* medialibrary. It ran on the
+controller's upload path, it was destructive with no untouched copy kept, and the collection
+could not enforce it: a second upload path (the phase 7 logo, a seeder, an import) would have
+stored full-size files unless it remembered to call it. The decision was to hand the pipeline
+back to the package — **the file that is uploaded is the file that is stored**, and the only
+derived file is the one medialibrary makes itself. `max:2048` is what bounds storage now.
+
+Worth keeping from the attempt, because it will bite the next person who tries something
+similar: spatie/image picks its output format from the file *extension*, and PHP's upload
+temporary file has none. The first version threw `Unsupported format ''` inside its own catch,
+so the upload succeeded, stored the original untouched, and only the log said otherwise — a
+silent `catch` there would have shipped a measured-as-zero no-op.
+
+### The thumbnail, and the black square it nearly shipped
+
+The listing draws twenty-five products at 40px square. Serving the originals into those
+cells is up to 50MB of photographs per page of the catalog, so there is a `thumb`
+conversion at 256px — enough for the table at 3x and the dialog preview at 2x. `Fit::Max`
+never upscales, so a small image is left alone rather than blown up and re-encoded.
+
+It is generated **inline**, during the upload request, and `queue_conversions_by_default`
+is set to `false` to say so. `QUEUE_CONNECTION` is `database` and nothing in this app runs
+a worker, so a queued conversion is a thumbnail that never appears: the row renders a
+broken image and no error is raised anywhere.
+
+**`keepOriginalImageFormat()` is the line that matters.** medialibrary's conversions default
+to JPEG — its `Conversion` constructor calls `->format('jpg')` — and JPEG has no alpha
+channel. A product photographed on a transparent background, which is most catalog artwork,
+comes back as the product on a solid **black** square. Measured rather than guessed: a
+transparent PNG through the default pipeline gives `rgb(0,0,0)` in every corner. With the
+flag, a transparent PNG stays a PNG and a JPEG stays a JPEG, verified both ways on disk.
+
+The trade is real and worth knowing: a PNG thumbnail can be *larger* than a small PNG
+original, because a 256px resample has anti-aliased edges the flat original did not. For
+photographs — the case that actually matters — the conversion is about 5x smaller.
+
+Changing a conversion definition after files exist orphans the old ones, which is what
+`php artisan media-library:regenerate` is for. It bit this session mid-test and is worth
+remembering before the next conversion is added.
+
+### The media route, and a permission v1 did not check
+
+`GET /{tenant}/media/{media}` for the original, `/{tenant}/media/{media}/{conversion}` for a
+size. **Extension-less on purpose**: some nginx setups serve anything ending in `.png`
+straight from the docroot with `try_files $uri =404` and never reach PHP — which for a
+private disk means every image 404s in production and works perfectly in development.
+
+The id is the version. A re-upload replaces the media row, so the new file has a new id and
+therefore a new URL; a stored URL always names the file it named when it was written, and a
+deleted id 404s rather than showing whatever took its place. `StreamsMedia` adds the
+validators for the narrower case the id cannot cover — the same row re-processed — so the
+browser revalidates and gets a 304 rather than assuming.
+
+**The deviation from v1:** v1 left this route open to any signed-in user, so somebody with
+no products permission at all could read every product photo in the workspace by counting
+up from `/media/1`. A media row knows what it belongs to, so `MediaController` reads the
+permission off the owner via `MediaOwners` — the same registry that decided where the file
+was written. Unknown owner types are **refused, not allowed**, at both ends: a model with no
+entry cannot be stored and cannot be served.
+
+### Two new zod primitives
+
+`optionalFile` and `optionalFlag`. The first is the more interesting.
+
+Everything the server checks *about the file itself* is checkable before the bytes leave,
+and that is the whole point: a 2MB photo the server is going to refuse costs an upload, a
+wait and a re-pick, and on a phone it costs data. Verified with an 11MB file — the gate
+refused it with **zero network requests**.
+
+It takes both `mimes` and `values`, which look redundant and are not. A browser reports
+what it picked as a mime type (`image/jpeg`) and knows nothing about the extension; Laravel
+matches on the extension and prints that list in its message. `jpg` and `jpeg` are one mime
+type and two extensions, so neither list can be generated from the other.
+
+`isFile` is duck-typed rather than `z.instanceof(File)`. These schemas are built during
+*render*, which also happens inside the Node process that server-renders the page, and
+`z.instanceof` reads the global at construction. Node has had `File` since v20 and this app
+runs v24, so nothing was broken — a shape check simply cannot become a version problem
+later.
+
+New validation messages in all three locales: `boolean`, `image`, `mimes`, and `max.file`.
+That last one closed a quiet hole — the gate counted `max` as covered because `max.string`
+existed, so a file-size failure would have fallen back to the framework's English inside a
+Malay form.
+
+### The field, and the three states a file input cannot express
+
+No photo; a new file chosen; the stored one removed. A file input alone gives two — empty,
+or holding a file — so removal travels as its own flag, rendered only while it is true, so
+an untouched form sends no opinion about the photo at all and the server treats absent as
+"leave it exactly as it is". A new file beats the flag: somebody who presses Remove and then
+picks a replacement meant the replacement.
+
+The preview of a newly picked file is an object URL created in the change handler, never
+during render — one minted while rendering is minted again on every re-render and every one
+of them leaks until the tab closes. Only image-shaped files are previewed: picking a PDF and
+getting a broken-image glyph reads as "the app is broken" rather than "that is not a photo",
+and the message under the field is already saying the second.
+
+In the list, the photo rides in the **name cell** rather than a column of its own — it
+identifies the same thing the name does, and a separate column would be mostly empty frames
+taking width from the fields that carry information. Rows without one get the same empty
+frame so the names stay on one line, and `object-contain` on a neutral ground rather than
+`object-cover`, because cropping a supplier's catalog shot to fill a square is how the label
+ends up outside the frame. `alt=""` there: the name is the adjacent text and a screen reader
+reading the product twice per row is worse than not describing the picture.
+
+`ImageField` and `ProductThumb` stay in `pages/products/_components/` — one consumer each.
+The business logo in phase 7 is their second, and the non-trivial logic makes that the
+promotion point.
+
+### Verified in a real browser (Playwright, SSR on)
+
+- Create with a photo → the row shows `/demo/media/1/thumb`; replace → a **new id**, so no
+  stale URL is possible; Remove → media row gone, both files gone from disk, placeholder back.
+- The served thumb: 256x256, `image/png` (format kept), `no-cache, private`, ETag
+  `"2-thumb-…"`, and **304 on revalidation**.
+- `/media/{id}` (original), `/media/{id}/thumb` → 200. `/media/{id}/bogus` and a nonexistent
+  id → 404.
+- **Permissions:** signed out → redirected to login, no bytes. Signed in as
+  `viewer@demo.test` (Catalog Viewer, no `products.view`) → **403** on both the original and
+  the thumbnail.
+- The zod gate: 11MB → "must not be greater than 2048 kilobytes", **no request sent**,
+  `aria-invalid` set and focus moved to the input. A `.txt` → "must be a file of type: jpg,
+  jpeg, png, webp", and the stored photo stays visible instead of a broken image.
+- The **server** refusing the same things with the gate bypassed (raw multipart POST): 422
+  with both `image` and `mimes` messages, translated through our own lang file.
+- Transparency: a transparent PNG round-trips as a 256x256 PNG with alpha 127 in the corner.
+- en / ms / zh_Hans — `Gambar (pilihan)` / `图片 （选填）`, `Buang gambar` / `移除图片`, and the
+  gate in Chinese: `图片不能大于 2048 KB。`
+- Light and dark, 375 / 1280, no horizontal overflow. Hard reload with SSR on:
+  `data-server-rendered="true"`, the thumbnail URL in the server HTML, console clean.
+- "Remove photo" now starts on the same vertical line as the hint and the input above it
+  (measured: all three at x=425), with the hover surface still surrounding the label and the
+  target still 32px tall.
+- `bun run build` and `bun run build:ssr` both succeed.
+
+### Found while driving: the platform refuses before the rule does
+
+`upload_max_filesize` and `post_max_size` are both **2M** on this machine, and the rule is
+`max:2048` — the same number. `post_max_size` covers the *whole* request body, so a file at
+the limit plus the other fields exceeds it, and the request dies at the web server with a
+**413** before Laravel's validator ever runs. Measured: 2.1MB → 413, 1.5MB → reaches Laravel.
+
+Nobody hits this through the UI, because the zod gate refuses over-2MB files before the
+request is built. But it means the app's stated limit can never be the one that fires for
+anyone who bypasses the browser. The fix is a deployment setting rather than a code change:
+the platform needs to allow a request body comfortably larger than the file limit (8M is a
+reasonable ceiling for a 2MB rule). Left alone here because php.ini is machine
+configuration, not repository content.
+
+### Open, carried forward
+
+- No image is shown at full size anywhere yet, so `ProductData` carries only `thumb_url`.
+  A lightbox or a detail page would add `image_url` alongside it.
+
 ## Phases 3–8 — Modules ⬜
 
 | Phase | Modules | Status |
 |---|---|---|
-| 3 · Catalog | **categories ✅ · suppliers ✅ · customers ✅ · raw materials ✅** · products (core ✅, +BOM, image) | 🚧 |
+| 3 · Catalog | **categories ✅ · suppliers ✅ · customers ✅ · raw materials ✅** · products (core ✅, image ✅, +BOM) | 🚧 |
 | 4 · Stock | locations, warehouses, StockService, movements, transfers, reorder levels, stock takes | ⬜ |
 | 5 · Orders | purchase orders, purchase returns, sales orders, sales returns, production orders | ⬜ |
 | 6 · Insights | reports, activity log | ⬜ |
