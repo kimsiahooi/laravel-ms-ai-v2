@@ -48,7 +48,7 @@ const columns = column.columns([
                     <span className="block truncate font-medium">
                         {row.original.name}
                     </span>
-                    <UnitSymbol unit={row.original.unit} />
+                    <NameMeta product={row.original} />
                 </div>
             </div>
         ),
@@ -88,13 +88,26 @@ const columns = column.columns([
     }),
 ]);
 
-/** The product's unit under its name — the short form, as on raw materials. */
-function UnitSymbol({ unit }: { unit: App.Enums.Unit }) {
-    const { t } = useTranslation();
+/**
+ * The line under a product's name: the unit it is counted in, and the size of its bill
+ * of materials where it has one.
+ *
+ * The bill is the only way to tell a manufactured product from a bought one, and it is
+ * otherwise two clicks deep in a menu. A count rather than a badge, because "3
+ * materials" answers the next question as well as the first.
+ */
+function NameMeta({ product }: { product: Product }) {
+    const { t, tChoice } = useTranslation();
 
     return (
-        <span className="block text-muted-foreground text-xs">
-            {t(`units.symbol.${unit}` as const)}
+        <span className="block truncate text-muted-foreground text-xs">
+            {t(`units.symbol.${product.unit}` as const)}
+            {product.bom.length > 0 && (
+                <>
+                    {' · '}
+                    {tChoice('products.bom.count', product.bom.length)}
+                </>
+            )}
         </span>
     );
 }

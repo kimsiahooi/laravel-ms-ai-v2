@@ -23,19 +23,28 @@ declare(strict_types=1);
 
 return [
 
+    'array' => 'The :attribute field must be an array.',
     'boolean' => 'The :attribute field must be true or false.',
+    'decimal' => 'The :attribute field must have :decimal decimal places.',
+    'distinct' => 'The :attribute field has a duplicate value.',
     'email' => 'The :attribute field must be a valid email address.',
     'enum' => 'The selected :attribute is invalid.',
     'exists' => 'The selected :attribute is invalid.',
+    'gt' => [
+        'numeric' => 'The :attribute field must be greater than :value.',
+    ],
     'image' => 'The :attribute field must be an image.',
     'max' => [
+        'array' => 'The :attribute field must not have more than :max items.',
         'file' => 'The :attribute field must not be greater than :max kilobytes.',
+        'numeric' => 'The :attribute field must not be greater than :max.',
         'string' => 'The :attribute field must not be greater than :max characters.',
     ],
     'mimes' => 'The :attribute field must be a file of type: :values.',
     'min' => [
         'string' => 'The :attribute field must be at least :min characters.',
     ],
+    'numeric' => 'The :attribute field must be a number.',
     'regex' => 'The :attribute field format is invalid.',
     'required' => 'The :attribute field is required.',
     'string' => 'The :attribute field must be a string.',
@@ -59,6 +68,9 @@ return [
         'description' => 'description',
         'email' => 'email',
         'image' => 'photo',
+        'items' => 'materials',
+        'items.*.quantity' => 'quantity',
+        'items.*.raw_material_id' => 'material',
         'name' => 'name',
         'notes' => 'notes',
         'phone' => 'phone',

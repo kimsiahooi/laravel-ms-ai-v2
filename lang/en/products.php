@@ -83,6 +83,26 @@ return [
         'supplier_empty' => 'No suppliers match.',
     ],
 
+    'bom' => [
+        'action' => 'Bill of materials',
+        'title' => 'Bill of materials',
+        'description' => 'The raw materials that go into :name, and how much of each it takes to make one.',
+        'submit' => 'Save bill',
+        'submitting' => 'Saving…',
+        'add' => 'Add material',
+        'line' => 'Material :number',
+        'column_material' => 'Material',
+        'column_quantity' => 'Quantity per unit',
+        'material_placeholder' => 'Choose a material',
+        'material_search' => 'Search materials…',
+        'material_empty' => 'No materials match.',
+        'quantity_placeholder' => 'e.g. 0.35',
+        'remove' => 'Remove material :number',
+        'empty' => 'No materials yet. Add the first one to describe what this product is made of.',
+        'none_available' => 'There are no raw materials in this workspace yet. Add one first, and it will be available here.',
+        'count' => '{0} No bill|{1} :count material|[2,*] :count materials',
+    ],
+
     'confirm' => [
         'delete_title' => 'Delete :name?',
         'delete_description' => 'Orders already raised for this product keep their record of it — you simply will not be able to pick it for a new one.',
@@ -91,6 +111,7 @@ return [
     ],
 
     'toast' => [
+        'bom_saved' => 'Bill of materials saved for :name.',
         'created' => ':name created.',
         'updated' => ':name updated.',
         'deleted' => ':name deleted.',

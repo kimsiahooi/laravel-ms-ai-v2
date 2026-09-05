@@ -5,6 +5,12 @@ slug: string,
 name: string,
 deleted_at: string | null,
 };
+export type BomItemData = {
+id: number,
+raw_material_id: number,
+name: string,
+quantity: string,
+};
 export type CategoryData = {
 id: number,
 name: string,
@@ -46,6 +52,7 @@ supplier_id: number | null,
 supplier: string | null,
 unit: App.Enums.Unit,
 thumb_url: string | null,
+bom: App.Data.BomItemData[],
 created_at: string,
 creator: string | null,
 };

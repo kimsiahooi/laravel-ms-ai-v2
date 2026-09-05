@@ -8,8 +8,10 @@ use App\Enums\Unit;
 use App\Models\Concerns\RecordsCreator;
 use App\Models\Concerns\Searchable;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 use Spatie\Image\Enums\Fit;
@@ -34,6 +36,7 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
  * @property Carbon $updated_at
  * @property Carbon|null $deleted_at
  * @property-read Category|null $category
+ * @property-read Collection<int, BomItem> $bomItems
  * @property-read Supplier|null $supplier
  * @property-read User|null $creator
  */
@@ -96,6 +99,26 @@ class Product extends Model implements HasMedia
     public function supplier(): BelongsTo
     {
         return $this->belongsTo(Supplier::class)->withTrashed();
+    }
+
+    /**
+     * What goes into it: the raw materials and the per-unit quantity of each.
+     *
+     * Ordered by id, which is insertion order — and since updateBom() rewrites the
+     * whole bill on every save, that is the order the lines were left in by whoever
+     * last edited it. Sorting by material name instead would silently reshuffle the
+     * editor under someone who had just arranged it.
+     *
+     * `rawMaterial` on the other side is nullable in practice: the FK cascades on a
+     * hard delete, but the materials screen soft-deletes, so a line can point at a
+     * trashed material. The DTO resolves the name `withTrashed()` rather than showing
+     * a blank where a material used to be.
+     *
+     * @return HasMany<BomItem, $this>
+     */
+    public function bomItems(): HasMany
+    {
+        return $this->hasMany(BomItem::class)->orderBy('id');
     }
 
     /**

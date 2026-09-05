@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { useTranslation } from '@/hooks/use-translation';
 import { useZodGate } from '@/hooks/use-zod-gate';
+import type { TranslationParams } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 import type { TranslationKey } from '@/types/lang';
 import type { RouteFormDefinition } from '@/wayfinder';
@@ -30,6 +31,15 @@ type Props = {
     schema: ZodType;
     title: TranslationKey;
     description: TranslationKey;
+    /**
+     * What the heading's `:placeholders` are filled with — the record's own name,
+     * where the dialog is about one particular row.
+     *
+     * One bag for both lines rather than two props: the title and the description are
+     * two sentences about the same thing, and a dialog that named a different record
+     * in each would be a bug rather than a feature.
+     */
+    headingParams?: TranslationParams;
     submit: TranslationKey;
     submitting: TranslationKey;
     /**
@@ -72,6 +82,7 @@ export function ResourceFormDialog({
     schema,
     title,
     description,
+    headingParams,
     submit,
     submitting,
     size = 'sm',
@@ -102,8 +113,10 @@ export function ResourceFormDialog({
                 )}
             >
                 <DialogHeader className="border-b p-6">
-                    <DialogTitle>{t(title)}</DialogTitle>
-                    <DialogDescription>{t(description)}</DialogDescription>
+                    <DialogTitle>{t(title, headingParams)}</DialogTitle>
+                    <DialogDescription>
+                        {t(description, headingParams)}
+                    </DialogDescription>
                 </DialogHeader>
 
                 <Form

@@ -50,6 +50,7 @@ const EXEMPT = new Set([
 
 /** Schemas exported as factories, with the arguments to build one for inspection. */
 const FACTORY_ARGS: Record<string, unknown[]> = {
+    BomRequest: [[1]],
     CustomerRequest: [['MY', 'SG']],
     RawMaterialRequest: [['kg']],
     ProductRequest: [['kg'], [1], [1]],

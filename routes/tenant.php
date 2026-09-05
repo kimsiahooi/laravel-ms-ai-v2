@@ -105,6 +105,9 @@ Route::middleware(['web', InitializeTenancyByPath::class, SetTenantUrlDefault::c
                 Route::post('/', [ProductController::class, 'store'])->name('store');
                 Route::patch('{product}', [ProductController::class, 'update'])->name('update');
                 Route::delete('{product}', [ProductController::class, 'destroy'])->name('destroy');
+                // PUT, not PATCH: the whole bill is replaced, never patched. The name
+                // `products.bom` is what TenantPermissions maps to products.update.
+                Route::put('{product}/bom', [ProductController::class, 'updateBom'])->name('bom');
             });
 
             // Every uploaded file in the workspace, served from one place: a product

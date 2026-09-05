@@ -83,6 +83,26 @@ return [
         'supplier_empty' => '没有匹配的供应商。',
     ],
 
+    'bom' => [
+        'action' => '物料清单',
+        'title' => '物料清单',
+        'description' => '制造 :name 所需的原材料，以及每生产一个单位需要多少。',
+        'submit' => '保存清单',
+        'submitting' => '保存中…',
+        'add' => '添加物料',
+        'line' => '物料 :number',
+        'column_material' => '物料',
+        'column_quantity' => '单位用量',
+        'material_placeholder' => '选择物料',
+        'material_search' => '搜索物料…',
+        'material_empty' => '没有匹配的物料。',
+        'quantity_placeholder' => '例如 0.35',
+        'remove' => '移除物料 :number',
+        'empty' => '尚未添加物料。添加第一项来说明该产品由什么构成。',
+        'none_available' => '此工作区尚无原材料。请先添加一项，然后即可在此选择。',
+        'count' => '{0} 无清单|[1,*] :count 项物料',
+    ],
+
     'confirm' => [
         'delete_title' => '删除 :name？',
         'delete_description' => '已经为该产品下过的单据会保留记录 —— 只是无法再为新的单据选择它。',
@@ -91,6 +111,7 @@ return [
     ],
 
     'toast' => [
+        'bom_saved' => '已保存 :name 的物料清单。',
         'created' => '已创建 :name。',
         'updated' => '已更新 :name。',
         'deleted' => '已删除 :name。',

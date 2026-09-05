@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Tenant;
 
+use App\Actions\ReplaceBom;
 use App\Data\OptionData;
 use App\Data\ProductData;
 use App\Enums\Unit;
@@ -11,10 +12,13 @@ use App\Http\Controllers\Concerns\RendersResourceIndex;
 use App\Http\Controllers\Concerns\ResolvesPerPage;
 use App\Http\Controllers\Concerns\RespondsWithToast;
 use App\Http\Controllers\Concerns\SortsResourceQuery;
+use App\Http\Requests\Tenant\BomRequest;
 use App\Http\Requests\Tenant\ProductRequest;
 use App\Models\Category;
 use App\Models\Product;
+use App\Models\RawMaterial;
 use App\Models\Supplier;
+use App\Support\TenantPermissions;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -62,9 +66,12 @@ final class ProductController
     {
         ['rows' => $products, 'filters' => $filters] = $this->resourceList(
             request: $request,
-            // `media` with the rest: without it every row asks for its own photo and a
-            // page of twenty-five products is twenty-six queries.
-            query: Product::query()->with(['category', 'supplier', 'creator', 'media']),
+            // `media` and `bomItems` with the rest: without them every row asks for
+            // its own photo and its own bill, and a page of twenty-five products is
+            // fifty-one queries instead of three.
+            query: Product::query()->with([
+                'category', 'supplier', 'creator', 'media', 'bomItems.rawMaterial',
+            ]),
             sortable: self::SORTABLE,
             toData: ProductData::fromProduct(...),
             searchUsing: self::searchBy(...),
@@ -83,6 +90,10 @@ final class ProductController
             // is also a category nobody can submit.
             'categories' => OptionData::collect(Category::query()->orderBy('name')->get()),
             'suppliers' => OptionData::collect(Supplier::query()->orderBy('name')->get()),
+            // The bill editor's picker. By name, because that is what somebody is
+            // scanning the list for — the id order the table uses would put the
+            // material added last at the bottom of a hundred-row popover.
+            'rawMaterials' => OptionData::collect(RawMaterial::query()->orderBy('name')->get()),
             'units' => Unit::grouped(),
         ]);
     }
@@ -105,6 +116,25 @@ final class ProductController
         $this->syncImage($request, $product);
 
         $this->toast(__('products.toast.updated', ['name' => $product->name]));
+
+        return back();
+    }
+
+    /**
+     * Replace the product's bill of materials.
+     *
+     * Its own route rather than part of `update()`, because it is its own kind of edit:
+     * a variable number of lines rather than a fixed set of fields, saved from its own
+     * dialog, and gated by the same permission through
+     * {@see TenantPermissions} ROUTE_OVERRIDES.
+     */
+    public function updateBom(BomRequest $request, Product $product, ReplaceBom $replace): RedirectResponse
+    {
+        // An empty bill sends no `items` inputs at all, so the key is absent from the
+        // payload — see BomRequest on why that is the same thing as an empty list.
+        $replace->handle($product, $request->lines());
+
+        $this->toast(__('products.toast.bom_saved', ['name' => $product->name]));
 
         return back();
     }

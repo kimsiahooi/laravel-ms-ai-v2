@@ -16,11 +16,22 @@ import type { TranslationKey } from '@/types/lang';
  * (`validation.attributes.*`), which is also where Laravel reads it from, so neither
  * side can drift into calling the same field something different.
  *
- * Only the primitives the app actually uses live here. The numeric ones — quantities,
- * money, the decimal-scale guard that stops MySQL silently rounding an invoice — come
- * with the stock and order modules that need them, along with the message keys they
- * introduce. Adding one before its consumer would mean guessing at both.
+ * Only the primitives the app actually uses live here. Money, dates and percentages
+ * still have no consumer and so no primitive; each arrives with the module that needs
+ * it, along with the message keys it introduces.
  */
+
+/**
+ * Decimal places a `decimal(15,4)` column stores, and the largest value one holds —
+ * 11 integer digits, since 4 of the 15 are spent after the point.
+ *
+ * The same two numbers as `TenantFormRequest::DECIMAL_SCALE` and `::DECIMAL_MAX`.
+ * Duplicated rather than generated because they describe a column shape that is fixed
+ * by a migration, not a policy either side is free to change: if these ever disagree
+ * with the PHP constants, one of the two is wrong about the database.
+ */
+export const DECIMAL_SCALE = 4;
+export const DECIMAL_MAX = 99_999_999_999;
 
 /** A rule's message, bound to the field it is about. */
 function message(
@@ -353,4 +364,178 @@ export function email({
     return text({ attribute, max }).pipe(
         z.email(message('validation.email', attribute)),
     );
+}
+
+/**
+ * A required reference to a row the workspace owns — `['required', ActiveExists::of(…)]`.
+ *
+ * The {@see optionalId} of this, differing only in that empty is a failure and reports
+ * "is required" rather than "is invalid" — the same distinction {@see oneOf} draws, and
+ * for the same reason: not choosing is not the same as choosing wrongly.
+ */
+export function id({
+    ids,
+    attribute,
+}: {
+    ids: readonly number[];
+    attribute: TranslationKey;
+}) {
+    const known = new Set(ids.map(String));
+
+    return z
+        .string(message('validation.string', attribute))
+        .trim()
+        .min(1, message('validation.required', attribute))
+        .refine(
+            (value) => known.has(value),
+            message('validation.exists', attribute),
+        );
+}
+
+type DecimalOptions = {
+    /** A `validation.attributes.*` key naming this field. */
+    attribute: TranslationKey;
+    /** `decimal:0,S`. Defaults to the column scale. */
+    scale?: number;
+    /** `max:M`. Defaults to what the column holds. */
+    max?: number;
+    /** `gt:N`. The lower bound the value must exceed. */
+    gt?: number;
+};
+
+/**
+ * A required `decimal(15,4)` quantity — the browser half of
+ * `TenantFormRequest::decimalRules()`.
+ *
+ * **The scale check is the point of this existing.** MySQL's strict mode refuses too
+ * many integer digits but silently *rounds* extra decimal places, so `1.12345` would be
+ * accepted and stored as `1.1235` with nothing to show for it. The server's
+ * `decimal:0,4` refuses that, and this refuses it here first.
+ *
+ * A string, not `z.number()`. A form submits strings, and `Number("")` is 0 — so a
+ * numeric schema would read an empty box as a legitimate zero and report the wrong
+ * failure, or none. Parsing is left until after the shape has been checked.
+ *
+ * `superRefine` with early returns rather than a chain of `.refine()`s, so exactly one
+ * issue is produced: `"abc"` fails all four checks, and which message surfaces should
+ * be the first that applies, not whichever the issue list happens to order first.
+ */
+export function decimal({
+    attribute,
+    scale = DECIMAL_SCALE,
+    max = DECIMAL_MAX,
+    gt = 0,
+}: DecimalOptions) {
+    // Laravel's own `decimal` rule, verbatim: an optional sign, digits, an optional
+    // point, digits. It is what makes `1e3` — which `numeric` accepts — a failure here
+    // too, so the two layers agree on more than the digit count.
+    const shape = /^[+-]?\d*\.?(\d*)$/;
+
+    return z
+        .string(message('validation.string', attribute))
+        .trim()
+        .superRefine((value, ctx) => {
+            const fail = (
+                key: TranslationKey,
+                params?: Record<string, string | number>,
+            ) => {
+                ctx.addIssue({
+                    code: 'custom',
+                    message: message(key, attribute, params),
+                });
+            };
+
+            if (value === '') {
+                return fail('validation.required');
+            }
+
+            const parsed = Number(value);
+
+            if (!Number.isFinite(parsed)) {
+                return fail('validation.numeric');
+            }
+
+            const digits = shape.exec(value)?.[1];
+
+            if (digits === undefined || digits.length > scale) {
+                // `:decimal` is "0-4", the way Laravel renders a range — see
+                // ReplacesAttributes::replaceDecimal.
+                return fail('validation.decimal', { decimal: `0-${scale}` });
+            }
+
+            if (parsed <= gt) {
+                return fail('validation.gt.numeric', { value: gt });
+            }
+
+            if (parsed > max) {
+                return fail('validation.max.numeric', { max });
+            }
+        });
+}
+
+/**
+ * A repeating group of rows — `['nullable', 'array', 'max:N']` over `items.*.…`.
+ *
+ * Optional, not merely empty-able: a form with no rows renders no inputs, so the key is
+ * absent from the payload rather than present and empty. That is the shape the server
+ * accepts too — see BomRequest on why absent and empty mean the same thing there.
+ *
+ * `distinct` is checked here rather than left to the server because the failure is
+ * about the list as a whole and has to be reported on one row. The issue is filed at
+ * the *second* occurrence, which is the one somebody just chose, and under that row's
+ * own field — so the message lands beside the picker that repeats rather than at the
+ * top of a list of ten.
+ */
+export function lines<T extends z.ZodType>({
+    item,
+    max,
+    attribute,
+    distinct,
+}: {
+    item: T;
+    /** `max:N` — the ceiling on how many rows may be sent. */
+    max: number;
+    /** A `validation.attributes.*` key naming the collection. */
+    attribute: TranslationKey;
+    /** The field no two rows may share, and the key naming it. */
+    distinct?: { field: string; attribute: TranslationKey };
+}) {
+    const rows = z
+        .array(item, message('validation.array', attribute))
+        .max(max, message('validation.max.array', attribute, { max }));
+
+    if (!distinct) {
+        return rows.optional();
+    }
+
+    return rows
+        .superRefine((values, ctx) => {
+            const seen = new Set<unknown>();
+
+            values.forEach((row, index) => {
+                const value = (row as Record<string, unknown>)[distinct.field];
+
+                // An empty picker is not a duplicate of another empty picker — it is
+                // two rows nobody has filled in, and `required` already says so.
+                if (value === undefined || value === '') {
+                    return;
+                }
+
+                if (seen.has(value)) {
+                    ctx.addIssue({
+                        code: 'custom',
+                        path: [index, distinct.field],
+                        message: message(
+                            'validation.distinct',
+                            distinct.attribute,
+                        ),
+                    });
+
+                    return;
+                }
+
+                seen.add(value);
+            });
+        })
+        .optional();
 }

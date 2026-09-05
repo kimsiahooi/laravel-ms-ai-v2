@@ -84,6 +84,26 @@ return [
         'supplier_empty' => 'Tiada pembekal sepadan.',
     ],
 
+    'bom' => [
+        'action' => 'Senarai bahan',
+        'title' => 'Senarai bahan',
+        'description' => 'Bahan mentah yang digunakan untuk :name, dan berapa banyak diperlukan untuk membuat satu unit.',
+        'submit' => 'Simpan senarai',
+        'submitting' => 'Menyimpan…',
+        'add' => 'Tambah bahan',
+        'line' => 'Bahan :number',
+        'column_material' => 'Bahan',
+        'column_quantity' => 'Kuantiti seunit',
+        'material_placeholder' => 'Pilih bahan',
+        'material_search' => 'Cari bahan…',
+        'material_empty' => 'Tiada bahan sepadan.',
+        'quantity_placeholder' => 'cth. 0.35',
+        'remove' => 'Buang bahan :number',
+        'empty' => 'Belum ada bahan. Tambah yang pertama untuk menerangkan produk ini diperbuat daripada apa.',
+        'none_available' => 'Belum ada bahan mentah dalam ruang kerja ini. Tambah satu dahulu dan ia akan tersedia di sini.',
+        'count' => '{0} Tiada senarai|[1,*] :count bahan',
+    ],
+
     'confirm' => [
         'delete_title' => 'Padam :name?',
         'delete_description' => 'Pesanan yang sudah dibuat untuk produk ini mengekalkan rekodnya — anda cuma tidak lagi boleh memilihnya untuk pesanan baharu.',
@@ -92,6 +112,7 @@ return [
     ],
 
     'toast' => [
+        'bom_saved' => 'Senarai bahan untuk :name disimpan.',
         'created' => ':name telah dicipta.',
         'updated' => ':name telah dikemas kini.',
         'deleted' => ':name telah dipadam.',

@@ -1,4 +1,5 @@
 import { MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
+import type { ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import {
     DropdownMenu,
@@ -16,6 +17,16 @@ type Props = {
     canDelete: boolean;
     onEdit: () => void;
     onDelete: () => void;
+    /**
+     * Entries only this module has — a product's bill of materials, an order's
+     * lifecycle actions. Rendered under Edit, above the destructive item, as
+     * `<DropdownMenuItem>`s the caller writes.
+     *
+     * A slot rather than a props-described list: what these do, what they are called
+     * and whether they are permitted differs every time, and the only thing they have
+     * in common is where they sit.
+     */
+    children?: ReactNode;
 };
 
 /**
@@ -39,11 +50,12 @@ export function RowActions({
     canDelete,
     onEdit,
     onDelete,
+    children,
 }: Props) {
     const { t } = useTranslation();
 
     // A menu with nothing in it is a button that does nothing when clicked.
-    if (!canEdit && !canDelete) {
+    if (!canEdit && !canDelete && !children) {
         return null;
     }
 
@@ -65,7 +77,10 @@ export function RowActions({
                         {t('common.actions.edit')}
                     </DropdownMenuItem>
                 )}
-                {canEdit && canDelete && <DropdownMenuSeparator />}
+                {children}
+                {(canEdit || children) && canDelete && (
+                    <DropdownMenuSeparator />
+                )}
                 {canDelete && (
                     <DropdownMenuItem variant="destructive" onSelect={onDelete}>
                         <Trash2 className="mr-2 size-4" />

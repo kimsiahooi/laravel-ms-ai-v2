@@ -8,19 +8,28 @@ declare(strict_types=1);
 
 return [
 
+    'array' => ':attribute必须是数组。',
     'boolean' => ':attribute必须是真或假。',
+    'decimal' => ':attribute必须有 :decimal 位小数。',
+    'distinct' => ':attribute有重复的值。',
     'email' => ':attribute必须是有效的电子邮件地址。',
     'enum' => '所选的:attribute无效。',
     'exists' => '所选的:attribute无效。',
+    'gt' => [
+        'numeric' => ':attribute必须大于 :value。',
+    ],
     'image' => ':attribute必须是图片。',
     'max' => [
+        'array' => ':attribute最多只能有 :max 项。',
         'file' => ':attribute不能大于 :max KB。',
+        'numeric' => ':attribute不能大于 :max。',
         'string' => ':attribute不能大于 :max 个字符。',
     ],
     'mimes' => ':attribute必须是以下类型的文件：:values。',
     'min' => [
         'string' => ':attribute至少需要 :min 个字符。',
     ],
+    'numeric' => ':attribute必须是数字。',
     'regex' => ':attribute格式不正确。',
     'required' => ':attribute不能为空。',
     'string' => ':attribute必须是字符串。',
@@ -39,6 +48,9 @@ return [
         'description' => '描述',
         'email' => '电子邮箱',
         'image' => '图片',
+        'items' => '物料',
+        'items.*.quantity' => '数量',
+        'items.*.raw_material_id' => '原材料',
         'name' => '名称',
         'notes' => '备注',
         'phone' => '电话',

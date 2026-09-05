@@ -9,19 +9,28 @@ declare(strict_types=1);
 
 return [
 
+    'array' => 'Ruangan :attribute mestilah senarai.',
     'boolean' => 'Ruangan :attribute mestilah benar atau palsu.',
+    'decimal' => 'Ruangan :attribute mestilah mempunyai :decimal tempat perpuluhan.',
+    'distinct' => 'Ruangan :attribute mempunyai nilai berulang.',
     'email' => 'Ruangan :attribute mestilah alamat e-mel yang sah.',
     'enum' => ':attribute yang dipilih tidak sah.',
     'exists' => ':attribute yang dipilih tidak sah.',
+    'gt' => [
+        'numeric' => 'Ruangan :attribute mestilah lebih besar daripada :value.',
+    ],
     'image' => 'Ruangan :attribute mestilah imej.',
     'max' => [
+        'array' => 'Ruangan :attribute tidak boleh mempunyai lebih daripada :max item.',
         'file' => 'Ruangan :attribute tidak boleh melebihi :max kilobait.',
+        'numeric' => 'Ruangan :attribute tidak boleh melebihi :max.',
         'string' => 'Ruangan :attribute tidak boleh melebihi :max aksara.',
     ],
     'mimes' => 'Ruangan :attribute mestilah fail berjenis: :values.',
     'min' => [
         'string' => 'Ruangan :attribute mestilah sekurang-kurangnya :min aksara.',
     ],
+    'numeric' => 'Ruangan :attribute mestilah nombor.',
     'regex' => 'Format ruangan :attribute tidak sah.',
     'required' => 'Ruangan :attribute diperlukan.',
     'string' => 'Ruangan :attribute mestilah rentetan aksara.',
@@ -40,6 +49,9 @@ return [
         'description' => 'keterangan',
         'email' => 'e-mel',
         'image' => 'gambar',
+        'items' => 'bahan',
+        'items.*.quantity' => 'kuantiti',
+        'items.*.raw_material_id' => 'bahan mentah',
         'name' => 'nama',
         'notes' => 'nota',
         'phone' => 'telefon',

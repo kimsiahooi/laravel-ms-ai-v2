@@ -1895,11 +1895,124 @@ right on both sides of a DST boundary — and it is digits, so it needs no trans
 - **Month names are still English in every locale** — see below; this change did not
   address it, but it did remove the reason it was blocked.
 
+### Products C — the bill of materials, and the first real number
+
+The last third of products, and the first `decimal(15,4)` column in the schema. A bill is
+which raw materials go into a product and how much of each it takes to make **one** —
+per unit, not per batch, so a production order for 250 multiplies rather than needing its
+own bill.
+
+`bom_items` carries no soft delete and no `created_by`, unlike everything else in the
+catalog. A bill is not a record of something that happened; it is the current answer to
+"what goes into this". What *did* happen is the production order, which will snapshot its
+own copy of these lines at creation — which is what makes it safe to replace a bill
+wholesale, and why `ReplaceBom` deletes and re-inserts rather than reconciling. Nothing
+points at a line's id.
+
+The unique index on `(product_id, raw_material_id)` is the reason `distinct` is in the
+rules: two lines for one material are not a bill with a duplicate, they are two answers to
+one question, and without the rule the second insert would be a 500 instead of a sentence.
+
+#### The decimals, finally
+
+`TenantFormRequest::decimalRules()` and the `decimal()` zod primitive both land here,
+because this is the first column that needs them.
+
+**`numeric` alone is not enough, and the gap is silent.** MySQL in strict mode *errors* on
+too many integer digits but *rounds* extra decimal places — `1.12345` is accepted and
+stored as `1.1235`, nothing is logged, and a per-unit quantity that then multiplies every
+future production order quietly stops being the one somebody typed. `decimal:0,4` refuses
+it; `max:99999999999` turns the overflow case from a 500 into a sentence.
+
+`0,4` is a range rather than `4`, so `2` is as acceptable as `2.0000` — requiring exactly
+four would mean typing three zeros to enter a whole number.
+
+Three places carry the value and none of them is a float:
+
+- `bom_items.quantity` is `decimal(15,4)`;
+- `BomRequest::lines()` hands Eloquent the **string** that passed `decimal:0,4`, so the
+  exact value reaches the column;
+- `BomItemData` trims it back for the form — `2.5000` → `2.5`, and the `.` guard matters:
+  trimming zeros off `10` without it gives `1`.
+
+0.1 has no exact binary representation, and this number gets multiplied by an order size.
+The column is fixed-point for that reason, and casting anywhere along the way would undo it.
+
+#### The editor
+
+A dialog of its own, opened from the row menu, rather than a third group in the product
+form: it is a list somebody grows and prunes rather than a fixed set of fields, and the
+product form is already eight fields long. `RowActions` grew a `children` slot for the
+menu entry — a slot rather than a described list, because what those entries do and
+whether they are permitted differs every time and only their position is shared.
+
+**The rows are uncontrolled, and `key` is what makes that work.** State holds only that a
+row exists plus its seed values; the inputs hold their own values after mount. Removing
+the first of two lines re-indexes the survivor's inputs from `items[1][…]` to
+`items[0][…]` while React keeps the same DOM nodes — so nothing is re-seeded and nothing
+typed is lost. Verified live. `items[0][quantity]` is also exactly the name
+`gate.ts:dotPathToInputName` has been converting zod's `items.0.quantity` into since
+Phase 2, which is what puts a line's error under that line's own field.
+
+`BomLines` sits *inside* the dialog's content rather than beside it, so Radix unmounts it
+on close and an abandoned edit cannot reappear on the next open — the same property
+ordinary uncontrolled fields already rely on.
+
+**`nullable`, not `present`, on `items`.** A bill with no lines is legitimate — it is how
+one is cleared — but a form with no rows renders no `items[…]` inputs, so the key is
+simply absent. There is no markup that submits an empty array. Since the endpoint's whole
+contract is "here is the new bill", absent and empty mean the same thing, and demanding a
+key the browser cannot send would only be a rule the form has to work around.
+
+Below `sm` the column headers hide and each field's own label takes over, which is what
+`labelHidden="sm"` on `TextField` and `ComboboxField` is for. The alternative — labels
+always visible — costs about 170px per line, and a ten-material bill is then most of a
+phone screen per row.
+
+#### Verified in a real browser (Playwright, SSR on)
+
+- Create, edit, re-index, clear. Two lines saved as `2.5000` and `0.3500`; removing the
+  first and saving left one row **with a new id**, which is the delete-and-reinsert
+  visible from outside; removing the last cleared the bill to zero rows.
+- The zod gate refused, before any request left: an empty line ("The material field is
+  required." / "The quantity field is required."), `1.12345` ("The quantity field must
+  have 0-4 decimal places."), and a duplicate material — filed on the **second**
+  occurrence, the one just chosen, not on both.
+- Bypassing the gate with `fetch`, the server refused the same five things with the same
+  sentences, word for word: too many decimals, duplicate, `0`, an unknown material id,
+  and `999999999999`.
+- The listing's SSR HTML — no JavaScript — already contains "3 materials", and never
+  contains `12.0000`: the trim happens in the DTO, not in the browser.
+- 375px: column headers hidden, both labels visible, row stacked, no horizontal overflow.
+  1024px: headers visible, labels `sr-only` but still in the a11y tree, row a
+  `418px 144px 36px` grid.
+- en / ms / zh_Hans complete, including the validation messages
+  ("Ruangan kuantiti mestilah mempunyai 0-4 tempat perpuluhan.") and the counts —
+  "3 materials" / "3 bahan" / "3 项物料". The `count` key uses explicit `{0}|[1,*]`
+  conditions in all three: Malay and Chinese have one plural form, so a bare two-segment
+  string would always have picked "No bill".
+- Console: 0 errors beyond five deliberate 422s from the bypass probes. No #418.
+- `bun run build:ssr` clean.
+
+#### Open, carried forward
+
+- **Laravel flags both halves of a duplicate; zod flags only the second.** Two different
+  readings of the same rule, and the browser's is the better one — it points at the line
+  just changed rather than at two lines equally. Only reachable by bypassing the gate.
+- **Stale errors survive a row being removed.** The bag is keyed by index, so removing a
+  line above an errored one leaves the message under the wrong row until the next submit
+  clears it. Cosmetic, and it self-corrects on the next save.
+- **No bill is shown anywhere but the editor.** The listing carries a count under the
+  product name; there is no read-only view of what a product is made of.
+- The catalog has no seeder — the demo workspace's products, materials and this bill were
+  all made by hand. A fresh tenant starts empty, which is correct, but it means the
+  feature is invisible until somebody adds a material.
+
 ## Phases 3–8 — Modules ⬜
 
 | Phase | Modules | Status |
 |---|---|---|
-| 3 · Catalog | **categories ✅ · suppliers ✅ · customers ✅ · raw materials ✅** · products (core ✅, image ✅, +BOM) | 🚧 |
+| 3 · Catalog | **categories ✅ · suppliers ✅ · customers ✅ · raw materials ✅ · products ✅** (core · image · BOM) | ✅ |
 | 4 · Stock | locations, warehouses, StockService, movements, transfers, reorder levels, stock takes | ⬜ |
 | 5 · Orders | purchase orders, purchase returns, sales orders, sales returns, production orders | ⬜ |
 | 6 · Insights | reports, activity log | ⬜ |

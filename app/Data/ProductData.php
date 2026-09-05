@@ -33,6 +33,18 @@ final class ProductData extends Data
         public ?string $supplier,
         public Unit $unit,
         public ?string $thumb_url,
+        /**
+         * What goes into this product. Empty for most of the catalog — only
+         * manufactured products have a bill.
+         *
+         * Carried on the listing rather than fetched when the editor opens, because
+         * the editor is a dialog over this table and a round trip to open it would
+         * show an empty bill for as long as it took to answer. The cost is bounded:
+         * the controller eager-loads it, and a line is four short fields.
+         *
+         * @var list<BomItemData>
+         */
+        public array $bom,
         public string $created_at,
         public ?string $creator,
     ) {}
@@ -51,6 +63,7 @@ final class ProductData extends Data
             supplier: $product->supplier?->name,
             unit: $product->unit,
             thumb_url: self::thumbUrl($product),
+            bom: array_values($product->bomItems->map(BomItemData::fromBomItem(...))->all()),
             created_at: $product->created_at->toIso8601String(),
             creator: $product->creator?->name,
         );

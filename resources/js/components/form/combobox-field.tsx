@@ -41,6 +41,8 @@ type Props = {
     emptyMessage: TranslationKey;
     /** Adds a "not set" entry and drops the required marker. */
     optional?: boolean;
+    /** Keeps the label for screen readers only — see {@see TextField}. */
+    labelHidden?: boolean | 'sm';
 };
 
 /** Reserved for the "clear this" entry — no row can have it, since ids are numbers. */
@@ -77,6 +79,7 @@ export function ComboboxField({
     searchPlaceholder,
     emptyMessage,
     optional,
+    labelHidden,
 }: Props) {
     const { t } = useTranslation();
     const id = useId();
@@ -111,7 +114,13 @@ export function ComboboxField({
 
     return (
         <div className="space-y-2">
-            <Label htmlFor={id}>
+            <Label
+                htmlFor={id}
+                className={cn(
+                    labelHidden === true && 'sr-only',
+                    labelHidden === 'sm' && 'sm:sr-only',
+                )}
+            >
                 {t(label)}
                 {optional && (
                     <>

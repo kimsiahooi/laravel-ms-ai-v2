@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useTranslation } from '@/hooks/use-translation';
+import { cn } from '@/lib/utils';
 import type { TranslationKey } from '@/types/lang';
 
 type Props = {
@@ -34,6 +35,25 @@ type Props = {
     autoComplete?: string;
     /** `email` and `tel` get the right keyboard on a phone. */
     type?: 'text' | 'email' | 'tel';
+    /**
+     * The on-screen keyboard for a field that holds digits.
+     *
+     * `inputMode`, not `type="number"`. A number input scrolls its value when the
+     * wheel passes over it, refuses to show what was typed when the browser considers
+     * it incomplete, and reads the decimal separator from the OS locale — none of
+     * which is wanted for a quantity that two validation layers already check.
+     */
+    inputMode?: 'decimal';
+    /**
+     * Keep the label for screen readers but take it off the screen. For a repeating
+     * row under a column header, where the visible label is the header and printing
+     * "Quantity" ten times down the column is noise a sighted reader has to skip.
+     *
+     * `'sm'` hides it only from that breakpoint up — for a row whose column headers
+     * are themselves hidden on a phone, where the label is the only thing left saying
+     * what the box is for.
+     */
+    labelHidden?: boolean | 'sm';
     /** Render as a textarea this many rows tall instead of a single line. */
     rows?: number;
 };
@@ -65,6 +85,8 @@ export function TextField({
     autoFocus,
     autoComplete = 'off',
     type = 'text',
+    inputMode,
+    labelHidden,
     rows,
 }: Props) {
     const { t } = useTranslation();
@@ -82,6 +104,7 @@ export function TextField({
     const shared = {
         id,
         name,
+        inputMode,
         defaultValue: defaultValue ?? '',
         required: !optional,
         autoFocus,
@@ -93,7 +116,13 @@ export function TextField({
 
     return (
         <div className="space-y-2">
-            <Label htmlFor={id}>
+            <Label
+                htmlFor={id}
+                className={cn(
+                    labelHidden === true && 'sr-only',
+                    labelHidden === 'sm' && 'sm:sr-only',
+                )}
+            >
                 {t(label)}
                 {optional && (
                     // An explicit `{' '}`, not a margin. A margin is the obvious fix
