@@ -3,6 +3,7 @@ import { Boxes } from 'lucide-react';
 import { ColumnHeader } from '@/components/data/column-header';
 import { DataTable } from '@/components/data/data-table';
 import { DateCell } from '@/components/data/date-cell';
+import { SelectFilter } from '@/components/data/select-filter';
 import { columnsFor } from '@/components/data/table';
 import { EmptyState } from '@/components/feedback/empty-state';
 import { useTranslation } from '@/hooks/use-translation';
@@ -17,6 +18,8 @@ type RawMaterial = App.Data.RawMaterialData;
 type Props = {
     rawMaterials: Paginated<RawMaterial>;
     filters: ResourceFilters;
+    /** Unit codes in use, for the filter. See the controller's unitsInUse(). */
+    unitsInUse: App.Enums.Unit[];
 };
 
 /**
@@ -91,7 +94,11 @@ function UnitSymbol({ unit }: { unit: App.Enums.Unit }) {
     );
 }
 
-export default function RawMaterialsIndex({ rawMaterials, filters }: Props) {
+export default function RawMaterialsIndex({
+    rawMaterials,
+    filters,
+    unitsInUse,
+}: Props) {
     const { t } = useTranslation();
 
     // setLayoutProps rather than a static `.layout`: a breadcrumb title is a resolved
@@ -123,6 +130,25 @@ export default function RawMaterialsIndex({ rawMaterials, filters }: Props) {
                 columns={columns}
                 getRowId={(rawMaterial) => String(rawMaterial.id)}
                 only={['rawMaterials']}
+                toolbar={
+                    // Hidden below two units: a filter offering one choice narrows
+                    // nothing, and a workspace that measures everything in pieces
+                    // should not carry a control that cannot change the answer.
+                    unitsInUse.length > 1
+                        ? (filter) => (
+                              <SelectFilter
+                                  value={filter.values.unit ?? ''}
+                                  onChange={(unit) => filter.set('unit', unit)}
+                                  options={unitsInUse.map((unit) => ({
+                                      value: unit,
+                                      label: `units.name.${unit}` as const,
+                                  }))}
+                                  allLabel="raw-materials.filter.all_units"
+                                  ariaLabel="raw-materials.filter.unit"
+                              />
+                          )
+                        : undefined
+                }
                 searchPlaceholder={t('raw-materials.search_placeholder')}
                 noMatch={{
                     title: t('raw-materials.no_match.title'),

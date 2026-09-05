@@ -64,17 +64,29 @@ final class ProductController
 
     public function index(Request $request): Response
     {
+        // The unit filter. Resolved through the enum, so `?unit=nonsense` is simply no
+        // filter rather than an empty list or an error — there is nothing to protect
+        // here beyond the column, and tryFrom is the whole of that.
+        $unit = Unit::tryFrom((string) $request->string('unit'));
+
+        // `media` and `bomItems` with the rest: without them every row asks for its
+        // own photo and its own bill, and a page of twenty-five products is fifty-one
+        // queries instead of three.
+        $query = Product::query()->with([
+            'category', 'supplier', 'creator', 'media', 'bomItems.rawMaterial',
+        ]);
+
+        if ($unit !== null) {
+            $query->where('unit', $unit);
+        }
+
         ['rows' => $products, 'filters' => $filters] = $this->resourceList(
             request: $request,
-            // `media` and `bomItems` with the rest: without them every row asks for
-            // its own photo and its own bill, and a page of twenty-five products is
-            // fifty-one queries instead of three.
-            query: Product::query()->with([
-                'category', 'supplier', 'creator', 'media', 'bomItems.rawMaterial',
-            ]),
+            query: $query,
             sortable: self::SORTABLE,
             toData: ProductData::fromProduct(...),
             searchUsing: self::searchBy(...),
+            extra: ['unit' => $unit === null ? '' : $unit->value],
         );
 
         return Inertia::render('products/index', [
@@ -95,6 +107,8 @@ final class ProductController
             // material added last at the bottom of a hundred-row popover.
             'rawMaterials' => OptionData::collect(RawMaterial::query()->orderBy('name')->get()),
             'units' => Unit::grouped(),
+            // Just the codes the unit filter may offer — see unitsInUse().
+            'unitsInUse' => self::unitsInUse(),
         ]);
     }
 
@@ -187,5 +201,31 @@ final class ProductController
         if ($request->boolean('remove_image')) {
             $product->clearMediaCollection(Product::IMAGE);
         }
+    }
+
+    /**
+     * The unit codes this workspace's products actually use, in the enum's own order.
+     *
+     * Only the units in use, so the filter never offers a choice that returns nothing
+     * — there are fourteen units and a workspace typically uses three. Computed over
+     * the whole table rather than the current page or the current search: a filter
+     * whose options moved as you searched would be a filter you could not get back out
+     * of.
+     *
+     * Enum order rather than alphabetical, so the list reads mass, volume, length,
+     * count instead of interleaving them.
+     *
+     * @return list<string>
+     */
+    private static function unitsInUse(): array
+    {
+        $used = Product::query()->distinct()->pluck('unit')
+            ->map(static fn (Unit $unit): string => $unit->value)
+            ->all();
+
+        return array_values(array_filter(
+            array_map(static fn (Unit $unit): string => $unit->value, Unit::cases()),
+            static fn (string $code): bool => in_array($code, $used, true),
+        ));
     }
 }

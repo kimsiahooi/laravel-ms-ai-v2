@@ -46,6 +46,15 @@ trait RendersResourceIndex
      * @param  array<int, string>  $sortable  columns the UI may sort by; this list is the injection guard
      * @param  Closure(TModel): mixed  $toData  maps one row to its wire shape
      * @param  Closure(Builder<TModel>, string): void  $searchUsing  applied only when the term is non-empty
+     * @param  array<string, string>  $extra  this resource's own filters — a unit, a status, a
+     *                                        date range — already resolved and already applied
+     *                                        to `$query` by the caller. Only echoed back here,
+     *                                        so the table re-sends them on every visit and a
+     *                                        sort or a page change does not silently widen the
+     *                                        result set. Applying them stays at the call site
+     *                                        for the same reason `searchUsing` does: what the
+     *                                        filter *means* should be visible next to the query
+     *                                        it narrows, not buried in a shared trait.
      * @param  string  $defaultSort  the house default, and lists are expected to take it:
      *                               newest first is the one ordering that means the same
      *                               thing on every screen, and it puts what someone just
@@ -53,7 +62,7 @@ trait RendersResourceIndex
      *                               where a list has its own notion of recency — the
      *                               workspace archive sorts by `deleted_at`, which is the
      *                               same rule applied to the event that list is about.
-     * @return array{rows: LengthAwarePaginator<int, mixed>, filters: array{search: string, per_page: int, sort: string, direction: 'asc'|'desc', sortable: array<int, string>}}
+     * @return array{rows: LengthAwarePaginator<int, mixed>, filters: array{search: string, per_page: int, sort: string, direction: 'asc'|'desc', sortable: array<int, string>, extra: array<string, string>}}
      */
     protected function resourceList(
         Request $request,
@@ -63,6 +72,7 @@ trait RendersResourceIndex
         Closure $searchUsing,
         string $defaultSort = 'created_at',
         string $defaultDirection = 'desc',
+        array $extra = [],
     ): array {
         $search = trim((string) $request->string('search'));
         $perPage = $this->perPage($request);
@@ -81,6 +91,10 @@ trait RendersResourceIndex
                 'search' => $search,
                 'per_page' => $perPage,
                 ...$sort,
+                // Always present, even empty, so the client's shape is one thing rather
+                // than two. Blank values are dropped: an unset filter has no business
+                // in the URL.
+                'extra' => array_filter($extra, static fn (string $value): bool => $value !== ''),
             ],
         ];
     }

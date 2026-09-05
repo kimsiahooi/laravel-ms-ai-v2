@@ -25,7 +25,7 @@ import {
 } from '@/components/ui/table';
 import { useTranslation } from '@/hooks/use-translation';
 import { cn } from '@/lib/utils';
-import type { Paginated, ResourceFilters } from '@/types';
+import type { FilterApi, Paginated, ResourceFilters } from '@/types';
 
 /**
  * A server-driven list: search, sort, page size and paging all round-trip to the
@@ -69,7 +69,14 @@ type Props<TRow extends RowData> = {
      */
     only?: string[];
     /** Extra controls beside the search box — a status filter, a date range. */
-    toolbar?: ReactNode;
+    /**
+     * This resource's own filter controls, rendered beside the search box.
+     *
+     * A render prop rather than a node, because a control has to route its change
+     * through the table — see {@see FilterApi} — and handing it the setter is what
+     * keeps "narrowing starts again at page 1" in one place.
+     */
+    toolbar?: (filter: FilterApi) => ReactNode;
 };
 
 export function DataTable<TRow extends RowData>({
@@ -112,6 +119,8 @@ export function DataTable<TRow extends RowData>({
                     per_page: filters.per_page,
                     sort: filters.sort,
                     direction: filters.direction,
+                    // Before `params`, so a control changing one of them wins.
+                    ...filters.extra,
                     ...params,
                 },
                 {
@@ -136,6 +145,20 @@ export function DataTable<TRow extends RowData>({
         [visit],
     );
     const onPage = useCallback((to: number) => visit({ page: to }), [visit]);
+
+    /**
+     * What a per-resource filter control is handed. `set` routes through `visit`, so
+     * "narrowing the results starts again at page 1" keeps having exactly one home —
+     * a control calling `router.get` itself would be the second copy of that rule.
+     */
+    const filter = useMemo<FilterApi>(
+        () => ({
+            values: filters.extra,
+            set: (key, value) =>
+                visit({ [key]: value || undefined, page: undefined }),
+        }),
+        [filters.extra, visit],
+    );
 
     const table = useTable({
         features,
@@ -188,7 +211,7 @@ export function DataTable<TRow extends RowData>({
                     search={filters.search}
                     placeholder={searchPlaceholder}
                     onSearch={onSearch}
-                    extra={toolbar}
+                    extra={toolbar?.(filter)}
                 />
             )}
 

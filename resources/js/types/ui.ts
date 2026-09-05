@@ -39,6 +39,28 @@ export type ResourceFilters = {
     sort: string;
     direction: 'asc' | 'desc';
     sortable: string[];
+    /**
+     * This resource's own filters — `{ unit: 'kg' }` — round-tripped alongside the
+     * rest so that sorting or paging cannot silently widen the result set.
+     *
+     * A bag rather than named keys, because what a list filters by is the list's
+     * business: units here, an order status and a date range later. `DataTable` only
+     * has to re-send whatever it was given, which is the one thing every list agrees
+     * on. Empty values never reach it — the server drops them.
+     */
+    extra: Record<string, string>;
+};
+
+/**
+ * What `DataTable` hands its toolbar slot so a per-resource control can narrow the
+ * list: the filters currently in force, and the one way to change them.
+ *
+ * `set('unit', '')` clears — an empty value drops the key from the URL rather than
+ * sending a blank one.
+ */
+export type FilterApi = {
+    values: Record<string, string>;
+    set: (key: string, value: string) => void;
 };
 
 export type FlashToast = {

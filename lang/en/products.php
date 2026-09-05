@@ -13,6 +13,11 @@ return [
 
     'search_placeholder' => 'Search name, SKU or barcode…',
 
+    'filter' => [
+        'unit' => 'Filter by unit',
+        'all_units' => 'All units',
+    ],
+
     'column' => [
         'name' => 'Product',
         'sku' => 'SKU',

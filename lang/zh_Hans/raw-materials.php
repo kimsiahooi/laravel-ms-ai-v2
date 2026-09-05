@@ -13,6 +13,11 @@ return [
 
     'search_placeholder' => '搜索名称、SKU 或条码…',
 
+    'filter' => [
+        'unit' => '按单位筛选',
+        'all_units' => '所有单位',
+    ],
+
     'column' => [
         'name' => '材料',
         'sku' => 'SKU',

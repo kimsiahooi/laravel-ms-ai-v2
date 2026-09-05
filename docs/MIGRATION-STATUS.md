@@ -2080,6 +2080,69 @@ surface a stale line.
   There are none in the demo data now, and the guard stops new ones, but nothing repairs
   an old one.
 
+### Lists can filter by unit, and the toolbar slot finally has a tenant
+
+Asked for a unit filter on raw materials and products. The interesting part was not the
+filter; it was that `ListToolbar` has had an `extra` slot since phase 2 documented for
+"a status filter, a date range" and nothing had ever used it. Building the first one
+decided the shape every later filter inherits, so it was built generic.
+
+**Three pieces, none of them about units.**
+
+- `RendersResourceIndex` gained `extra` — a bag of this resource's own filters, echoed
+  back under `filters.extra`. Only echoed: the *constraint* is applied by the controller
+  on its own Builder, for the same reason `searchUsing` is a closure rather than a flag.
+  What a filter means belongs beside the query it narrows.
+- `DataTable` re-sends `filters.extra` on every visit. Without that, sorting a filtered
+  list would silently widen it back out — the failure mode this kind of feature usually
+  ships with.
+- The `toolbar` prop became a **render prop** taking a `FilterApi` (`values`, `set`).
+  A control has to route its change through the table, because "narrowing starts again
+  at page 1" already lives in `visit()` and a control calling `router.get` itself would
+  be the second copy of that rule.
+
+`SelectFilter` is the control: translated labels from `lang/`, no `<Label>`, no name on
+the wire. It is to a filter what `SelectField` is to a form — and deliberately not
+`ComboboxField`, whose search box would be furniture over a list of six.
+
+**Only the units actually in use are offered.** Fourteen exist; the demo workspace uses
+six for products and three for materials, and the two lists are different. Computed over
+the whole table rather than the current page or search — a filter whose options moved as
+you typed would be one you could not get back out of. Ordered by the enum's own cases,
+so it reads mass, volume, length, count instead of interleaving them alphabetically.
+Below two units the control is not rendered at all: a filter offering one choice narrows
+nothing.
+
+`Unit::tryFrom()` is the whole of the input handling. `?unit=nonsense` is no filter
+rather than an error or an empty list — there is nothing to protect here beyond the
+column.
+
+#### Verified in a real browser (Playwright, SSR on)
+
+- Products offered exactly its six units in enum order (Kilogram, Millilitre, Litre,
+  Metre, Piece, Box); raw materials offered its own three (Kilogram, Millilitre, Sheet).
+- `?unit=ml` narrowed six rows to one, and the trigger showed the choice.
+- **It composes**: sorting kept `unit=ml` (`?direction=asc&sort=name&unit=ml`), and a
+  search on top gave `?search=Aladdin&sort=name&unit=ml` with the filter still shown.
+- `?unit=nonsense` fell back to "All units" and all six rows, no error.
+- Changing the filter dropped `page` from the URL. The demo data is too small for a
+  second page to exist, so this was observed on the URL rather than on rows.
+- Setting every material to one unit made the control disappear, leaving search intact;
+  restored afterwards.
+- ms: "Tapis mengikut unit" / "Semua unit", with unit names already translated through
+  the existing `units.name.*` keys.
+- 375px: stacks under the search box, both full width, no horizontal overflow. Console
+  clean.
+
+#### Open, carried forward
+
+- **Only one filter per list so far.** `filters.extra` is a bag and `SelectFilter` is
+  generic, so a second one is a second control and another key — but nothing has yet
+  proved two side by side, and the toolbar's `sm:ml-auto` row may want revisiting when
+  it happens.
+- `per_page` accepts only 10/25/50/100, so a deep link with anything else silently
+  becomes 10. Pre-existing, noticed while testing the page reset, not changed.
+
 ## Phases 3–8 — Modules ⬜
 
 | Phase | Modules | Status |

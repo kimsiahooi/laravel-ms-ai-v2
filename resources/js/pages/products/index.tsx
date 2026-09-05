@@ -3,6 +3,7 @@ import { Package } from 'lucide-react';
 import { ColumnHeader } from '@/components/data/column-header';
 import { DataTable } from '@/components/data/data-table';
 import { DateCell } from '@/components/data/date-cell';
+import { SelectFilter } from '@/components/data/select-filter';
 import { columnsFor } from '@/components/data/table';
 import { EmptyState } from '@/components/feedback/empty-state';
 import { useTranslation } from '@/hooks/use-translation';
@@ -22,6 +23,8 @@ type Product = App.Data.ProductData;
 type Props = {
     products: Paginated<Product>;
     filters: ResourceFilters;
+    /** Unit codes in use, for the filter. See the controller's unitsInUse(). */
+    unitsInUse: App.Enums.Unit[];
 };
 
 /**
@@ -112,7 +115,11 @@ function NameMeta({ product }: { product: Product }) {
     );
 }
 
-export default function ProductsIndex({ products, filters }: Props) {
+export default function ProductsIndex({
+    products,
+    filters,
+    unitsInUse,
+}: Props) {
     const { t } = useTranslation();
 
     setLayoutProps({
@@ -142,6 +149,25 @@ export default function ProductsIndex({ products, filters }: Props) {
                 columns={columns}
                 getRowId={(product) => String(product.id)}
                 only={['products']}
+                toolbar={
+                    // Hidden below two units: a filter offering one choice narrows
+                    // nothing, and a workspace that measures everything in pieces
+                    // should not carry a control that cannot change the answer.
+                    unitsInUse.length > 1
+                        ? (filter) => (
+                              <SelectFilter
+                                  value={filter.values.unit ?? ''}
+                                  onChange={(unit) => filter.set('unit', unit)}
+                                  options={unitsInUse.map((unit) => ({
+                                      value: unit,
+                                      label: `units.name.${unit}` as const,
+                                  }))}
+                                  allLabel="products.filter.all_units"
+                                  ariaLabel="products.filter.unit"
+                              />
+                          )
+                        : undefined
+                }
                 searchPlaceholder={t('products.search_placeholder')}
                 noMatch={{
                     title: t('products.no_match.title'),
