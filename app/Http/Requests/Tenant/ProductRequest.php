@@ -6,7 +6,6 @@ namespace App\Http\Requests\Tenant;
 
 use App\Enums\Unit;
 use App\Models\Product;
-use App\Support\ActiveExists;
 use Illuminate\Validation\Rule;
 
 /**
@@ -48,8 +47,8 @@ final class ProductRequest extends TenantFormRequest
             ],
             'barcode' => ['nullable', 'string', 'max:100'],
             'description' => ['nullable', 'string', 'max:2000'],
-            'category_id' => ['nullable', ActiveExists::of('categories')],
-            'supplier_id' => ['nullable', ActiveExists::of('suppliers')],
+            'category_id' => ['nullable', ...$this->foreignKey('categories')],
+            'supplier_id' => ['nullable', ...$this->foreignKey('suppliers')],
             'unit' => ['required', Rule::enum(Unit::class)],
             // `image` and `mimes` overlap on purpose. `image` refuses anything that is
             // not a picture and says so in those words; `mimes` narrows to the formats

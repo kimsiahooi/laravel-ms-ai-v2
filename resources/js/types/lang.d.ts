@@ -740,6 +740,7 @@ export type TranslationKey =
     | 'validation.gte.numeric'
     | 'validation.image'
     | 'validation.in'
+    | 'validation.integer'
     | 'validation.max.array'
     | 'validation.max.file'
     | 'validation.max.numeric'

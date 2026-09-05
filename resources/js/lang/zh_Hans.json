@@ -736,6 +736,7 @@
     "validation.gte.numeric": ":attribute必须大于或等于 :value。",
     "validation.image": ":attribute必须是图片。",
     "validation.in": "所选的:attribute无效。",
+    "validation.integer": ":attribute必须是整数。",
     "validation.max.array": ":attribute最多只能有 :max 项。",
     "validation.max.file": ":attribute不能大于 :max KB。",
     "validation.max.numeric": ":attribute不能大于 :max。",

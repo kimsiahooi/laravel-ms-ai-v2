@@ -10,6 +10,7 @@ import {
     MOVEMENT_TYPES,
     stockMovementSchema,
 } from '@/lib/validation/schemas/stock-movement';
+import { OnHandLine } from '@/pages/stock-movements/_components/on-hand-line';
 import type { StockPickerEntry } from '@/pages/stock-movements/_components/stock-picker-field';
 import { StockPickerField } from '@/pages/stock-movements/_components/stock-picker-field';
 import { store } from '@/routes/stock-movements';
@@ -65,6 +66,12 @@ export function MovementFormDialog({
     const { t } = useTranslation();
     const { warehouses, items } = usePage<PageProps>().props;
     const [type, setType] = useState<MovementType>('in');
+
+    // Mirrored here only so the on-hand line can see both at once. Each picker still
+    // owns its own value and its own hidden input — this is a second reader, not a
+    // second source of truth.
+    const [warehouseId, setWarehouseId] = useState('');
+    const [item, setItem] = useState('');
 
     const warehouseEntries: StockPickerEntry[] = useMemo(
         () =>
@@ -161,6 +168,7 @@ export function MovementFormDialog({
                         placeholder="stock-movements.field.warehouse_placeholder"
                         searchPlaceholder="stock-movements.field.warehouse_search"
                         emptyMessage="stock-movements.field.warehouse_empty"
+                        onChange={setWarehouseId}
                         error={errors.warehouse_id}
                     />
 
@@ -171,20 +179,27 @@ export function MovementFormDialog({
                         placeholder="stock-movements.field.item_placeholder"
                         searchPlaceholder="stock-movements.field.item_search"
                         emptyMessage="stock-movements.field.item_empty"
+                        onChange={setItem}
                         error={errors.item}
                     />
 
-                    <TextField
-                        name="quantity"
-                        label="stock-movements.field.quantity"
-                        placeholder={
-                            type === 'set'
-                                ? 'stock-movements.field.quantity_placeholder_set'
-                                : 'stock-movements.field.quantity_placeholder'
-                        }
-                        error={errors.quantity}
-                        inputMode="decimal"
-                    />
+                    <div className="space-y-2">
+                        <TextField
+                            name="quantity"
+                            label="stock-movements.field.quantity"
+                            placeholder={
+                                type === 'set'
+                                    ? 'stock-movements.field.quantity_placeholder_set'
+                                    : 'stock-movements.field.quantity_placeholder'
+                            }
+                            error={errors.quantity}
+                            inputMode="decimal"
+                        />
+
+                        {/* Beside the box it informs rather than up by the pickers, and
+                            for `set` it is the number being replaced. */}
+                        <OnHandLine warehouseId={warehouseId} item={item} />
+                    </div>
 
                     <TextField
                         name="notes"

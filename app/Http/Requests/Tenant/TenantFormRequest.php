@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Tenant;
 
+use App\Support\ActiveExists;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
@@ -37,6 +38,32 @@ abstract class TenantFormRequest extends FormRequest
     public function authorize(): bool
     {
         return $this->user() !== null;
+    }
+
+    /**
+     * A foreign key: an integer, naming a row that exists and is not trashed.
+     *
+     * **The `integer` is the load-bearing half, and its absence is silent.** Laravel's
+     * `exists` accepts an *array* — it checks that every element exists — so
+     * `warehouse_id[]=7` passes a bare `['required', ActiveExists::of('warehouses')]`.
+     * The controller then reads it with `$request->integer()`, and PHP casts a non-empty
+     * array to `1`. The request is validated, accepted, and applied to **row 1** — a
+     * movement recorded against a warehouse nobody named. Nothing errors, nothing is
+     * logged, and the ledger is wrong.
+     *
+     * That is the same shape as the `?search[]=x` bug that 500'd every list: a parameter
+     * arriving as an array where a scalar was assumed. This is the version that corrupts
+     * data rather than crashing, which is worse — so it lives in one helper rather than
+     * in six rule arrays that each have to remember.
+     *
+     * `nullable` for an optional key stays the caller's to add, because it has to come
+     * first.
+     *
+     * @return array<int, mixed>
+     */
+    protected function foreignKey(string $table): array
+    {
+        return ['integer', ActiveExists::of($table)];
     }
 
     /**

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Tenant;
 
-use App\Support\ActiveExists;
 use App\Support\StockItem;
 use Closure;
 use Illuminate\Validation\Rule;
@@ -43,7 +42,7 @@ final class StockMovementRequest extends TenantFormRequest
         $bound = $this->input('type') === 'set' ? 'gte:0' : 'gt:0';
 
         return [
-            'warehouse_id' => ['required', ActiveExists::of('warehouses')],
+            'warehouse_id' => ['required', ...$this->foreignKey('warehouses')],
             // One field, not a type and an id — see StockItem on why.
             'item' => ['required', 'string', $this->itemExists()],
             'type' => ['required', Rule::in(self::TYPES)],

@@ -201,15 +201,22 @@ function preview(keys: string[]): string {
 // failing, so nothing short of reading every message in every language would catch it.
 
 /**
- * Rule builders this project wrote, and the Laravel rule each one produces.
+ * Rule builders this project wrote, and the Laravel rules each one produces.
  *
  * `Rule::*` is recognised by shape; these cannot be, because the name says nothing
- * about the rule underneath. Without the mapping the message check reads
- * `ActiveExists::of('categories')` as a rule literally called "categories" — which is
- * both a false alarm and, worse, silence about the `exists` message it really needs.
+ * about the rules underneath. Without the mapping the message check reads
+ * `ActiveExists::of('categories')` as a rule literally called "categories" — both a
+ * false alarm and, worse, silence about the `exists` message it really needs.
+ *
+ * The `$this->` entries matter for a second reason: the helpers on TenantFormRequest
+ * expand to several rules each, and until they were listed here the gate could not see
+ * any of them. `decimalRules()` has produced `numeric` and `decimal` since products
+ * part C and this check has never once looked at them.
  */
-const OWN_BUILDERS: Record<string, string> = {
-    'ActiveExists::of': 'exists',
+const OWN_BUILDERS: Record<string, string[]> = {
+    'ActiveExists::of': ['exists'],
+    '$this->foreignKey': ['integer', 'exists'],
+    '$this->decimalRules': ['numeric', 'decimal', 'gt', 'gte', 'max'],
 };
 
 /** Rules that never produce a message — they only decide whether others run. */
@@ -279,14 +286,16 @@ function rulesInUse(php: string): Array<[string, string]> {
         // Builders this project wrote, which produce a Laravel rule under another name.
         const ours = Object.entries(OWN_BUILDERS)
             .filter(([call]) => block.includes(call))
-            .map(([, rule]) => rule);
+            .flatMap(([, rules]) => rules);
         // A builder's arguments are table and column names, not rules — drop every
-        // static call before reading the plain-string rules, or `Rule::unique('tenants',
-        // 'id')` reports two rules called `tenants` and `id`, and
-        // `ActiveExists::of('categories')` reports one called `categories`.
+        // builder call before reading the plain-string rules, or `Rule::unique('tenants',
+        // 'id')` reports two rules called `tenants` and `id`,
+        // `ActiveExists::of('categories')` reports one called `categories`, and
+        // `$this->foreignKey('locations')` reports one called `locations`.
         const strings = [
             ...block
                 .replace(/\w+::\w+\s*\([^)]*\)/g, '')
+                .replace(/\$this->\w+\s*\([^)]*\)/g, '')
                 .matchAll(/'([a-z_]+)(?::[^']*)?'/g),
         ].map((m) => m[1]);
 

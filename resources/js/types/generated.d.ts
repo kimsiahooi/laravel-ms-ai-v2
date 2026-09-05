@@ -96,6 +96,10 @@ user: string | null,
 notes: string | null,
 created_at: string,
 };
+export type StockOnHandData = {
+on_hand: string,
+unit: App.Enums.Unit,
+};
 export type SupplierData = {
 id: number,
 name: string,

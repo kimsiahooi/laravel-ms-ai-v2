@@ -55,6 +55,7 @@ export function StockPickerField({
     label,
     entries,
     defaultValue,
+    onChange,
     error,
     placeholder,
     searchPlaceholder,
@@ -65,6 +66,16 @@ export function StockPickerField({
     label: TranslationKey;
     entries: StockPickerEntry[];
     defaultValue?: string | null;
+    /**
+     * Told what was picked, when something else on the form depends on it.
+     *
+     * The field keeps owning the value — the hidden input is still what the server
+     * reads, and a caller that ignores this gets a control that works on its own. This
+     * only exists so a *second* thing can react, which for movements is the on-hand
+     * line: it needs the warehouse and the item together, and neither picker knows
+     * about the other.
+     */
+    onChange?: (value: string) => void;
     error?: string;
     placeholder: TranslationKey;
     searchPlaceholder: TranslationKey;
@@ -183,6 +194,7 @@ export function StockPickerField({
                                             value={entry.value}
                                             onSelect={(value) => {
                                                 setChosen(value);
+                                                onChange?.(value);
                                                 setOpen(false);
                                             }}
                                         >

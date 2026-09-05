@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Tenant;
 
-use App\Support\ActiveExists;
-
 /**
  * A product's whole bill of materials, in one request.
  *
@@ -41,7 +39,7 @@ final class BomRequest extends TenantFormRequest
                 // the unique index would refuse the second with a 500. This refuses it
                 // with a sentence, pointing at the line that repeats.
                 'distinct',
-                ActiveExists::of('raw_materials'),
+                ...$this->foreignKey('raw_materials'),
             ],
             'items.*.quantity' => ['required', ...$this->decimalRules()],
         ];

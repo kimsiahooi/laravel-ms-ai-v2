@@ -736,6 +736,7 @@
     "validation.gte.numeric": "Ruangan :attribute mestilah lebih besar daripada atau sama dengan :value.",
     "validation.image": "Ruangan :attribute mestilah imej.",
     "validation.in": ":attribute yang dipilih tidak sah.",
+    "validation.integer": "Ruangan :attribute mestilah integer.",
     "validation.max.array": "Ruangan :attribute tidak boleh mempunyai lebih daripada :max item.",
     "validation.max.file": "Ruangan :attribute tidak boleh melebihi :max kilobait.",
     "validation.max.numeric": "Ruangan :attribute tidak boleh melebihi :max.",

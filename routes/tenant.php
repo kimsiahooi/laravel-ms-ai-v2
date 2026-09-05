@@ -11,6 +11,7 @@ use App\Http\Controllers\Tenant\LocationController;
 use App\Http\Controllers\Tenant\MediaController;
 use App\Http\Controllers\Tenant\ProductController;
 use App\Http\Controllers\Tenant\RawMaterialController;
+use App\Http\Controllers\Tenant\StockLookupController;
 use App\Http\Controllers\Tenant\StockMovementController;
 use App\Http\Controllers\Tenant\SupplierController;
 use App\Http\Controllers\Tenant\WarehouseController;
@@ -135,6 +136,12 @@ Route::middleware(['web', InitializeTenancyByPath::class, SetTenantUrlDefault::c
                 Route::get('/', [StockMovementController::class, 'index'])->name('index');
                 Route::post('/', [StockMovementController::class, 'store'])->name('store');
             });
+
+            // A read-only lookup the movement dialog makes while somebody is choosing,
+            // so the quantity box is not typed into blind. JSON, not a page — see the
+            // controller. Named `stock.on-hand` so TenantPermissions can map it.
+            Route::get('stock/on-hand', [StockLookupController::class, 'onHand'])
+                ->name('stock.on-hand');
 
             // Every uploaded file in the workspace, served from one place: a product
             // photo today, the business logo later. Deliberately outside the module

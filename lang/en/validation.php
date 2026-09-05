@@ -38,6 +38,7 @@ return [
     ],
     'image' => 'The :attribute field must be an image.',
     'in' => 'The selected :attribute is invalid.',
+    'integer' => 'The :attribute field must be an integer.',
     'max' => [
         'array' => 'The :attribute field must not have more than :max items.',
         'file' => 'The :attribute field must not be greater than :max kilobytes.',

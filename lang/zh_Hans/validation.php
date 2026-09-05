@@ -23,6 +23,7 @@ return [
     ],
     'image' => ':attribute必须是图片。',
     'in' => '所选的:attribute无效。',
+    'integer' => ':attribute必须是整数。',
     'max' => [
         'array' => ':attribute最多只能有 :max 项。',
         'file' => ':attribute不能大于 :max KB。',

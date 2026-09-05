@@ -24,6 +24,7 @@ return [
     ],
     'image' => 'Ruangan :attribute mestilah imej.',
     'in' => ':attribute yang dipilih tidak sah.',
+    'integer' => 'Ruangan :attribute mestilah integer.',
     'max' => [
         'array' => 'Ruangan :attribute tidak boleh mempunyai lebih daripada :max item.',
         'file' => 'Ruangan :attribute tidak boleh melebihi :max kilobait.',

@@ -2731,6 +2731,93 @@ other lists use.
 - The preset has no `success` token, so only the outward direction is coloured. Worth
   revisiting if a green is ever added.
 
+### On-hand while you type — and the bug it uncovered
+
+Raised after using the movement form: you pick a warehouse and an item, ask to take six,
+and the refusal is the first thing that tells you six was never possible. The dialog now
+shows what is there, under the quantity box.
+
+**Fetched, not shipped with the page.** Every on-hand row could travel as a prop, and for
+a small workspace that is a few dozen. But the number changes whenever anybody else
+records anything, and a figure baked in at page load goes quietly stale while a dialog
+sits open. `GET /{tenant}/stock/on-hand?warehouse_id=&item=` returns JSON — the first
+non-Inertia endpoint in the app, which is why it is its own controller rather than a
+method among ones that all render or redirect.
+
+**It never disables anything.** The lookup takes no lock, so the figure is out of date
+the moment it arrives; the refusal at submit time is the guarantee. Showing "3" must not
+stop somebody submitting 4 that a colleague's delivery has just made possible.
+
+An `AbortController` per request, because choosing a second item before the first answer
+lands would otherwise leave the earlier number on screen under the later item — a wrong
+figure that looks exactly like a right one.
+
+Gated on `stock-movements.view` through `ROUTE_OVERRIDES`, not left open to any signed-in
+user: it returns a stock level. When transfers and stock takes call it too, that mapping
+needs to become "any stock screen's view permission" rather than one of them.
+
+#### The bug: `exists` accepts an array
+
+Probing the new endpoint with `?warehouse_id[]=7` returned a 404 with a stack trace,
+which was the thread worth pulling. Measured, not guessed:
+
+```
+exists rule with ['7']                     → PASSES
+$request->integer('warehouse_id') of ['7'] → 1
+```
+
+So a request with `warehouse_id[]=7` is **validated, accepted, and applied to row 1**.
+On the lookup that is a wrong answer. On `POST /stock-movements` it is a movement
+recorded against a warehouse nobody named — no error, no log, and a ledger that is
+simply wrong. Six FormRequests had the shape: both stock requests, `WarehouseRequest`,
+`ProductRequest` (twice) and `BomRequest`.
+
+This is the same shape as the `?search[]=x` bug that 500'd every list in `96f9892` — a
+parameter arriving as an array where a scalar was assumed. That one crashed, which is
+how it was found. This one corrupts, which is why it lives in one helper now rather than
+six rule arrays that each have to remember:
+
+```php
+protected function foreignKey(string $table): array
+{
+    return ['integer', ActiveExists::of($table)];
+}
+```
+
+#### And the gate that could not see it
+
+Adding the helper made `check:i18n` report a rule called `locations` — it reads
+`rules()` as text, and `$this->foreignKey('locations')` looked like a quoted rule name.
+It already handled `ActiveExists::of(…)`; it had no notion of `$this->` builders at all.
+
+Fixing that properly turned up something worse: **`decimalRules()` has expanded to
+`numeric` and `decimal` since products part C, and this check has never once looked at
+them.** The builder map now lists both helpers with every rule they produce, and the
+argument-stripping handles instance calls as well as static ones. The first thing the
+repaired gate found was that `integer` had no translated message — so until now it would
+have rendered in English inside Malay and Chinese.
+
+#### Verified in a real browser (Playwright, SSR on)
+
+- Nothing chosen, or only a warehouse: the line is absent, not a placeholder for an
+  answer nobody asked for.
+- Both chosen: **"On hand now: 18 pcs"**, matching the ledger. Changing the item updates
+  it; an item never stocked there reads **"On hand now: 0 pcs"**.
+- The endpoint: a real pair 200s; unknown warehouse, unknown item, malformed item and
+  both-missing each 422 on the right field.
+- **The hole, closed on all four paths**: `?warehouse_id[]=7`, `POST` with
+  `warehouse_id[]`, `location_id[]` and `category_id[]` are now *"…must be an integer"*
+  — and the database confirms no product, warehouse or movement was created by any of
+  them. The scalar forms still work.
+
+#### Open, carried forward
+
+- `lang/units.php` is read for the symbol, so the line says "18 pcs". The unit is the
+  item's own, which is right for now — multi-UOM would make it a question.
+- The lookup is one request per choice. Fine at this size; a workspace where somebody
+  scrolls a picker of thousands would want it debounced.
+- No barcode scan into the picker yet — v1 has `matchStockItem()`. Phase 8.
+
 ## Phases 3–8 — Modules ⬜
 
 | Phase | Modules | Status |

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Http\Requests\Tenant;
 
 use App\Models\Warehouse;
-use App\Support\ActiveExists;
 use Illuminate\Validation\Rule;
 
 /**
@@ -28,7 +27,7 @@ final class WarehouseRequest extends TenantFormRequest
             // Required, unlike a product's category: a warehouse with no site is not
             // addressable, and the column is NOT NULL. ActiveExists rather than plain
             // exists, so a trashed site cannot be submitted by hand — see the class.
-            'location_id' => ['required', ActiveExists::of('locations')],
+            'location_id' => ['required', ...$this->foreignKey('locations')],
             'name' => ['required', 'string', 'max:255'],
             'code' => [
                 'nullable',

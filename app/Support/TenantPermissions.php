@@ -77,6 +77,11 @@ final class TenantPermissions
      * @var array<string, string>
      */
     private const ROUTE_OVERRIDES = [
+        // The on-hand lookup returns a stock level, so it is gated like the screen that
+        // asks for it rather than left open to any signed-in user. Movements is its only
+        // consumer today; when transfers and stock takes call it too, this needs to
+        // become "any stock screen's view permission" rather than one of them.
+        'stock.on-hand' => 'stock-movements.view',
         'products.bom' => 'products.update',
         'warehouses.reorder-levels.update' => 'warehouses.update',
         'stock-takes.post' => 'stock-takes.create',

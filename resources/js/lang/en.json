@@ -736,6 +736,7 @@
     "validation.gte.numeric": "The :attribute field must be greater than or equal to :value.",
     "validation.image": "The :attribute field must be an image.",
     "validation.in": "The selected :attribute is invalid.",
+    "validation.integer": "The :attribute field must be an integer.",
     "validation.max.array": "The :attribute field must not have more than :max items.",
     "validation.max.file": "The :attribute field must not be greater than :max kilobytes.",
     "validation.max.numeric": "The :attribute field must not be greater than :max.",

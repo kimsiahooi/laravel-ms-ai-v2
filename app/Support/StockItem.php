@@ -41,8 +41,13 @@ final class StockItem
      * Null covers every way the value can be wrong, deliberately: a caller that has to
      * distinguish "malformed" from "deleted" would be building a message nobody can act
      * on differently.
+     *
+     * The return type names both models rather than saying `?Model`. There are exactly
+     * two things a workspace holds stock of, and callers legitimately read `->unit` and
+     * `->name` off the result — which a bare `Model` cannot promise, and which would
+     * otherwise be waved through with a cast.
      */
-    public static function decode(string $value): ?Model
+    public static function decode(string $value): Product|RawMaterial|null
     {
         if (! str_contains($value, ':')) {
             return null;
