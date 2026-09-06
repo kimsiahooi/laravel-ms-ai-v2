@@ -71,25 +71,89 @@ These are per-site in CloudPanel, so raising them here does not affect the other
 
 ### 3. MySQL — and the privilege CloudPanel does not grant
 
-Create the central database and a user, then **grant that user the ability to create
-databases**:
-
-```sql
-GRANT ALL PRIVILEGES ON `inv_tenant_%`.* TO 'youruser'@'localhost';
-GRANT CREATE, DROP ON *.* TO 'youruser'@'localhost';
-FLUSH PRIVILEGES;
-```
-
 This app is multi-database multi-tenant: provisioning a workspace **creates a real MySQL
 database**, `inv_tenant_{slug}`, through the app's own connection. CloudPanel's generated
 per-site user is scoped to that site's single database and cannot do it.
 
+Create the central database and its user in CloudPanel first. Then, **as root on the
+server**:
+
+```bash
+clpctl db:show:master-credentials
+```
+
+It prints a small table: **Host, User Name, Password, Port**. Use exactly what it shows —
+the user name is often `root`, but it is whatever is in that table, so read it rather than
+assuming.
+
+**Pass the Host it prints, with `-h`. This is the part that catches people:**
+
+```bash
+mysql -h 127.0.0.1 -P 3306 -u root -p     # <- values from the table above
+```
+
+Omitting `-h` does not mean "the same machine" to MySQL. Without it the client connects
+over the unix socket, which MySQL authenticates as `user@localhost` — a *different account
+row* from `user@127.0.0.1`, usually with a different password and, on Debian/Ubuntu, often
+no password at all because `root@localhost` uses the `auth_socket` plugin. So
+`mysql -u root -p` with the printed password is refused even though the password is
+correct. `-h 127.0.0.1` forces TCP and matches the row those credentials belong to.
+
+It then asks for a password; paste the one the table printed. Nothing is echoed while you
+type — that is normal, just paste and press enter.
+
+At the `mysql>` prompt. First find the user CloudPanel made for the central database, and
+the host it is registered under — both matter, and neither is worth guessing:
+
+```sql
+SELECT user, host, db FROM mysql.db WHERE db LIKE 'ms%';
+```
+
+Then grant, substituting the user and host that query returned:
+
+```sql
+GRANT ALL PRIVILEGES ON `inv\_tenant\_%`.* TO 'youruser'@'localhost';
+FLUSH PRIVILEGES;
+SHOW GRANTS FOR 'youruser'@'localhost';
+```
+
+`SHOW GRANTS` echoing the line back is the confirmation. Then `exit`.
+
+**One line, not two.** The obvious second line — `GRANT CREATE, DROP ON *.*` — is not
+needed and should not be used. A database-level grant with a wildcard already covers
+`CREATE DATABASE` for names matching the pattern, so the single line above lets the app
+create, migrate and drop workspace databases while being unable to touch anything else on
+the server. `ON *.*` would let this user drop **any** database on the box, including the
+other site's. Verified rather than assumed — with only the line above granted:
+
+| Attempt | Result |
+|---|---|
+| `CREATE DATABASE inv_tenant_acme` | allowed |
+| `CREATE TABLE` inside it, `INSERT` | allowed |
+| `DROP DATABASE inv_tenant_acme` | allowed |
+| `CREATE DATABASE other_app` | **denied** |
+| `DROP DATABASE` (another site's) | **denied** |
+
+Three things that silently make this not work:
+
+- **The escaped underscores are load-bearing.** In a grant pattern an unescaped `_` is a
+  single-character wildcard, so `inv_tenant_%` would also match databases like
+  `invXtenantY…` — a wider grant than intended. Written `` `inv\_tenant\_%` `` the
+  backslashes make them literal underscores. (A hyphenated prefix would need no escaping,
+  since only `_` and `%` are wildcards.)
+- **The host must match how the app connects.** MySQL grants are per `user@host`, and the
+  pair must already exist — granting to `'youruser'@'localhost'` when the account is
+  registered as `'youruser'@'%'` fails with `ERROR 1410`, because to MySQL that is a
+  different user it is being asked to invent. Check first:
+  `SELECT user, host FROM mysql.user WHERE user = 'youruser';`
+- **The pattern must match `TENANCY_DB_PREFIX`.** The grant above assumes
+  `TENANCY_DB_PREFIX=inv_tenant_` in `.env`, giving `inv_tenant_{slug}`. Change one and you
+  must change the other; the prefix is what keeps these databases distinct from the central
+  database and from anything a second tenanted app on this box creates.
+
 **The failure does not appear at deploy time.** Everything installs, the site comes up,
 you sign in — and then creating your first workspace fails. Which is why provisioning a
 throwaway workspace is on the day-one checklist below.
-
-`TENANCY_DB_PREFIX=inv_tenant_` in `.env` is what keeps those databases distinct from
-anything a second tenanted app on this box might create.
 
 ### 4. Node, Bun and pm2
 
@@ -234,7 +298,27 @@ cannot match them — if a rule has been added that catches them anyway, that is
 
 **Uploading a 2 MB photo fails with no message.** PHP's upload limits — section 2 above.
 
+**`Failed to parse dotenv file. Encountered unexpected whitespace at [...]`, during
+`composer install`.** Not a composer problem. A value in `.env` contains a space and is
+not quoted, which makes the entire file unparseable; you see it here because composer's
+`post-autoload-dump` hook runs `artisan package:discover`, and that is the first thing to
+boot Laravel. Quote the value — `KEY="two words"` — or remove the spaces. `deploy` now
+checks for this before it installs anything, so it should not reach composer again.
+
 **Creating a workspace fails.** The MySQL user cannot `CREATE DATABASE` — section 3.
+
+**`ERROR 1410: You are not allowed to create a user with GRANT`.** The user in your
+`GRANT … TO 'x'@'host'` does not exist, and MySQL 8 will not create one for you. Almost
+always this is the *database* name typed where the *user* name belongs — they are
+different things, and CloudPanel asks for both when you add a database. Find the real one:
+
+```sql
+SELECT user, host, db FROM mysql.db WHERE db LIKE 'ms%';
+```
+
+**`mysql -u root -p` is refused with the right password.** You are on the unix socket, so
+MySQL is checking `root@localhost` rather than the `root@127.0.0.1` those credentials
+belong to. Add `-h 127.0.0.1` — section 3.
 
 **Password reset emails never arrive.** `MAIL_MAILER` is still `log`.
 

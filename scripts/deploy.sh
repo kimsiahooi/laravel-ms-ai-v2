@@ -29,6 +29,8 @@ main() {
 
     parse_args "$@"
 
+    check_env
+
     if [ "$FRESH" -eq 1 ]; then
         echo "▶ [0/12] Fresh mode: taking the site down for the installs…"
         # --retry tells well-behaved clients when to come back; --secret gives you a
@@ -159,6 +161,40 @@ parse_args() {
                 ;;
         esac
     done
+}
+
+# Sanity-check .env before anything expensive runs.
+#
+# A dotenv value containing unquoted whitespace makes the WHOLE file unparseable, and
+# nothing says so: the first thing to notice is `package:discover`, run by composer's
+# post-autoload-dump hook, aborting with "Failed to parse dotenv file" in the middle of
+# step 3. That reads like a composer problem and is not one.
+#
+# Deliberately plain grep, not php: on a first deploy vendor/ does not exist yet, so
+# anything needing Laravel booted cannot run here.
+check_env() {
+    echo "▶ [0/12] Checking .env…"
+
+    if [ ! -f .env ]; then
+        echo "✗ No .env in $(pwd). Copy .env.production.example and fill it in." >&2
+        exit 1
+    fi
+
+    # KEY=value where the value is unquoted and contains a space or tab.
+    if unquoted=$(grep -nE "^[A-Za-z_][A-Za-z0-9_]*=[^\"'#]*[[:space:]]" .env); then
+        echo "✗ .env has unquoted whitespace in a value, so dotenv cannot parse the file:" >&2
+        echo "$unquoted" >&2
+        echo "  Quote the value (KEY=\"two words\") or remove the spaces." >&2
+        exit 1
+    fi
+
+    # Placeholders from .env.production.example that were never filled in. Anchored to an
+    # assignment so the template's own comments explaining CHANGEME do not match.
+    if leftover=$(grep -nE "^[A-Za-z_][A-Za-z0-9_]*=.*CHANGEME" .env); then
+        echo "✗ .env still has placeholders:" >&2
+        echo "$leftover" >&2
+        exit 1
+    fi
 }
 
 main "$@"
