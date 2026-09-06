@@ -7,6 +7,7 @@ import { DateCell } from '@/components/data/date-cell';
 import { FilterPanel } from '@/components/data/filter-panel';
 import { columnsFor } from '@/components/data/table';
 import { EmptyState } from '@/components/feedback/empty-state';
+import { InlineLink } from '@/components/inline-link';
 import { Button } from '@/components/ui/button';
 import { usePermissions } from '@/hooks/use-permissions';
 import { useTranslation } from '@/hooks/use-translation';
@@ -43,13 +44,18 @@ const columns = column.columns([
                 {/* The name is the way in to what is actually inside the building.
                     A link rather than a menu entry: a detail screen reached only
                     through a row menu is one most people never find, and everybody
-                    on this list already has `warehouses.view`. */}
-                <Link
+                    on this list already has `warehouses.view`.
+
+                    Bold *and* linked, unlike the site beside it. The weight is what
+                    makes it the row's name; the link styling is what makes it
+                    followable. It carries no aria-label because, alone among the
+                    links on this screen, its text already names where it goes. */}
+                <InlineLink
                     href={show({ warehouse: row.original.id })}
-                    className="rounded-sm font-medium underline-offset-4 ring-offset-background transition-colors hover:underline focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2"
+                    className="font-medium"
                 >
                     {row.original.name}
-                </Link>
+                </InlineLink>
                 {/* The site has no column of its own on a phone, and it is the one
                     thing that distinguishes two warehouses with the same name. */}
                 <span className="block text-muted-foreground text-xs md:hidden">
@@ -111,13 +117,12 @@ function SiteLink({ name }: { name: string }) {
     }
 
     return (
-        <Link
+        <InlineLink
             href={locationsIndex(undefined, { query: { search: name } })}
             aria-label={t('warehouses.column.view_site', { name })}
-            className="rounded-sm text-link underline underline-offset-4 ring-offset-background transition-colors hover:text-link-hover focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2"
         >
             {name}
-        </Link>
+        </InlineLink>
     );
 }
 

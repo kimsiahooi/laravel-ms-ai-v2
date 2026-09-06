@@ -1,4 +1,4 @@
-import { Link } from '@inertiajs/react';
+import { InlineLink } from '@/components/inline-link';
 import { usePermissions } from '@/hooks/use-permissions';
 import { useTranslation } from '@/hooks/use-translation';
 import { index as categories } from '@/routes/categories';
@@ -50,11 +50,8 @@ export function SupplierLink({ name }: { name: string | null }) {
  * One row's link to the screen its value lives on.
  *
  * **Styled as a link, not as a subtle affordance.** These were a badge and muted text,
- * which looked like the data they are and gave nobody a reason to click. Underlined and
- * in the primary colour is the one convention every reader already knows, and it is the
- * `text-link` token rather than `text-primary` because the primary is a *surface* colour
- * — it is contrast-checked against `primary-foreground` sitting on top of it, not
- * against the page behind it.
+ * which looked like the data they are and gave nobody a reason to click. That styling
+ * now lives in {@see InlineLink}, which is where the reasoning for it is written down.
  */
 function FilingLink({
     name,
@@ -80,12 +77,8 @@ function FilingLink({
     }
 
     return (
-        <Link
-            href={href(name)}
-            aria-label={t(label, { name })}
-            className="rounded-sm text-link underline underline-offset-4 ring-offset-background transition-colors hover:text-link-hover focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2"
-        >
+        <InlineLink href={href(name)} aria-label={t(label, { name })}>
             {name}
-        </Link>
+        </InlineLink>
     );
 }

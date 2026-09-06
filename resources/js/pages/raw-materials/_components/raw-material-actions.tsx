@@ -1,7 +1,7 @@
-import { Link } from '@inertiajs/react';
 import { useState } from 'react';
 import { RowActions } from '@/components/data/row-actions';
 import { ConfirmDialog } from '@/components/feedback/confirm-dialog';
+import { InlineLink } from '@/components/inline-link';
 import { usePermissions } from '@/hooks/use-permissions';
 import { useResourceDelete } from '@/hooks/use-resource-delete';
 import { useTranslation } from '@/hooks/use-translation';
@@ -85,18 +85,17 @@ export function RawMaterialActions({
                         a link that 403s is worse than a sentence that stops.
                     */}
                     {canSeeProducts && (
-                        <Link
+                        <InlineLink
                             href={products(undefined, {
                                 query: { material: String(rawMaterial.id) },
                             })}
-                            className="rounded-sm text-link underline underline-offset-4 ring-offset-background transition-colors hover:text-link-hover focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2"
                         >
                             {tChoice(
                                 'raw-materials.confirm.blocked_link',
                                 usedByCount,
                                 { count: usedByCount },
                             )}
-                        </Link>
+                        </InlineLink>
                     )}
                 </ConfirmDialog>
             ) : (
