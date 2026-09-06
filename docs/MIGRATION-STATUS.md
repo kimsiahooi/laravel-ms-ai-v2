@@ -3098,6 +3098,44 @@ reason to open. The key is now `common.field.on_hand`, and the dead
 - No barcode scan into the picker — Phase 8, along with movements.
 - Notes are written to all three rows, as in v1: the document and both movements.
 
+### The reason badges got colours, and the preset got a palette ✅
+
+Reported from use: every reason badge was grey. It was — `variant="secondary"` for all
+ten — but the cause was upstream. **The preset had no colours to give them.** Only two
+hues exist in it, the brand blue at 264° and destructive red at 27°; everything else,
+including `--chart-1..5`, was `oklch(… 0 0)` — zero chroma, five greys, identical in light
+and dark. That is a shadcn `baseColor: neutral` default nobody customised rather than a
+design decision, and it would have made Phase 6's charts unusable too.
+
+So the tokens were filled in rather than a second palette invented beside them: five hues
+anchored on the brand blue and spaced around the wheel, at one lightness and chroma so no
+series shouts louder than another.
+
+**Coloured by family, not by reason.** Ten colours is not a legend anyone learns, and the
+ten are not ten unrelated things — the enum already groups them in pairs, and the pairs
+are what a person thinks in: bought, sold, made, moved, or counted by hand. Five is
+learnable. The two halves of a pair share a hue because the quantity column's sign already
+says which direction, and colouring that twice spends a second channel on one fact.
+
+The map is a `Record` over the whole enum, so adding a reason is a compile error until
+somebody says which family it joins — rather than a badge that silently falls back to grey.
+
+A tint with coloured text, not a solid fill: twenty-five saturated badges down a page stop
+being labels and become the page. And the hue is never the only channel — the badge says
+the reason in words, in the reader's language.
+
+#### Two corrections along the way
+
+- The manual family (adjustment, stock take) was first given a near-neutral slate, on the
+  reasoning that it is the ordinary case and the ones tied to money should stand out. On
+  screen it read as exactly the grey it replaced, which was half the original complaint. It
+  is a real teal now.
+- **Light mode failed WCAG AA at first.** Measured rather than eyeballed, by resolving each
+  token through a canvas and compositing text over the 10% tint over the card: green 4.34,
+  amber 4.19 and teal 4.29 against a 4.5:1 bar for 12px text. Those three came down in
+  lightness until all five cleared it. Final: **light ≥ 5.38:1, dark ≥ 5.87:1**, five
+  distinct hues in both, cross-checked against the real rendered badges (5.55 and 5.37).
+
 ## Phases 3–8 — Modules ⬜
 
 | Phase | Modules | Status |

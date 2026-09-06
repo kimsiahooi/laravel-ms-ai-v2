@@ -102,11 +102,22 @@
     --border: oklch(0.922 0 0);
     --input: oklch(0.922 0 0);
     --ring: oklch(0.708 0 0);
-    --chart-1: oklch(0.87 0 0);
-    --chart-2: oklch(0.556 0 0);
-    --chart-3: oklch(0.439 0 0);
-    --chart-4: oklch(0.371 0 0);
-    --chart-5: oklch(0.269 0 0);
+    /*
+       A qualitative palette: five hues meant to be told apart at a glance, not five
+       steps of one ramp. They arrived from shadcn as five greys — a `baseColor: neutral`
+       default nobody customised — which is unusable for the job the tokens exist to do.
+
+       Anchored on the brand blue (264°) and spaced around the wheel from it, all at one
+       lightness and chroma so no series shouts louder than another. Light enough to sit
+       as text on `--background`; the dark block lifts them for the same reason reversed.
+
+       Read by the stock-movement reason badges, and by Phase 6's charts when they land.
+    */
+    --chart-1: oklch(0.5 0.19 264);
+    --chart-2: oklch(0.46 0.14 155);
+    --chart-3: oklch(0.48 0.12 75);
+    --chart-4: oklch(0.5 0.19 305);
+    --chart-5: oklch(0.46 0.11 200);
     --radius: 0;
     --sidebar: oklch(0.985 0 0);
     --sidebar-foreground: oklch(0.145 0 0);
@@ -152,11 +163,12 @@
     --border: oklch(1 0 0 / 10%);
     --input: oklch(1 0 0 / 15%);
     --ring: oklch(0.556 0 0);
-    --chart-1: oklch(0.87 0 0);
-    --chart-2: oklch(0.556 0 0);
-    --chart-3: oklch(0.439 0 0);
-    --chart-4: oklch(0.371 0 0);
-    --chart-5: oklch(0.269 0 0);
+    /* Lifted and slightly desaturated, so the same five hues carry on a dark ground. */
+    --chart-1: oklch(0.72 0.16 264);
+    --chart-2: oklch(0.74 0.14 155);
+    --chart-3: oklch(0.79 0.13 75);
+    --chart-4: oklch(0.72 0.16 305);
+    --chart-5: oklch(0.74 0.12 200);
     --sidebar: oklch(0.205 0 0);
     --sidebar-foreground: oklch(0.985 0 0);
     --sidebar-primary: oklch(0.623 0.214 259.815);
