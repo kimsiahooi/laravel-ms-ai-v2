@@ -114,6 +114,7 @@ export default function StockMovementsIndex({
 
             <DataTable
                 href={index().url}
+                tableKey="stock-movements"
                 page={movements}
                 filters={filters}
                 columns={columns}

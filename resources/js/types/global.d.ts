@@ -23,6 +23,18 @@ declare module '@inertiajs/core' {
              * through a cookie. Never call `resolvedOptions()` during a render.
              */
             timezone: string;
+            /**
+             * Which columns this person looks at, per list — only the lists they have
+             * actually changed. A prop rather than anything the browser reads for itself:
+             * the table seeds its state from this during render, so both sides have to be
+             * looking at the same value or the first paint disagrees.
+             */
+            tableColumns: Partial<
+                Record<
+                    App.Enums.TableKey,
+                    { order: string[]; hidden: string[] }
+                >
+            >;
             [key: string]: unknown;
         };
     }

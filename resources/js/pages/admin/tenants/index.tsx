@@ -113,6 +113,7 @@ export default function TenantsIndex({ tenants, filters }: Props) {
 
             <DataTable
                 href={index().url}
+                tableKey="admin-tenants"
                 page={tenants}
                 filters={filters}
                 columns={columns}

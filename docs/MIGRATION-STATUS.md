@@ -2862,14 +2862,11 @@ rendered.
 
 #### Open, carried forward
 
-- **Nothing is persisted.** The layout lives in `DataTable` state, so it survives search,
-  sort and paging — which preserve the component — and resets on navigation. Deferred by
-  decision until the UI settles. The seam is ready: `DataTable` takes `defaultLayout` +
-  `onLayoutChange` and nothing else moves. The candidates are the cookie → server-prop
-  route the sidebar, timezone and appearance already use (right on first paint, per
-  browser) or a `preferences` column mirroring `locale` (follows the user, needs a
-  migration on **both** the tenant and central `users` tables, since two lists are
-  `CentralUser` screens).
+- ~~**Nothing is persisted.**~~ Done — see *The layout is remembered* below. Two claims
+  made here were wrong and are corrected there: the seam was **not** ready (`DataTable`
+  had no `defaultLayout`/`onLayoutChange` props; `defaultLayout` was an imported function
+  and the state was component-owned), and `locale` is **not** a both-tables precedent —
+  the central `users` table has no `locale` column at all.
 - **The last-column guard cannot currently fire**, and is kept deliberately. The sorted
   column can never be hidden, so it is always the survivor — meaning `showing === 1` is
   always already caught by the sort guard. That holds only while every controller sorts by
@@ -2879,6 +2876,80 @@ rendered.
   is the one place the feedback is indirect.
 - `data-table.tsx` is now 506 lines, well past the ~250 signal. The header-row block is the
   obvious extraction; kept out of this change so the diff stays readable.
+
+### The layout is remembered ✅
+
+The Columns panel landed without persistence, deliberately, until the UI was settled. It
+was, so: **tick Notes, refresh, it is still there.**
+
+Stored per user in a `table_columns` json column, on **both** `users` tables. A dedicated
+column rather than a general `preferences` bag, following `locale` directly beside it —
+this app's precedent for a per-user preference is one column per preference, and a bag
+would be guessing at a shape nothing needs yet.
+
+- **`App\Enums\TableKey`** is what makes it type-safe end to end. Column ids are only
+  unique *within* a screen — `name`, `created_at` and `actions` each appear on several — so
+  a layout has to be keyed by its list, and an open-ended key would let a signed-in user
+  grow their own row without limit. The server validates with `Rule::enum`; `#[TypeScript]`
+  types `DataTable`'s new `tableKey` prop, so a typo on a page is a tsc error rather than a
+  preference that silently never loads. Adding the prop turned up all ten call sites at
+  once, which is the point.
+- **Two routes, one controller.** A workspace cannot post to the central route: the session
+  driver is `database` and tenancy switches the connection, so it would find no session and
+  CSRF would answer 419. `LanguageSwitcher` already carries this split. One `__invoke`
+  serves both, because `Authenticate` calls `shouldUse()` on the guard that passes — inside
+  `auth:central`, `$request->user()` already *is* the `CentralUser`.
+- **Validated inline, no FormRequest and no zod schema** — the call `LocaleController`
+  already makes, for the same reason: a background save is not a form and has no field for
+  an error to land under. `required_with` is deliberately avoided: it has **no translated
+  message**, and `check:i18n` only reads `app/Http/Requests`, so an inline rule that fired
+  would have spoken English in all three locales with nothing reporting it.
+- **`App\Support\TableColumns`** is the read guard, shaped like `TimeZones::resolve()`.
+  Nothing stored reaches a prop unchecked — driven with a deliberately hostile row
+  (unknown table key, an integer id, a 200-character id, `hidden` as a string) and every
+  bad part was dropped while the page rendered normally.
+- **No `TenantPermissions` mapping, deliberately.** An unmapped route stays open to any
+  signed-in user, which is right for a preference about the reader rather than a resource.
+- Saving is debounced 500 ms: six changes in a row produced **one** request, measured.
+
+**The seed is a server prop, and that is the whole SSR story.** The table builds its header
+row from it during render, so both sides start from the same value. Verified the hard way
+rather than by inspection — re-fetching the page from inside itself and reading the raw
+HTML shows `Notes` already in `<thead>`, so the column is server-rendered rather than
+added a frame after hydration.
+
+#### What happens when the columns change later
+
+Asked directly, and worth recording. A stored layout is a list of id *strings*, reconciled
+on every render against what the page currently declares, so the failure mode is always
+"fall back to sensible" rather than a crash. Driven, not assumed:
+
+| Change | Result |
+|---|---|
+| Column removed | Dropped from `order`; the rest keep their positions, cells stay aligned. A stale id in `hidden` is ignored and cleared on the next save. |
+| Column added | Appears **between its declared neighbours**. |
+| Column id renamed | Remove plus add. |
+| List retired | `TableColumns::forUser` drops entries whose key is no longer a `TableKey`. |
+
+That second row is a change made *because* of the question. `toColumnOrder()` used to
+append an unknown id to the end, which meant one deploy showed a new column in two
+different places — its declared position for anyone who had never opened the panel, and
+last for everyone who had. Proven by putting the old behaviour back: with a customised
+layout saved, a column declared between `warehouse` and `reason` landed at index 6 instead
+of 4. It now inserts after the nearest earlier column the reader still has.
+
+#### Open, carried forward
+
+- **Existing workspaces need `php artisan tenants:migrate`.** New ones are migrated on
+  provision; the demo tenant was migrated by hand.
+- Per-user isolation was verified across two *different* user records — `owner@demo.test`
+  and the `CentralUser` `admin@example.com`, which also exercises the second migration —
+  rather than by signing in as a second tenant user, whose password is in no seeder and was
+  not worth changing for a test.
+- After heavy drift the reconciled order can read oddly, since each recovered column lands
+  after its declared predecessor. Only reachable from a corrupted row, and every column is
+  still present and aligned; Reset fixes it.
+- `data-table.tsx` is 516 lines and still wants its header-row block extracted.
 
 ## Phases 3–8 — Modules ⬜
 

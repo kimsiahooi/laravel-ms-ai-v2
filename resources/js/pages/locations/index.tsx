@@ -118,6 +118,7 @@ export default function LocationsIndex({ locations, filters }: Props) {
 
             <DataTable
                 href={index().url}
+                tableKey="locations"
                 page={locations}
                 filters={filters}
                 columns={columns}

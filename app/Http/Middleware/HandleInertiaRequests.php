@@ -6,6 +6,7 @@ namespace App\Http\Middleware;
 
 use App\Models\User;
 use App\Support\Locales;
+use App\Support\TableColumns;
 use App\Support\TenantRoles;
 use App\Support\TimeZones;
 use Illuminate\Http\Request;
@@ -76,6 +77,17 @@ class HandleInertiaRequests extends Middleware
             // rendered. Timestamps stay UTC everywhere else — this is display only.
             'timezone' => TimeZones::resolve($request),
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
+            // Which columns this person looks at, per list — see App\Support\TableColumns.
+            // Resolved through the same guard expression as `auth.user` above and for the
+            // same reason: share() runs before route middleware, so `auth:central` has not
+            // switched the default guard yet and $request->user() alone is null on /admin.
+            //
+            // It has to be a prop rather than anything the browser reads for itself. The
+            // table seeds its state from this during render, so the server and the client
+            // must be looking at the same value or the first paint disagrees.
+            'tableColumns' => TableColumns::forUser(
+                $this->isAdminArea($request) ? $request->user('central') : $webUser,
+            ),
             // Identifies the current workspace. The client registers `slug` as the
             // default {tenant} route parameter (see app.tsx), so route helpers
             // resolve to this workspace without every call site passing it.

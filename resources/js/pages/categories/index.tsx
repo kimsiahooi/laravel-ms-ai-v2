@@ -110,6 +110,7 @@ export default function CategoriesIndex({ categories, filters }: Props) {
 
             <DataTable
                 href={index().url}
+                tableKey="categories"
                 page={categories}
                 filters={filters}
                 columns={columns}

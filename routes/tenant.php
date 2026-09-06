@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\Settings\SecurityController;
+use App\Http\Controllers\TableColumnController;
 use App\Http\Controllers\Tenant\CategoryController;
 use App\Http\Controllers\Tenant\CustomerController;
 use App\Http\Controllers\Tenant\LocationController;
@@ -68,6 +69,14 @@ Route::middleware(['web', InitializeTenancyByPath::class, SetTenantUrlDefault::c
         // no mapped permission stay open to any signed-in user.
         Route::middleware(['auth:web', AuthorizeTenantRoute::class])->group(function (): void {
             Route::get('dashboard', fn () => Inertia::render('dashboard'))->name('dashboard');
+
+            // Which columns this user looks at, per list. Deliberately unmapped in
+            // TenantPermissions: it is a preference about the reader, not about a
+            // resource, so every signed-in user may set their own. A separate route from
+            // the central one for the reason the locale switcher gives above — the
+            // session, and the user row this writes to, live in the tenant database.
+            Route::put('table-columns', TableColumnController::class)
+                ->name('tenant.table-columns.update');
 
             // Catalog. Route names are bare — `categories.index`, not `tenant.categories.index`
             // — because that is the shape TenantPermissions::routeMap() keys on.

@@ -150,6 +150,7 @@ export default function ProductsIndex({
 
             <DataTable
                 href={index().url}
+                tableKey="products"
                 page={products}
                 filters={filters}
                 columns={columns}

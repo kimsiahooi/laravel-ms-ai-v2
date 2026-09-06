@@ -115,6 +115,7 @@ export default function SuppliersIndex({ suppliers, filters }: Props) {
 
             <DataTable
                 href={index().url}
+                tableKey="suppliers"
                 page={suppliers}
                 filters={filters}
                 columns={columns}

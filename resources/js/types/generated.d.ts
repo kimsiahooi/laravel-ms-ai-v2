@@ -138,6 +138,7 @@ export type Country = 'MY' | 'SG';
 export type Dimension = 'mass' | 'volume' | 'length' | 'count';
 export type StockItemType = 'product' | 'raw_material';
 export type StockMovementReason = 'adjustment' | 'stock_take' | 'transfer_in' | 'transfer_out' | 'purchase_receipt' | 'purchase_return' | 'sales_fulfillment' | 'sales_return' | 'production_consume' | 'production_output';
+export type TableKey = 'admin-tenants' | 'admin-tenants-trashed' | 'categories' | 'customers' | 'locations' | 'products' | 'raw-materials' | 'stock-movements' | 'suppliers' | 'warehouses';
 export type Unit = 'g' | 'kg' | 't' | 'ml' | 'l' | 'mm' | 'cm' | 'm' | 'pcs' | 'box' | 'roll' | 'sheet' | 'pair' | 'set';
 }
 }

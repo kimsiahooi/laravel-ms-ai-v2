@@ -6,6 +6,7 @@ use App\Http\Controllers\Central\AdminSessionController;
 use App\Http\Controllers\Central\DashboardController;
 use App\Http\Controllers\Central\TenantController;
 use App\Http\Controllers\LocaleController;
+use App\Http\Controllers\TableColumnController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -46,6 +47,11 @@ Route::prefix('admin')->name('admin.')->group(function (): void {
 
     Route::middleware('auth:central')->group(function (): void {
         Route::get('dashboard', DashboardController::class)->name('dashboard');
+
+        // Which columns this admin looks at, per list. Inside the auth group because it
+        // writes to their own row; `auth:central` makes $request->user() the CentralUser,
+        // so the same controller serves this and the workspace route.
+        Route::put('table-columns', TableColumnController::class)->name('table-columns.update');
 
         Route::prefix('tenants')->name('tenants.')->group(function (): void {
             Route::get('/', [TenantController::class, 'index'])->name('index');

@@ -30,6 +30,7 @@ use Spatie\Permission\Traits\HasRoles;
  * @property string $email
  * @property Carbon|null $email_verified_at
  * @property string|null $locale
+ * @property array<array-key, mixed>|null $table_columns
  * @property string $password
  * @property string|null $two_factor_secret
  * @property string|null $two_factor_recovery_codes
@@ -61,6 +62,9 @@ class User extends Authenticatable implements PasskeyUser
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'two_factor_confirmed_at' => 'datetime',
+            // Which columns this person looks at, per list. Never mass-assigned — it is
+            // written with forceFill() from one endpoint, the way `locale` is.
+            'table_columns' => 'array',
         ];
     }
 }

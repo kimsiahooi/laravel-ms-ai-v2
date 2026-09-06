@@ -95,6 +95,7 @@ export default function TenantsTrashed({ tenants, filters }: Props) {
 
             <DataTable
                 href={trashed().url}
+                tableKey="admin-tenants-trashed"
                 page={tenants}
                 filters={filters}
                 columns={columns}

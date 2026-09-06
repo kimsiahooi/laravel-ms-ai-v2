@@ -145,6 +145,7 @@ export default function WarehousesIndex({
 
             <DataTable
                 href={index().url}
+                tableKey="warehouses"
                 page={warehouses}
                 filters={filters}
                 columns={columns}

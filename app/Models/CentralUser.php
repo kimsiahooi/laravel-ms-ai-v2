@@ -24,6 +24,7 @@ use Stancl\Tenancy\Database\Concerns\CentralConnection;
  * @property string $name
  * @property string $email
  * @property string $password
+ * @property array<array-key, mixed>|null $table_columns
  * @property Carbon|null $deleted_at
  */
 #[Fillable(['name', 'email', 'password'])]
@@ -48,6 +49,8 @@ class CentralUser extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            // The two /admin lists carry the Columns panel too. See the migration.
+            'table_columns' => 'array',
         ];
     }
 }

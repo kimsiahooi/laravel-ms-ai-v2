@@ -10,8 +10,7 @@ import type {
 import { useTable } from '@tanstack/react-table';
 import { ArrowDown, ArrowUp, ArrowUpDown, SearchX } from 'lucide-react';
 import type { ReactNode } from 'react';
-import { useCallback, useMemo, useState } from 'react';
-import type { ColumnLayout } from '@/components/data/column-layout';
+import { useCallback, useMemo } from 'react';
 import {
     configurableColumns,
     defaultLayout,
@@ -23,6 +22,7 @@ import { ColumnPanel } from '@/components/data/column-panel';
 import { ListToolbar } from '@/components/data/list-toolbar';
 import { PaginationBar } from '@/components/data/pagination-bar';
 import { columnClasses, features } from '@/components/data/table';
+import { useColumnLayout } from '@/components/data/use-column-layout';
 import { EmptyState } from '@/components/feedback/empty-state';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -56,6 +56,16 @@ import type { FilterApi, Paginated, ResourceFilters } from '@/types';
 type Props<TRow extends RowData> = {
     /** The index route this list re-requests. */
     href: string;
+    /**
+     * Which list this is, for remembering its columns.
+     *
+     * Explicit rather than derived from `href`: column ids are only unique within a
+     * screen — `name`, `created_at` and `actions` each appear on several — and an href
+     * carries the workspace slug, which would give the same list a different layout in
+     * every workspace. Typed against {@see App.Enums.TableKey}, so a typo is a tsc error
+     * rather than a preference that silently never loads.
+     */
+    tableKey: App.Enums.TableKey;
     /** The paginator, straight from the page props. */
     page: Paginated<TRow>;
     /** The server's view of the query — what it searched, sorted and paged by. */
@@ -92,6 +102,7 @@ type Props<TRow extends RowData> = {
 
 export function DataTable<TRow extends RowData>({
     href,
+    tableKey,
     page,
     filters,
     columns,
@@ -120,19 +131,16 @@ export function DataTable<TRow extends RowData>({
     /**
      * Which columns this reader looks at, and in what order.
      *
-     * **The only state this component owns.** Everything above is derived from the
-     * server's answer, because everything above is a fact about the query. This is not:
-     * it is a fact about the screen, SQL has no opinion on it, and no round trip could
-     * answer it better. It is seeded from what the columns declare, which is also what
-     * makes it safe under SSR — the first render is the declarations on both sides, so
-     * there is nothing for hydration to disagree about.
+     * **The one piece of state this component owns.** Everything above is derived from
+     * the server's answer, because everything above is a fact about the query. This is
+     * not: it is a fact about the screen, SQL has no opinion on it, and no round trip
+     * could answer it better.
      *
-     * Not persisted yet, deliberately. It survives search, sort and paging, which
-     * preserve the component, and resets on navigation. See docs/MIGRATION-STATUS.md.
+     * It is still SSR-safe, and for a slightly different reason than before it was
+     * remembered: the seed is now a server prop rather than the column declarations, so
+     * both sides still start from the same value. See {@see useColumnLayout}.
      */
-    const [layout, setLayout] = useState<ColumnLayout>(() =>
-        defaultLayout(columns),
-    );
+    const [layout, setLayout] = useColumnLayout(tableKey, columns);
 
     const configurable = useMemo(() => configurableColumns(columns), [columns]);
 
@@ -232,26 +240,28 @@ export function DataTable<TRow extends RowData>({
         state: { pagination, sorting, columnOrder, columnVisibility },
         // Nothing in the app calls the table's own visibility/order setters — the panel
         // drives `layout` directly. These are wired anyway so that `column.toggleVisibility()`
-        // is not a silent no-op for whoever reaches for it next.
+        // is not a silent no-op for whoever reaches for it next. They take the current
+        // `layout` rather than an updater because the setter also schedules a save, and
+        // a state updater has to stay pure.
         onColumnVisibilityChange: (updater) => {
             const next =
                 typeof updater === 'function'
                     ? updater(columnVisibility)
                     : updater;
 
-            setLayout((current) => ({
-                ...current,
-                hidden: current.order.filter((id) => next[id] === false),
-            }));
+            setLayout({
+                ...layout,
+                hidden: layout.order.filter((id) => next[id] === false),
+            });
         },
         onColumnOrderChange: (updater) => {
             const next =
                 typeof updater === 'function' ? updater(columnOrder) : updater;
 
-            setLayout((current) => ({
-                ...current,
-                order: next.filter((id) => current.order.includes(id)),
-            }));
+            setLayout({
+                ...layout,
+                order: next.filter((id) => layout.order.includes(id)),
+            });
         },
         onSortingChange: (updater) => {
             // TanStack calls this with the functional form from its own handlers.

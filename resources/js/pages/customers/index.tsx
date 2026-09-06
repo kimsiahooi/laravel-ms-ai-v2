@@ -133,6 +133,7 @@ export default function CustomersIndex({ customers, filters }: Props) {
 
             <DataTable
                 href={index().url}
+                tableKey="customers"
                 page={customers}
                 filters={filters}
                 columns={columns}

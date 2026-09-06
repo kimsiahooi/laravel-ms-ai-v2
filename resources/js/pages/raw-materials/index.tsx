@@ -122,6 +122,7 @@ export default function RawMaterialsIndex({
 
             <DataTable
                 href={index().url}
+                tableKey="raw-materials"
                 page={rawMaterials}
                 filters={filters}
                 columns={columns}

@@ -106,15 +106,31 @@ export function toColumnOrder(
     const declared = columns.map(columnId);
     const configurable = new Set(configurableColumns(columns).map((c) => c.id));
 
-    // The reader's order, minus anything that no longer exists, plus anything new that
-    // was added since. Neither can happen while a layout lives only in component state,
-    // but both will the moment one is restored from storage — and a column silently
-    // missing from the table is worse than one appearing at the end.
+    // The reader's order, minus anything that no longer exists. A stored layout outlives
+    // the columns it names: a deploy removes one, renames one, adds one, and a saved
+    // layout has to survive all three without the table losing a column or throwing.
     const ordered = layout.order.filter((id) => configurable.has(id));
+
+    // Anything declared since this layout was saved goes back where it was declared —
+    // just after the nearest earlier column the reader still has — rather than on the
+    // end. Appending was the obvious thing and it is subtly wrong: a column added between
+    // `sku` and `category` would sit last for everyone who had touched the panel and in
+    // its proper place for everyone who had not, from one deploy, for a reason invisible
+    // on screen.
+    let previous: string | null = null;
+
     for (const id of declared) {
-        if (configurable.has(id) && !ordered.includes(id)) {
-            ordered.push(id);
+        if (!configurable.has(id)) {
+            continue;
         }
+
+        if (!ordered.includes(id)) {
+            const after = previous === null ? -1 : ordered.indexOf(previous);
+
+            ordered.splice(after + 1, 0, id);
+        }
+
+        previous = id;
     }
 
     declared.forEach((id, index) => {
