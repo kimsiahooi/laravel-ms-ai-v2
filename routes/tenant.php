@@ -14,6 +14,7 @@ use App\Http\Controllers\Tenant\ProductController;
 use App\Http\Controllers\Tenant\RawMaterialController;
 use App\Http\Controllers\Tenant\StockLookupController;
 use App\Http\Controllers\Tenant\StockMovementController;
+use App\Http\Controllers\Tenant\StockTakeController;
 use App\Http\Controllers\Tenant\StockTransferController;
 use App\Http\Controllers\Tenant\SupplierController;
 use App\Http\Controllers\Tenant\WarehouseController;
@@ -172,6 +173,36 @@ Route::middleware(['web', InitializeTenancyByPath::class, SetTenantUrlDefault::c
             Route::prefix('stock-transfers')->name('stock-transfers.')->group(function (): void {
                 Route::get('/', [StockTransferController::class, 'index'])->name('index');
                 Route::post('/', [StockTransferController::class, 'store'])->name('store');
+            });
+
+            // The only stock module with a lifecycle. A count is a draft document that
+            // is filled in over hours and then applied once, so it needs a detail screen
+            // and five writes where the ledger needed one.
+            //
+            // Every name here is load-bearing: TenantPermissions maps `count` and
+            // `lines` to `stock-takes.create` by override, and AuthorizeTenantRoute
+            // treats a route it cannot find in that map as open to any signed-in user.
+            // A renamed route is a silently unguarded one.
+            //
+            // The parameter is `{stockTake}` rather than `{stock_take}` because that is
+            // the name Laravel resolves the model binding from — and the name the count
+            // request's `line` rule reaches back through to scope a line to its own take.
+            //
+            // No update and no line delete. A count is corrected by counting again, and
+            // an added line left uncounted is inert at posting — see the controller.
+            Route::prefix('stock-takes')->name('stock-takes.')->group(function (): void {
+                Route::get('/', [StockTakeController::class, 'index'])->name('index');
+                Route::post('/', [StockTakeController::class, 'store'])->name('store');
+                Route::get('{stockTake}', [StockTakeController::class, 'show'])->name('show');
+
+                // POST, not PATCH, and once per line: the sheet saves each number as it
+                // is entered rather than holding the whole count in the browser until a
+                // submit that a closed tab would lose.
+                Route::post('{stockTake}/count', [StockTakeController::class, 'count'])->name('count');
+                Route::post('{stockTake}/lines', [StockTakeController::class, 'addLine'])->name('lines');
+                Route::post('{stockTake}/post', [StockTakeController::class, 'post'])->name('post');
+                Route::post('{stockTake}/cancel', [StockTakeController::class, 'cancel'])->name('cancel');
+                Route::delete('{stockTake}', [StockTakeController::class, 'destroy'])->name('destroy');
             });
 
             // A read-only lookup the movement dialog makes while somebody is choosing,

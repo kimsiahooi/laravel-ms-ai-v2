@@ -85,11 +85,17 @@ final class TenantPermissions
         // it answers the same question for each, and gating it on one screen's permission
         // would 403 somebody who may read a different one. Add a screen here when it
         // starts calling the lookup.
-        'stock.on-hand' => ['stock-movements.view', 'stock-transfers.view'],
+        'stock.on-hand' => ['stock-movements.view', 'stock-transfers.view', 'stock-takes.view'],
         'products.bom' => 'products.update',
         'warehouses.reorder-levels.update' => 'warehouses.update',
         'stock-takes.post' => 'stock-takes.create',
         'stock-takes.cancel' => 'stock-takes.create',
+        // Filling a count sheet in — one saved number, one item found on the shelf. Both
+        // map to `stock-takes.create` because that is the permission to *take* a count,
+        // and the screen has no separate notion of editing one. It already exists and is
+        // already seeded, so no tenant needs re-seeding for these two.
+        'stock-takes.count' => 'stock-takes.create',
+        'stock-takes.lines' => 'stock-takes.create',
         'purchase-orders.receive' => 'purchase-orders.update',
         'purchase-orders.cancel' => 'purchase-orders.update',
         'purchase-returns.complete' => 'purchase-returns.update',

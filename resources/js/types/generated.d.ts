@@ -100,6 +100,31 @@ export type StockOnHandData = {
 on_hand: string,
 unit: App.Enums.Unit,
 };
+export type StockTakeData = {
+id: number,
+warehouse: string,
+site: string,
+status: App.Enums.StockTakeStatus,
+line_count: number,
+counted_count: number,
+variance_count: number,
+notes: string | null,
+created_by: string | null,
+posted_by: string | null,
+posted_at: string | null,
+created_at: string,
+};
+export type StockTakeItemData = {
+id: number,
+item: string,
+name: string | null,
+sku: string | null,
+type: App.Enums.StockItemType,
+unit: App.Enums.Unit | null,
+system_quantity: string,
+counted_quantity: string | null,
+applied_delta: string | null,
+};
 export type StockTransferData = {
 id: number,
 item: string | null,
@@ -163,7 +188,8 @@ export type Country = 'MY' | 'SG';
 export type Dimension = 'mass' | 'volume' | 'length' | 'count';
 export type StockItemType = 'product' | 'raw_material';
 export type StockMovementReason = 'adjustment' | 'stock_take' | 'transfer_in' | 'transfer_out' | 'purchase_receipt' | 'purchase_return' | 'sales_fulfillment' | 'sales_return' | 'production_consume' | 'production_output';
-export type TableKey = 'admin-tenants' | 'admin-tenants-trashed' | 'categories' | 'customers' | 'locations' | 'products' | 'raw-materials' | 'stock-movements' | 'stock-transfers' | 'suppliers' | 'warehouse-items' | 'warehouses';
+export type StockTakeStatus = 'draft' | 'posted' | 'cancelled';
+export type TableKey = 'admin-tenants' | 'admin-tenants-trashed' | 'categories' | 'customers' | 'locations' | 'products' | 'raw-materials' | 'stock-movements' | 'stock-takes' | 'stock-transfers' | 'suppliers' | 'warehouse-items' | 'warehouses';
 export type Unit = 'g' | 'kg' | 't' | 'ml' | 'l' | 'mm' | 'cm' | 'm' | 'pcs' | 'box' | 'roll' | 'sheet' | 'pair' | 'set';
 }
 }

@@ -3316,12 +3316,111 @@ open-type-save-close cycles.
 - `warehouses/show.tsx` is 198 lines after the empty states moved to
   `_components/warehouse-empty.tsx`.
 
+## Phase 4 · Stock — stock takes ✅
+
+The seventh and last Phase 4 module, and the first screen that stages a change before
+applying it. A count is opened against one warehouse, worked through line by line, and
+posted as one adjustment reconciled **at posting time**.
+
+Four migrations' worth of v1 defects were fixed rather than ported. Each was a real
+failure, not a preference:
+
+- **Counts are saved as they are entered.** v1 held them in React state until Post, so a
+  refresh, a locked phone or a stray Back button threw away an entire warehouse count
+  while the draft row sat in the database with columns ready to hold it. Each count now
+  persists on blur and on Enter, debounced, and a reload brings the sheet back exactly as
+  it was — driven and confirmed.
+- **The sheet is open.** v1 snapshotted only items that already had a stock row, so
+  something found on a shelf the system had never heard of could not be entered at all —
+  the one thing a physical count exists to discover. `StockPickerField` gets its promised
+  third consumer, and posting a found item sets its level from zero.
+- **`counted_quantity` is nullable, and null means "nobody has reached that shelf".** v1
+  preseeded every line to the system quantity, which made an untouched line
+  indistinguishable from one deliberately counted at exactly the expected number — so
+  posting a half-finished sheet rolled every untouched item back to the snapshot, undoing
+  real movements nobody had looked at. Uncounted lines are now skipped entirely.
+- **The line stores `applied_delta`, not a variance.** v1 wrote
+  `counted − system_quantity` on the line and then posted `counted − live on-hand`, so
+  whenever stock moved while the sheet was open the number on the line was not the number
+  that moved. What is stored now is what `setLevel()` actually applied under the lock.
+
+Three more, smaller: `created_by` and `posted_by` are separate columns (v1 overwrote the
+creator with the poster, so only one was ever knowable); a posted take cannot be deleted
+(v1 allowed it, orphaning the ledger rows whose notes point at the count); and the list
+shows **how many lines differ** rather than a signed sum across mixed units, which in v1
+let +10 kg of flour cancel −10 bolts and read "0" while still posting two adjustments.
+
+### One change outside the module
+
+`StockService::setLevel()` now returns `?StockMovement` and **writes nothing when the
+delta is zero**. Counting a 500-line warehouse would otherwise append 500 ledger rows
+saying nothing moved. A count that confirms the level is recorded by the stock take, which
+is where that fact belongs; the ledger records what moved. All four existing callers
+discard the return value, so nothing else changed. `record()` and `transfer()` are
+untouched — their lock ordering is what `stock:hammer --deadlock` proved.
+
+### Verified in the browser
+
+Driven against **built assets with SSR live** (`data-server-rendered="true"`, assets from
+`/build/`), which also finally runs the production-asset dress rehearsal the deploy plan
+had flagged as never once exercised on a tenant route.
+
+One count on Ipoh main with four lines — one short, one matching, one never touched, one
+found on the shelf — posted to **exactly two ledger rows**:
+
+| Line | Expected | Counted | Applied | Ledger row |
+|---|---|---|---|---|
+| Daniel Cruz | 999 | 995 | −4 | yes |
+| Aladdin Flores | 0 | *not counted* | — | **no** (skipped) |
+| Amos Brennan | 5000 | 5000 | 0 | **no** (zero delta) |
+| Folding step stool | 0 | 7 | +7 | yes |
+
+On-hand followed: 999 → 995, 5000 unchanged, a new row at 7. Movements 626 → 628.
+Both ledger rows carry `Stock take #1` and the poster's id.
+
+- **Draft persistence**: 995 was in the database before posting, and survived a full page
+  reload (995 / empty / 5000 / 7).
+- **Guards**: posting a cancelled take and deleting a posted take were both refused, with
+  no movements written and on-hand unchanged.
+- **The confirm dialog names what it will skip** — "3 of 4 lines will be applied".
+- **Read-only after posting**: no inputs, no add button, no footer actions, and the last
+  column's heading changes from "Difference" to "Applied".
+- en / ms / zh_Hans all render fully — Malay "Belum dikira", Chinese using real accounting
+  vocabulary (账面数 / 实点数 / 实际调整 / 已过账) rather than literal translation.
+- Light and dark, 375 / 768 / 1440. Console: **zero errors**, only the Vite font-preload
+  warnings every page in this app has.
+
+### Two corrections along the way
+
+- **The action returned where the controller expected a throw.** `PostStockTake` returned
+  the locked take when it was no longer a draft while `post()` caught a `DomainException`,
+  so a true concurrent double-press would have reported "posted and stock updated" for
+  work it did not do. It throws now; the ordinary press is still refused by the
+  controller's own check with a sentence a person can read.
+- **The summary cards were `grid-cols-3` at every width.** At 375 that left each card
+  about 100px wide, overflowing the row by a few pixels and wrapping every label onto a
+  third line — on the screen most likely to be used on a phone. Two up on mobile now, with
+  the last card spanning the empty cell, three from `sm`.
+
+#### Open, carried forward
+
+- **Existing workspaces need `php artisan tenants:migrate`** — two new migrations,
+  `stock_takes` and `stock_take_items`.
+- **No barcode scanning.** v1 could scan to increment a line by one. It is a real
+  convenience for counting and a separate decision, not a defect of this module.
+- **No count-sheet export or printable sheet**, and no line-level CSV. v1's export was
+  header-only too.
+- **No blind counting** — the expected quantity is on screen while counting. Some
+  operations want it hidden so the counter is not anchored by it.
+- **A mis-added found line cannot be removed**, only left uncounted, which makes it inert
+  at posting. Cheaper than a delete-line route and its permission; revisit if it annoys.
+
 ## Phases 3–8 — Modules ⬜
 
 | Phase | Modules | Status |
 |---|---|---|
 | 3 · Catalog | **categories ✅ · suppliers ✅ · customers ✅ · raw materials ✅ · products ✅** (core · image · BOM) | ✅ |
-| 4 · Stock | **locations ✅ · warehouses ✅ · StockService ✅ · movements ✅ · transfers ✅ · reorder levels ✅** (+ notes column, column preferences, warehouse detail) · stock takes | 🚧 |
+| 4 · Stock | **locations ✅ · warehouses ✅ · StockService ✅ · movements ✅ · transfers ✅ · reorder levels ✅ · stock takes ✅** (+ notes column, column preferences, warehouse detail) | ✅ |
 | 5 · Orders | purchase orders, purchase returns, sales orders, sales returns, production orders | ⬜ |
 | 6 · Insights | reports, activity log | ⬜ |
 | 7 · Team & settings | users, roles/RBAC, business settings, document numbering, e-invoice | ⬜ |

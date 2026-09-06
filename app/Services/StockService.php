@@ -20,7 +20,9 @@ use InvalidArgumentException;
  * Every on-hand change in the application goes through one of the three public methods
  * here. Each locks the (warehouse, item) row, applies a signed delta, refuses to go
  * below zero, and appends exactly one ledger row — all inside one transaction, which is
- * what stops `warehouse_stocks` and `stock_movements` from ever disagreeing.
+ * what stops `warehouse_stocks` and `stock_movements` from ever disagreeing. The one
+ * exception is a {@see setLevel()} that changes nothing, which writes neither: no
+ * change, no row, and the two tables still agree.
  *
  * **Quantities are decimal strings, not floats.** v1 used `float` throughout and it is
  * *nearly* safe: every value round-trips through a `decimal(15,4)` column, which scrubs
@@ -108,6 +110,16 @@ final class StockService
      * The read and the write happen under the same lock, so two people counting the
      * same shelf cannot both compute their delta from the same starting number.
      *
+     * **A count that matches writes nothing, and null says so.** The ledger records what
+     * moved; a confirmed level did not move, and appending `0.0000` would put a row in
+     * the history that says nothing happened. It is not a rounding concern but a
+     * readability one, and at the scale a stock take works at it is a volume one too — a
+     * 500-line count of a well-run warehouse would file 500 empty rows and bury the
+     * handful that mattered. The confirmation is not lost: the stock take's own line
+     * records that the shelf was counted and agreed, which is where that belongs.
+     *
+     * @return StockMovement|null null when the target already equalled on-hand
+     *
      * @throws InsufficientStockException when the target is negative
      */
     public function setLevel(
@@ -117,11 +129,18 @@ final class StockService
         StockMovementReason $reason = StockMovementReason::StockTake,
         ?User $user = null,
         ?string $notes = null,
-    ): StockMovement {
-        return DB::transaction(function () use ($warehouse, $stockable, $target, $reason, $user, $notes): StockMovement {
+    ): ?StockMovement {
+        return DB::transaction(function () use ($warehouse, $stockable, $target, $reason, $user, $notes): ?StockMovement {
             $stock = $this->lockRow($warehouse->id, $stockable);
             $current = $stock === null ? $this->zero() : $this->decimal((string) $stock->quantity);
             $delta = bcsub($this->decimal($target), $current, self::SCALE);
+
+            // Before applyLockedDelta, not after: a zero delta has nothing to apply, and
+            // returning here leaves `warehouse_stocks` untouched rather than rewriting a
+            // row with the value it already holds.
+            if (bccomp($delta, '0', self::SCALE) === 0) {
+                return null;
+            }
 
             $this->applyLockedDelta($warehouse, $stockable, $delta);
 

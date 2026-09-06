@@ -3,6 +3,7 @@ import {
     ArrowRightLeft,
     Boxes,
     Building,
+    ClipboardList,
     LayoutGrid,
     MapPin,
     Package,
@@ -17,6 +18,7 @@ import { index as locations } from '@/routes/locations';
 import { index as products } from '@/routes/products';
 import { index as rawMaterials } from '@/routes/raw-materials';
 import { index as stockMovements } from '@/routes/stock-movements';
+import { index as stockTakes } from '@/routes/stock-takes';
 import { index as stockTransfers } from '@/routes/stock-transfers';
 import { index as suppliers } from '@/routes/suppliers';
 import { index as warehouses } from '@/routes/warehouses';
@@ -117,6 +119,12 @@ export function tenantNavGroups(
                     href: stockTransfers(),
                     icon: ArrowRightLeft,
                     permission: 'stock-transfers.view',
+                },
+                {
+                    title: 'stock-takes.title',
+                    href: stockTakes(),
+                    icon: ClipboardList,
+                    permission: 'stock-takes.view',
                 },
             ],
         },
