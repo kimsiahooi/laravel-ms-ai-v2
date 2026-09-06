@@ -1157,7 +1157,9 @@ a nullable `default_cost` and `products` a nullable `default_price` when purchas
 arrived — a *suggestion* an order line starts from, never the record. The line stores what
 was actually paid, so changing a catalogue price moves no history, and null is a real
 answer ("we have never bought it") that zero would misstate. v1 had no such columns and
-retyped every price on every line.
+retyped every price on every line. The forms that *set* them came later still — see
+"Catalogue prices — the write path" — because the columns shipped with a reader and no
+writer, and the gap was invisible from the code: the field simply was not on the screen.
 
 **`unit` is an enum, not free text — and it carries the physics.** This came out of a
 direct question ("unit can be presets? coz in future i want to convert, like gram to kg")
@@ -3671,13 +3673,78 @@ transform-then-restore leaves behind. Three classes went missing that way and th
 - Sales orders next, then purchase returns, then sales returns. E-invoice sits on top of
   sales orders and stays deferred.
 
+## Phase 5 · Catalogue prices — the write path ✅
+
+The columns shipped with the money foundation and the purchase order line *read* them, but
+**nothing could set one**. `default_cost` and `default_price` were reachable only from the
+database, and the `12.50` that proved the prefill worked had been put there with tinker. The
+plan's A4 said "add defaults, prefill, stay editable"; only two thirds of that was built.
+
+Both catalogue forms now carry the field, both lists can show it, and the value survives the
+round trip at full precision.
+
+- `RawMaterial` / `Product` — the attribute added to `#[Fillable]` and cast `decimal:4`. Both
+  were missing from the model entirely, so even a hand-written `update()` would have been
+  dropped silently by mass-assignment.
+- `RawMaterialRequest` / `ProductRequest` — `['nullable', ...$this->decimalRules('gte:0')]`,
+  mirrored by `optionalDecimal({ gte: 0 })` in the two zod schemas. `gte`, not the default
+  `gt`: a material that arrives free with another order costs zero.
+- `RawMaterialData` / `ProductData` — the stored figure `Decimals::trim()`ed, the same shape
+  `StockItemOptionData` already sends the picker's suggestion in, so the number on the row and
+  the number that prefills a line are one string rather than two roundings of it.
+- `components/data/amount-cell.tsx` — new, shared by both lists from the start. Two concrete
+  callers in one change rather than a guess at a third; the alternative was the same twelve
+  lines twice.
+- `TextField` gained `hintParams`, so a hint can name the currency the server chose instead of
+  the caller concatenating a sentence out of fragments.
+
+**Null is a word, not a dash.** "Nobody has priced this" and "it is free" are different
+answers and the purchase order line reads them differently — one leaves the cost box empty to
+be typed, the other prefills a zero. An em dash in a column of money reads as the second.
+
+### `formatMoney` gained a minimum scale, and why it had to
+
+Trimming alone put `MYR 12.5` beside `MYR 8.7555` in one column, which reads as a fault rather
+than as precision. Rounding to two places was the obvious fix and is the wrong one: the column
+holds four, a material priced per gram legitimately uses them, and seeding the edit box with a
+rounded figure would have written the rounding back on the next save — data loss with no
+symptom.
+
+So the padding is a **floor, never a rounding**, and the floor comes from the server:
+`Money::scaleFor()` is sent as `baseCurrencyScale`. `format.ts` still holds no table of which
+currencies divide by a hundred — that fact stays stated in exactly one place, just not that
+one. `12.5` → `12.50`; `8.7555` keeps all four.
+
+### Two things found while verifying, both worth knowing
+
+- **`bun run build` does not build the SSR bundle.** It is `vite build` alone; `build:ssr` is
+  the one that writes `bootstrap/ssr/`. Building the client, restarting SSR and then browsing
+  renders the *old* page on the server against the *new* one in the browser — an intermittent
+  React #418 that looks exactly like a nondeterministic render and is not. It cost most of an
+  afternoon and produced two confident, wrong conclusions before the mtime on
+  `bootstrap/ssr/app.js` gave it away. **Verify with `bun run build:ssr`, not `bun run build`.**
+- **`defaultHidden` is defeated by any saved column layout.** The flag is read only by
+  `defaultLayout()`, which runs when a reader has *no* stored layout for that table. Anyone who
+  has ever touched the Columns panel on that list has a stored `hidden` array that cannot name
+  a column added later, so a new `defaultHidden` column arrives switched **on** for them and
+  off for everyone else. Visible today on `products` for the demo owner. Not a hydration bug —
+  the layout is a server prop, so both sides agree — but it does mean "off by default" is only
+  true for readers who have never customised that list.
+
+#### Open, carried forward
+
+- Neither `default_cost` nor `default_price` is sortable — the columns are not in either
+  controller's `SORTABLE` allow-list. Deliberate for now; adding them is one line each plus a
+  decision about where MySQL should put the nulls.
+- The prefill is still one number per material. No supplier-price history.
+
 ## Phases 3–8 — Modules ⬜
 
 | Phase | Modules | Status |
 |---|---|---|
 | 3 · Catalog | **categories ✅ · suppliers ✅ · customers ✅ · raw materials ✅ · products ✅** (core · image · BOM) | ✅ |
 | 4 · Stock | **locations ✅ · warehouses ✅ · StockService ✅ · movements ✅ · transfers ✅ · reorder levels ✅ · stock takes ✅** (+ notes column, column preferences, warehouse detail) | ✅ |
-| 5 · Orders | **money foundation ✅ · purchase orders ✅** · sales orders · purchase returns · sales returns | 🚧 |
+| 5 · Orders | **money foundation ✅ · purchase orders ✅ · catalogue prices ✅** · sales orders · purchase returns · sales returns | 🚧 |
 | 6 · Insights | reports, activity log | ⬜ |
 | 7 · Team & settings | users, roles/RBAC, **business settings ✅ · document numbering ✅** (both pulled forward into phase 5, which needed them), e-invoice | 🚧 |
 | 8 · Cross-cutting | exports, barcode/QR scanning, tenant dashboard, admin dashboard | ⬜ |

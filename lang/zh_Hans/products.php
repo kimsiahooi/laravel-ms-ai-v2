@@ -27,6 +27,7 @@ return [
     'column' => [
         'name' => '产品',
         'sku' => 'SKU',
+        'default_price' => '默认售价',
         'category' => '分类',
         'supplier' => '供应商',
         'created' => '添加时间',
@@ -78,6 +79,10 @@ return [
         'unit' => '单位',
         'unit_placeholder' => '选择单位',
         'unit_hint' => '你销售时使用的单位。该产品记录的每一个数量都是这个单位的数量。',
+        'default_price' => '默认售价',
+        'default_price_placeholder' => '例如 49.90',
+        'default_price_hint' => '每单位的常规售价，以 :currency 计。销售订单行将以此金额起始且仍可修改，因此调整它不会影响已开立的订单。',
+        'default_price_none' => '未设置',
         'description' => '描述',
         'description_placeholder' => '用一两句话说明这是什么',
         'image' => '图片',

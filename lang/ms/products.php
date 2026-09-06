@@ -28,6 +28,7 @@ return [
     'column' => [
         'name' => 'Produk',
         'sku' => 'SKU',
+        'default_price' => 'Harga lalai',
         'category' => 'Kategori',
         'supplier' => 'Pembekal',
         'created' => 'Ditambah',
@@ -79,6 +80,10 @@ return [
         'unit' => 'Unit',
         'unit_placeholder' => 'Pilih unit',
         'unit_hint' => 'Unit yang anda gunakan untuk menjualnya. Setiap kuantiti yang direkodkan untuk produk ini ialah bilangan unit ini.',
+        'default_price' => 'Harga lalai',
+        'default_price_placeholder' => 'cth. 49.90',
+        'default_price_hint' => 'Harga jualan biasa anda bagi satu unit, dalam :currency. Baris pesanan jualan akan bermula daripada angka ini dan masih boleh diubah, jadi mengubahnya tidak menjejaskan pesanan yang telah dibuat.',
+        'default_price_none' => 'Belum ditetapkan',
         'description' => 'Keterangan',
         'description_placeholder' => 'Apa produk ini, dalam satu atau dua baris',
         'image' => 'Gambar',

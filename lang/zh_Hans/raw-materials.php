@@ -21,6 +21,7 @@ return [
     'column' => [
         'name' => '材料',
         'sku' => 'SKU',
+        'default_cost' => '默认成本',
         'unit' => '单位',
         'created' => '添加时间',
         'creator' => '添加者',
@@ -63,6 +64,10 @@ return [
         'unit' => '单位',
         'unit_placeholder' => '选择单位',
         'unit_hint' => '你清点它时用的单位。该材料记录的每一个数量都是这个单位的数量，所以请选择你采购和领用时使用的那个。',
+        'default_cost' => '默认成本',
+        'default_cost_placeholder' => '例如 12.50',
+        'default_cost_hint' => '每单位的常规采购价，以 :currency 计。采购订单行会以此金额起始且仍可修改，因此调整它不会影响已开立的订单。',
+        'default_cost_none' => '未设置',
     ],
 
     'confirm' => [

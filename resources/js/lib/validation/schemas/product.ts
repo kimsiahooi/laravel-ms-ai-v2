@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import {
     oneOf,
+    optionalDecimal,
     optionalFile,
     optionalFlag,
     optionalId,
@@ -56,6 +57,12 @@ export const productSchema = (
         unit: oneOf({
             values: units,
             attribute: 'validation.attributes.unit',
+        }),
+        // Same bounds as a raw material's default cost, and the same three answers:
+        // a number, zero, and an empty box meaning nobody has set a price.
+        default_price: optionalDecimal({
+            attribute: 'validation.attributes.default_price',
+            gte: 0,
         }),
         image: optionalFile({
             attribute: 'validation.attributes.image',

@@ -47,6 +47,14 @@ final class RawMaterialRequest extends TenantFormRequest
             // different units. The enum is the list, and it is the same list the
             // picker was built from.
             'unit' => ['required', Rule::enum(Unit::class)],
+            // What this normally costs, in the workspace's base currency. `gte:0`
+            // rather than the default `gt:0`: a material that arrives free with
+            // another order costs zero, and refusing that would make it unrecordable.
+            //
+            // Nullable, and null is not zero — "nobody has said" is a different answer
+            // from "it is free", and the purchase order line reads them differently:
+            // one leaves the cost box empty to be typed, the other prefills 0.
+            'default_cost' => ['nullable', ...$this->decimalRules('gte:0')],
         ];
     }
 }

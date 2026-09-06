@@ -1,5 +1,6 @@
-import { Head, setLayoutProps } from '@inertiajs/react';
+import { Head, setLayoutProps, usePage } from '@inertiajs/react';
 import { Package } from 'lucide-react';
+import { AmountCell } from '@/components/data/amount-cell';
 import { ColumnHeader, heading } from '@/components/data/column-header';
 import { ComboboxFilter } from '@/components/data/combobox-filter';
 import { DataTable } from '@/components/data/data-table';
@@ -29,6 +30,10 @@ type Props = {
     unitsInUse: App.Enums.Unit[];
     /** Materials some bill mentions — see the controller's materialsInBills(). */
     materialsInBills: App.Data.OptionData[];
+    /** ISO 4217 code every default price on this page is quoted in. */
+    baseCurrency: string;
+    /** How many decimals that currency has — see Money::scaleFor. */
+    baseCurrencyScale: number;
 };
 
 /**
@@ -67,6 +72,15 @@ const columns = column.columns([
                 {row.original.sku}
             </span>
         ),
+    }),
+    column.accessor('default_price', {
+        ...heading('products.column.default_price', {
+            align: 'end',
+            // Off by default, discoverable in the Columns panel — the same call as the
+            // raw material list's default cost, and for the same reason.
+            defaultHidden: true,
+        }),
+        cell: ({ row }) => <PriceCell amount={row.original.default_price} />,
     }),
     column.accessor('category', {
         ...heading('products.column.category', { hideBelow: 'md' }),
@@ -114,6 +128,23 @@ function NameMeta({ product }: { product: Product }) {
                 </>
             )}
         </span>
+    );
+}
+
+/**
+ * The catalogue's suggested selling price, always in the workspace's base currency —
+ * the page prop, read here because a `cell` renderer gets no props of its own.
+ */
+function PriceCell({ amount }: { amount: string | null }) {
+    const { baseCurrency, baseCurrencyScale } = usePage<Props>().props;
+
+    return (
+        <AmountCell
+            amount={amount}
+            currency={baseCurrency}
+            scale={baseCurrencyScale}
+            empty="products.field.default_price_none"
+        />
     );
 }
 

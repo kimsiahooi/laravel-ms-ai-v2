@@ -1,5 +1,6 @@
-import { Head, setLayoutProps } from '@inertiajs/react';
+import { Head, setLayoutProps, usePage } from '@inertiajs/react';
 import { Boxes } from 'lucide-react';
+import { AmountCell } from '@/components/data/amount-cell';
 import { ColumnHeader, heading } from '@/components/data/column-header';
 import { DataTable } from '@/components/data/data-table';
 import { DateCell } from '@/components/data/date-cell';
@@ -21,6 +22,10 @@ type Props = {
     filters: ResourceFilters;
     /** Unit codes in use, for the filter. See the controller's unitsInUse(). */
     unitsInUse: App.Enums.Unit[];
+    /** ISO 4217 code every default cost on this page is quoted in. */
+    baseCurrency: string;
+    /** How many decimals that currency has — see Money::scaleFor. */
+    baseCurrencyScale: number;
 };
 
 /**
@@ -54,6 +59,18 @@ const columns = column.columns([
             </span>
         ),
     }),
+    column.accessor('default_cost', {
+        ...heading('raw-materials.column.default_cost', {
+            align: 'end',
+            // Off by default: it is a figure most days nobody is looking at, and the
+            // name and code are what somebody scans this list for. Discoverable in the
+            // Columns panel, which is the point of having one — a value that can be
+            // set and never seen is the defect this codebase has now shipped three
+            // times.
+            defaultHidden: true,
+        }),
+        cell: ({ row }) => <CostCell amount={row.original.default_cost} />,
+    }),
     column.accessor('created_at', {
         ...heading('raw-materials.column.created', { hideBelow: 'lg' }),
         cell: ({ row }) => <DateCell iso={row.original.created_at} />,
@@ -76,6 +93,24 @@ const columns = column.columns([
         meta: { align: 'end', width: 'w-12' },
     }),
 ]);
+
+/**
+ * What the catalogue says this material costs, always in the workspace's base currency —
+ * the page prop, read here because a `cell` renderer gets no props of its own. The
+ * catalogue holds one suggestion per material; an order records what was actually agreed.
+ */
+function CostCell({ amount }: { amount: string | null }) {
+    const { baseCurrency, baseCurrencyScale } = usePage<Props>().props;
+
+    return (
+        <AmountCell
+            amount={amount}
+            currency={baseCurrency}
+            scale={baseCurrencyScale}
+            empty="raw-materials.field.default_cost_none"
+        />
+    );
+}
 
 /**
  * The material's unit under its name. The short form — `kg`, not `Kilogram (kg)` — since

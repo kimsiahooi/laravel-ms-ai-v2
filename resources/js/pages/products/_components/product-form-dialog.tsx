@@ -19,10 +19,12 @@ type PageProps = {
     categories: App.Data.OptionData[];
     suppliers: App.Data.OptionData[];
     units: Record<App.Enums.Dimension, App.Enums.Unit[]>;
+    /** ISO 4217 code the default price is quoted in. See the controller. */
+    baseCurrency: string;
 };
 
 /**
- * Eight fields in two groups.
+ * Nine fields in two groups.
  *
  * The split is the design: what the product *is* — the part somebody can fill in from
  * the thing in front of them — and how it is *filed*, which is a decision about the
@@ -39,7 +41,8 @@ export function ProductFormDialog({
     /** The row being edited. Absent means this is the create form. */
     product?: Product;
 }) {
-    const { categories, suppliers, units } = usePage<PageProps>().props;
+    const { categories, suppliers, units, baseCurrency } =
+        usePage<PageProps>().props;
     const editing = product !== undefined;
 
     const unitOptions = useMemo(() => toUnitOptions(units), [units]);
@@ -107,6 +110,20 @@ export function ProductFormDialog({
                                 options={unitOptions}
                                 defaultValue={product?.unit}
                                 error={errors.unit}
+                            />
+
+                            <TextField
+                                name="default_price"
+                                label="products.field.default_price"
+                                placeholder="products.field.default_price_placeholder"
+                                hint="products.field.default_price_hint"
+                                hintParams={{ currency: baseCurrency }}
+                                // `inputMode`, never `type="number"` — see the raw
+                                // material dialog on what a stray scroll does to one.
+                                inputMode="decimal"
+                                defaultValue={product?.default_price ?? ''}
+                                error={errors.default_price}
+                                optional
                             />
 
                             <div className="sm:col-span-2">

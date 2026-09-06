@@ -31,6 +31,7 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
  * @property int|null $category_id
  * @property int|null $supplier_id
  * @property Unit $unit
+ * @property string|null $default_price
  * @property int|null $created_by
  * @property Carbon $created_at
  * @property Carbon $updated_at
@@ -42,7 +43,7 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
  */
 #[Fillable([
     'name', 'sku', 'barcode', 'description',
-    'category_id', 'supplier_id', 'unit',
+    'category_id', 'supplier_id', 'unit', 'default_price',
 ])]
 class Product extends Model implements HasMedia
 {
@@ -77,7 +78,13 @@ class Product extends Model implements HasMedia
      */
     protected function casts(): array
     {
-        return ['unit' => Unit::class];
+        return [
+            'unit' => Unit::class,
+            // A decimal string at four places, never a float — the same shape and the
+            // same reason as RawMaterial's default_cost. Null means nobody has set a
+            // price, which a sales order reads as "no suggestion" rather than as free.
+            'default_price' => 'decimal:4',
+        ];
     }
 
     /**

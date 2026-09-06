@@ -6,6 +6,7 @@ namespace App\Data;
 
 use App\Enums\Unit;
 use App\Models\RawMaterial;
+use App\Support\Decimals;
 use Spatie\LaravelData\Data;
 use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
@@ -36,6 +37,16 @@ final class RawMaterialData extends Data
         public ?string $barcode,
         public Unit $unit,
         /**
+         * What this normally costs, trimmed — `12.5`, not `12.5000` — or null if
+         * nobody has said.
+         *
+         * Trimmed rather than rounded to the currency's two places, and that matters:
+         * the column holds four, a material priced per gram legitimately uses them,
+         * and seeding the edit box with a rounded figure would quietly write the
+         * rounding back on the next save. Exactly what is stored goes out.
+         */
+        public ?string $default_cost,
+        /**
          * Names of the products whose bill of materials calls for this — capped, so a
          * material used by two hundred products does not put two hundred strings in
          * every row of the listing. `bom_product_count` carries the real total.
@@ -60,10 +71,23 @@ final class RawMaterialData extends Data
             sku: $rawMaterial->sku,
             barcode: $rawMaterial->barcode,
             unit: $rawMaterial->unit,
+            default_cost: self::amount($rawMaterial->default_cost),
             bom_products: array_values($rawMaterial->products->take(self::BOM_PRODUCTS_SHOWN)->pluck('name')->all()),
             bom_product_count: $rawMaterial->products->count(),
             created_at: $rawMaterial->created_at->toIso8601String(),
             creator: $rawMaterial->creator?->name,
         );
+    }
+
+    /**
+     * A stored `decimal(15,4)` as the form and the listing both want it, or null.
+     *
+     * The same shape {@see StockItemOptionData} sends the picker's suggestion in, so
+     * the number on this row and the number that prefills a purchase order line are
+     * one string rather than two roundings of it.
+     */
+    private static function amount(?string $stored): ?string
+    {
+        return $stored === null ? null : Decimals::trim($stored);
     }
 }

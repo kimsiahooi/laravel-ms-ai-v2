@@ -1,5 +1,10 @@
 import { z } from 'zod';
-import { oneOf, optionalText, text } from '@/lib/validation/primitives';
+import {
+    oneOf,
+    optionalDecimal,
+    optionalText,
+    text,
+} from '@/lib/validation/primitives';
 
 /**
  * Mirrors App\Http\Requests\Tenant\RawMaterialRequest and the `raw_materials` columns
@@ -31,5 +36,12 @@ export const rawMaterialSchema = (units: readonly string[]) =>
         unit: oneOf({
             values: units,
             attribute: 'validation.attributes.unit',
+        }),
+        // `gte: 0` rather than the default `gt: 0` — a material that arrives free with
+        // another order costs zero, and an empty box means nobody has said, which is a
+        // third answer the server reads differently from both.
+        default_cost: optionalDecimal({
+            attribute: 'validation.attributes.default_cost',
+            gte: 0,
         }),
     });

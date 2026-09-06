@@ -23,6 +23,7 @@ use Illuminate\Support\Carbon;
  * @property string $sku
  * @property string|null $barcode
  * @property Unit $unit
+ * @property string|null $default_cost
  * @property int|null $created_by
  * @property Carbon $created_at
  * @property Carbon $updated_at
@@ -30,7 +31,7 @@ use Illuminate\Support\Carbon;
  * @property-read User|null $creator
  * @property-read Collection<int, Product> $products
  */
-#[Fillable(['name', 'sku', 'barcode', 'unit'])]
+#[Fillable(['name', 'sku', 'barcode', 'unit', 'default_cost'])]
 class RawMaterial extends Model
 {
     use RecordsCreator;
@@ -82,9 +83,17 @@ class RawMaterial extends Model
      */
     protected function casts(): array
     {
-        // The column holds 'kg'; everything that reads it gets a Unit, with the
-        // dimension and conversion factor attached. Validation already refuses anything
-        // outside the enum, so the cast can never meet a value it cannot resolve.
-        return ['unit' => Unit::class];
+        return [
+            // The column holds 'kg'; everything that reads it gets a Unit, with the
+            // dimension and conversion factor attached. Validation already refuses
+            // anything outside the enum, so the cast can never meet a value it cannot
+            // resolve.
+            'unit' => Unit::class,
+            // A string at four places, like every other decimal in this schema — see
+            // {@see \App\Services\StockService} on why the engine never puts money or
+            // a quantity through a float. Null survives the cast and means nobody has
+            // said what this costs, which is not the same as it being free.
+            'default_cost' => 'decimal:4',
+        ];
     }
 }

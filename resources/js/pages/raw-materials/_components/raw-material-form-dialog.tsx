@@ -10,10 +10,14 @@ import { store, update } from '@/routes/raw-materials';
 type RawMaterial = App.Data.RawMaterialData;
 
 /** Unit codes grouped by what they measure — see App\Enums\Unit::grouped(). */
-type PageProps = { units: Record<App.Enums.Dimension, App.Enums.Unit[]> };
+type PageProps = {
+    units: Record<App.Enums.Dimension, App.Enums.Unit[]>;
+    /** ISO 4217 code the default cost is quoted in. See the controller. */
+    baseCurrency: string;
+};
 
 /**
- * Four fields, three of them required — the first form in the catalog that asks for
+ * Five fields, three of them required — the first form in the catalog that asks for
  * more than a name.
  *
  * It asks because the answers are load-bearing. The SKU is how a purchase order line, a
@@ -22,8 +26,10 @@ type PageProps = { units: Record<App.Enums.Dimension, App.Enums.Unit[]> };
  * nothing downstream could use, so both carry a hint saying what they are for rather
  * than a bare label and a shrug.
  *
- * The barcode is the exception and stays optional: not every material has one, and one
- * that does gets scanned rather than typed.
+ * The barcode and the default cost stay optional, for the same shape of reason: not
+ * every material has a barcode, and not every workspace has agreed a price. An empty
+ * cost box is a real answer that the purchase order line reads as "nothing to suggest" —
+ * it leaves the line's cost empty to be typed, rather than prefilling a zero.
  *
  * The unit is a picker rather than a box, because a stock engine that adds quantities
  * together cannot tell "kg" from "KG". The codes come from the server grouped by what
@@ -39,7 +45,7 @@ export function RawMaterialFormDialog({
     /** The row being edited. Absent means this is the create form. */
     rawMaterial?: RawMaterial;
 }) {
-    const { units } = usePage<PageProps>().props;
+    const { units, baseCurrency } = usePage<PageProps>().props;
     const editing = rawMaterial !== undefined;
 
     // Both derived from the same prop, and both memoised on it: the option list is a
@@ -112,6 +118,21 @@ export function RawMaterialFormDialog({
                         options={options}
                         defaultValue={rawMaterial?.unit}
                         error={errors.unit}
+                    />
+
+                    <TextField
+                        name="default_cost"
+                        label="raw-materials.field.default_cost"
+                        placeholder="raw-materials.field.default_cost_placeholder"
+                        hint="raw-materials.field.default_cost_hint"
+                        hintParams={{ currency: baseCurrency }}
+                        // `inputMode`, never `type="number"`: a number input turns a
+                        // stray scroll over the box into a silent edit, and drops the
+                        // trailing zero somebody typed on purpose.
+                        inputMode="decimal"
+                        defaultValue={rawMaterial?.default_cost ?? ''}
+                        error={errors.default_cost}
+                        optional
                     />
 
                     <div className="sm:col-span-2">

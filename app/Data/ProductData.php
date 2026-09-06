@@ -6,6 +6,7 @@ namespace App\Data;
 
 use App\Enums\Unit;
 use App\Models\Product;
+use App\Support\Decimals;
 use Spatie\LaravelData\Data;
 use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
@@ -32,6 +33,15 @@ final class ProductData extends Data
         public ?int $supplier_id,
         public ?string $supplier,
         public Unit $unit,
+        /**
+         * The usual selling price, trimmed — `12.5`, not `12.5000` — or null if nobody
+         * has set one.
+         *
+         * Exactly what is stored, not a two-place rounding of it: the column holds
+         * four places, and seeding the edit box with a rounded figure would write the
+         * rounding back the next time somebody saved. See RawMaterialData::amount().
+         */
+        public ?string $default_price,
         public ?string $thumb_url,
         /**
          * What goes into this product. Empty for most of the catalog — only
@@ -62,6 +72,9 @@ final class ProductData extends Data
             supplier_id: $product->supplier_id,
             supplier: $product->supplier?->name,
             unit: $product->unit,
+            default_price: $product->default_price === null
+                ? null
+                : Decimals::trim($product->default_price),
             thumb_url: self::thumbUrl($product),
             bom: array_values($product->bomItems->map(BomItemData::fromBomItem(...))->all()),
             created_at: $product->created_at->toIso8601String(),

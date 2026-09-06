@@ -15,10 +15,12 @@ use App\Http\Controllers\Concerns\RespondsWithToast;
 use App\Http\Controllers\Concerns\SortsResourceQuery;
 use App\Http\Requests\Tenant\BomRequest;
 use App\Http\Requests\Tenant\ProductRequest;
+use App\Models\BusinessSetting;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\RawMaterial;
 use App\Models\Supplier;
+use App\Support\Money;
 use App\Support\TenantPermissions;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -121,6 +123,10 @@ final class ProductController
             extra: ['unit' => $unit === null ? '' : $unit->value, 'material' => $selected->implode(',')],
         );
 
+        // One read for both money props below: current() is a firstOrCreate, and
+        // calling it twice would be two round trips for one row.
+        $settings = BusinessSetting::current();
+
         return Inertia::render('products/index', [
             'products' => $products,
             'filters' => $filters,
@@ -146,6 +152,16 @@ final class ProductController
             // every material is a legitimate thing to add. Here a material no bill
             // mentions is a choice that can only return nothing.
             'materialsInBills' => OptionData::collect($materials),
+            // The currency the default price is quoted in. One number per product,
+            // always in the workspace's base currency: the catalogue holds a suggestion,
+            // and an order raised in another currency records what was actually agreed
+            // on its own line. Sent so the field can name the money it asks for.
+            'baseCurrency' => $settings->base_currency,
+            // How many decimal places that currency actually has, from
+            // Money::scaleFor — so the browser can pad `12.5` to `12.50` without
+            // holding its own copy of which currencies divide by a hundred. A stored
+            // figure with more places than this keeps them: see formatMoney.
+            'baseCurrencyScale' => Money::scaleFor($settings->base_currency),
         ]);
     }
 

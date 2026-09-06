@@ -21,6 +21,7 @@ return [
     'column' => [
         'name' => 'Material',
         'sku' => 'SKU',
+        'default_cost' => 'Default cost',
         'unit' => 'Unit',
         'created' => 'Added',
         'creator' => 'Added by',
@@ -63,6 +64,10 @@ return [
         'unit' => 'Unit',
         'unit_placeholder' => 'Choose a unit',
         'unit_hint' => 'What you count it in. Every quantity recorded against this material is a number of these, so pick the one you buy and issue it in.',
+        'default_cost' => 'Default cost',
+        'default_cost_placeholder' => 'e.g. 12.50',
+        'default_cost_hint' => 'What you normally pay for one unit, in :currency. Purchase order lines start from this figure and stay editable, so changing it never alters an order already raised.',
+        'default_cost_none' => 'Not set',
     ],
 
     'confirm' => [

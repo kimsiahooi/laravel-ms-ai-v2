@@ -12,7 +12,9 @@ use App\Http\Controllers\Concerns\ResolvesPerPage;
 use App\Http\Controllers\Concerns\RespondsWithToast;
 use App\Http\Controllers\Concerns\SortsResourceQuery;
 use App\Http\Requests\Tenant\RawMaterialRequest;
+use App\Models\BusinessSetting;
 use App\Models\RawMaterial;
+use App\Support\Money;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -59,6 +61,10 @@ final class RawMaterialController
             $query->where('unit', $unit);
         }
 
+        // One read for both money props below: current() is a firstOrCreate, and
+        // calling it twice would be two round trips for one row.
+        $settings = BusinessSetting::current();
+
         ['rows' => $rawMaterials, 'filters' => $filters] = $this->resourceList(
             request: $request,
             query: $query,
@@ -78,6 +84,17 @@ final class RawMaterialController
             'units' => Unit::grouped(),
             // Just the codes the unit filter may offer — see unitsInUse().
             'unitsInUse' => self::unitsInUse(),
+            // The currency the default cost is quoted in. One number per
+            // material, always in the workspace's base currency: the catalogue holds a
+            // suggestion, and an order that is raised in another currency records what
+            // was actually agreed on its own line. Sent so the field can say which money
+            // it is asking for rather than leave it to be guessed.
+            'baseCurrency' => $settings->base_currency,
+            // How many decimal places that currency actually has, from
+            // Money::scaleFor — so the browser can pad `12.5` to `12.50` without
+            // holding its own copy of which currencies divide by a hundred. A stored
+            // figure with more places than this keeps them: see formatMoney.
+            'baseCurrencyScale' => Money::scaleFor($settings->base_currency),
         ]);
     }
 

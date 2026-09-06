@@ -78,6 +78,8 @@ return [
         'currencies' => 'currencies',
         'currencies.*' => 'currency',
         'currency' => 'currency',
+        'default_cost' => 'default cost',
+        'default_price' => 'default price',
         'description' => 'description',
         'email' => 'email',
         'exchange_rate' => 'exchange rate',

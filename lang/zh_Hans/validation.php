@@ -58,6 +58,8 @@ return [
         'currencies' => '货币',
         'currencies.*' => '货币',
         'currency' => '货币',
+        'default_cost' => '默认成本',
+        'default_price' => '默认售价',
         'description' => '描述',
         'email' => '电子邮箱',
         'exchange_rate' => '汇率',

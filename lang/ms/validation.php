@@ -59,6 +59,8 @@ return [
         'currencies' => 'mata wang',
         'currencies.*' => 'mata wang',
         'currency' => 'mata wang',
+        'default_cost' => 'kos lalai',
+        'default_price' => 'harga lalai',
         'description' => 'keterangan',
         'email' => 'e-mel',
         'exchange_rate' => 'kadar pertukaran',

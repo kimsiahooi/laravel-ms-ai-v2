@@ -50,6 +50,10 @@ final class ProductRequest extends TenantFormRequest
             'category_id' => ['nullable', ...$this->foreignKey('categories')],
             'supplier_id' => ['nullable', ...$this->foreignKey('suppliers')],
             'unit' => ['required', Rule::enum(Unit::class)],
+            // The usual selling price, in the base currency. Same bounds and the same
+            // null-is-not-zero reading as a raw material's default cost; a sales order
+            // line will prefill from it and stay editable.
+            'default_price' => ['nullable', ...$this->decimalRules('gte:0')],
             // `image` and `mimes` overlap on purpose. `image` refuses anything that is
             // not a picture and says so in those words; `mimes` narrows to the formats
             // every browser can actually display, which rules out the tif somebody's

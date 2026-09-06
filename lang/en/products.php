@@ -27,6 +27,7 @@ return [
     'column' => [
         'name' => 'Product',
         'sku' => 'SKU',
+        'default_price' => 'Default price',
         'category' => 'Category',
         'supplier' => 'Supplier',
         'created' => 'Added',
@@ -78,6 +79,10 @@ return [
         'unit' => 'Unit',
         'unit_placeholder' => 'Choose a unit',
         'unit_hint' => 'What you sell it in. Every quantity recorded against this product is a number of these.',
+        'default_price' => 'Default price',
+        'default_price_placeholder' => 'e.g. 49.90',
+        'default_price_hint' => 'What you normally sell one unit for, in :currency. Sales order lines will start from this figure and stay editable, so changing it never alters an order already raised.',
+        'default_price_none' => 'Not set',
         'description' => 'Description',
         'description_placeholder' => 'What it is, in a line or two',
         'image' => 'Photo',

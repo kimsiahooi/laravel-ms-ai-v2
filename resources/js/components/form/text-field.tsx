@@ -54,6 +54,16 @@ type Props = {
      */
     inputMode?: 'decimal';
     /**
+     * Values for the `:placeholders` in `hint`.
+     *
+     * A hint is the one string on a field that regularly needs a number from the
+     * server in it — which currency an amount is quoted in, what the cap is — and
+     * concatenating it in the caller would build a sentence out of fragments, which
+     * is the thing `docs/LOCALIZATION.md` refuses: word order is not the same in
+     * every language.
+     */
+    hintParams?: Record<string, string | number>;
+    /**
      * Keep the label for screen readers but take it off the screen. For a repeating
      * row under a column header, where the visible label is the header and printing
      * "Quantity" ten times down the column is noise a sighted reader has to skip.
@@ -95,6 +105,7 @@ export function TextField({
     autoComplete = 'off',
     type = 'text',
     inputMode,
+    hintParams,
     labelHidden,
     rows,
 }: Props) {
@@ -157,7 +168,7 @@ export function TextField({
 
             {hint && (
                 <p id={hintId} className="text-muted-foreground text-xs">
-                    {t(hint)}
+                    {t(hint, hintParams)}
                 </p>
             )}
 

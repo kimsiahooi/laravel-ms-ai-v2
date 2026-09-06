@@ -22,6 +22,7 @@ return [
     'column' => [
         'name' => 'Bahan',
         'sku' => 'SKU',
+        'default_cost' => 'Kos lalai',
         'unit' => 'Unit',
         'created' => 'Ditambah',
         'creator' => 'Ditambah oleh',
@@ -64,6 +65,10 @@ return [
         'unit' => 'Unit',
         'unit_placeholder' => 'Pilih unit',
         'unit_hint' => 'Apa yang anda gunakan untuk mengiranya. Setiap kuantiti yang direkodkan untuk bahan ini ialah bilangan unit ini, jadi pilih unit yang anda beli dan keluarkan.',
+        'default_cost' => 'Kos lalai',
+        'default_cost_placeholder' => 'cth. 12.50',
+        'default_cost_hint' => 'Harga biasa anda bagi satu unit, dalam :currency. Baris pesanan belian bermula daripada angka ini dan masih boleh diubah, jadi mengubahnya tidak menjejaskan pesanan yang telah dibuat.',
+        'default_cost_none' => 'Belum ditetapkan',
     ],
 
     'confirm' => [

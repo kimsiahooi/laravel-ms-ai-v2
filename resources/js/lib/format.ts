@@ -268,13 +268,25 @@ function group(digits: string): string {
  * rounded the amount to what the currency can express — see `App\Support\Money::roundTo()`
  * — so the decimals present are the decimals that matter, and this file holds no second
  * copy of which currencies divide by a hundred.
+ *
+ * `minDecimals` is the exception that proves it: a raw catalogue figure has *not* been
+ * rounded to a currency scale, because it is stored at four places and a material priced
+ * per gram legitimately uses them. Trimming alone put `MYR 12.5` beside `MYR 8.7555` in
+ * one column, which reads as a fault rather than as precision. The caller passes the
+ * floor, taken from `Money::scaleFor()` on the server, so the number of places a currency
+ * has is still stated in exactly one place — just not this one. Extra places are kept:
+ * padding is a minimum, never a rounding, and nothing here can lose a digit.
  */
-export function formatMoney(amount: string, currency: string): string {
+export function formatMoney(
+    amount: string,
+    currency: string,
+    minDecimals = 0,
+): string {
     const negative = amount.startsWith('-');
     const bare = negative ? amount.slice(1) : amount;
-    const [whole, fraction] = bare.split('.');
-    const body =
-        fraction === undefined ? group(whole) : `${group(whole)}.${fraction}`;
+    const [whole, fraction = ''] = bare.split('.');
+    const padded = fraction.padEnd(minDecimals, '0');
+    const body = padded === '' ? group(whole) : `${group(whole)}.${padded}`;
 
     return `${currency} ${negative ? '-' : ''}${body}`;
 }
