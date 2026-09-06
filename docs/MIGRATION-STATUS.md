@@ -3064,8 +3064,32 @@ one-directional question.
   table scrolls inside its card and the body does not.
 - en / ms / zh_Hans across list, dialog and validation messages. SSR on, console clean.
 
+#### Both ends show what they hold
+
+The first cut showed the on-hand for the **source only**, on the reasoning that it is the
+only end that can refuse a transfer. Reported from use, and the reasoning was wrong about
+what the reader is doing: deciding *how much* to move is a judgement about both sides —
+you are usually levelling two shelves, and the destination's number is half of that.
+
+Each line now sits under the picker that names it, so neither has to say which warehouse
+it means, and the quantity box follows both. Still advisory: the numbers are read without
+a lock and the real check happens under one, which is why nothing here disables anything.
+
+The move also fixed a smell it exposed. `OnHandLine` had been promoted to
+`components/form/` but still read `stock-movements.field.on_hand` — a shared component
+reaching into one module's strings, which made transfers' copy depend on a file it has no
+reason to open. The key is now `common.field.on_hand`, and the dead
+`on_hand_unknown` beside it (no consumer since the component was written) is gone.
+
 #### Open, carried forward
 
+- **`stock:hammer` writes transfer movements with no transfer document.** It calls
+  `StockService::transfer()` directly rather than {@see RecordStockTransfer}, which is
+  correct — it is measuring the service's lock ordering, and adding a third table to the
+  contention would change what is being measured. The consequence is that a workspace the
+  hammer has run against has `transfer_in`/`transfer_out` rows in the ledger with nothing
+  in `stock_transfers` to pair them. Fine for a dev fixture; worth knowing before reading
+  the demo workspace's numbers.
 - The two prerequisite empty states — fewer than two warehouses, and an empty catalogue —
   were **not driven**: the demo workspace has six warehouses and a full catalogue, and
   manufacturing the states would mean destroying data. The ordinary empty state was.

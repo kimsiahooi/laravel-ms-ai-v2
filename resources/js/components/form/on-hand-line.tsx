@@ -24,6 +24,10 @@ type OnHand = App.Data.StockOnHandData;
  *
  * Nothing renders until both pickers are set, so an empty form stays quiet rather than
  * showing a placeholder for an answer nobody has asked for yet.
+ *
+ * Its wording lives in `common.field.on_hand`, not in a module's file: two screens use
+ * this now, and a shared component reaching into one module's strings makes the other
+ * one's copy depend on a file it has no reason to open.
  */
 export function OnHandLine({
     warehouseId,
@@ -96,7 +100,7 @@ export function OnHandLine({
         >
             {state === 'loading'
                 ? ' ' // Holds the line's height so the form does not jump. i18n-allow
-                : t('stock-movements.field.on_hand', {
+                : t('common.field.on_hand', {
                       quantity: `${state.on_hand} ${t(`units.symbol.${state.unit}` as const)}`,
                   })}
         </p>

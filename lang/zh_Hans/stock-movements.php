@@ -104,8 +104,6 @@ return [
         'quantity_placeholder_set' => '例如：12 —— 新的总量',
         'notes' => '备注',
         'notes_placeholder' => '原因，或任何值得记录的信息',
-        'on_hand' => '当前库存：:quantity',
-        'on_hand_unknown' => '此处尚无记录。',
     ],
 
     'error' => [

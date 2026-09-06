@@ -105,8 +105,6 @@ return [
         'quantity_placeholder_set' => 'e.g. 12 — the new total',
         'notes' => 'Notes',
         'notes_placeholder' => 'Why, or anything worth remembering',
-        'on_hand' => 'On hand now: :quantity',
-        'on_hand_unknown' => 'Nothing recorded here yet.',
     ],
 
     'error' => [

@@ -16,6 +16,7 @@ return [
     // Marks a field the form will accept empty. Sits beside the label rather than
     // inside it, so the label stays the thing a screen reader announces.
     'field' => [
+        'on_hand' => '当前库存：:quantity',
         'none' => '未设置',
         'optional' => '（选填）',
     ],

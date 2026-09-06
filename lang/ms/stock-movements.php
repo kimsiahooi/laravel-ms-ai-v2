@@ -104,8 +104,6 @@ return [
         'quantity_placeholder_set' => 'cth. 12 — jumlah baharu',
         'notes' => 'Nota',
         'notes_placeholder' => 'Sebabnya, atau apa-apa yang perlu diingat',
-        'on_hand' => 'Ada sekarang: :quantity',
-        'on_hand_unknown' => 'Belum ada rekod di sini.',
     ],
 
     'error' => [
