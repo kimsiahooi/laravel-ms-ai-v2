@@ -17,6 +17,7 @@ return [
         'posted_by' => 'Posted by',
         'posted_at' => 'Posted',
         'created_at' => 'Started',
+        'notes' => 'Notes',
     ],
 
     'status' => [

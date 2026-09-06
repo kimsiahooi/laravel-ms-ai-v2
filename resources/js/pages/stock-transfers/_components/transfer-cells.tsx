@@ -73,16 +73,3 @@ export function EndpointCell({
 export function QuantityCell({ quantity }: { quantity: string }) {
     return <span className="font-medium tabular-nums">{quantity}</span>;
 }
-
-/** Whatever somebody wrote down. Off by default — see the Columns panel. */
-export function NotesCell({ notes }: { notes: string | null }) {
-    if (notes === null || notes === '') {
-        return <span className="text-muted-foreground">—</span>;
-    }
-
-    return (
-        <span className="block truncate text-muted-foreground" title={notes}>
-            {notes}
-        </span>
-    );
-}

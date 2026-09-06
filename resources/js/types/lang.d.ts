@@ -647,6 +647,7 @@ export type TranslationKey =
     | 'stock-takes.action.view'
     | 'stock-takes.column.created_at'
     | 'stock-takes.column.id'
+    | 'stock-takes.column.notes'
     | 'stock-takes.column.opened_by'
     | 'stock-takes.column.posted_at'
     | 'stock-takes.column.posted_by'

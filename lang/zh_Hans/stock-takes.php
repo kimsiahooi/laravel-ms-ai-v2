@@ -21,6 +21,7 @@ return [
         'posted_by' => '过账人',
         'posted_at' => '过账时间',
         'created_at' => '开始时间',
+        'notes' => '备注',
     ],
 
     'status' => [

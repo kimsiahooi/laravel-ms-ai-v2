@@ -643,6 +643,7 @@
     "stock-takes.action.view": "Open count sheet",
     "stock-takes.column.created_at": "Started",
     "stock-takes.column.id": "Count #",
+    "stock-takes.column.notes": "Notes",
     "stock-takes.column.opened_by": "Opened by",
     "stock-takes.column.posted_at": "Posted",
     "stock-takes.column.posted_by": "Posted by",

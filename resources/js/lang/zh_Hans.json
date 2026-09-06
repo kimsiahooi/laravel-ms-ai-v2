@@ -643,6 +643,7 @@
     "stock-takes.action.view": "打开盘点单",
     "stock-takes.column.created_at": "开始时间",
     "stock-takes.column.id": "盘点单号",
+    "stock-takes.column.notes": "备注",
     "stock-takes.column.opened_by": "发起人",
     "stock-takes.column.posted_at": "过账时间",
     "stock-takes.column.posted_by": "过账人",

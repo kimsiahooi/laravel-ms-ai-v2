@@ -4,6 +4,7 @@ import { heading } from '@/components/data/column-header';
 import { DataTable } from '@/components/data/data-table';
 import { DateCell } from '@/components/data/date-cell';
 import { FilterPanel } from '@/components/data/filter-panel';
+import { NotesCell } from '@/components/data/notes-cell';
 import { SelectFilter } from '@/components/data/select-filter';
 import { columnsFor } from '@/components/data/table';
 import { EmptyState } from '@/components/feedback/empty-state';
@@ -73,6 +74,17 @@ const columns = column.columns([
     column.accessor('variance_count', {
         ...heading('stock-takes.column.variances', { align: 'end' }),
         cell: ({ row }) => <VarianceCell count={row.original.variance_count} />,
+    }),
+    // The search box matches on notes, so the column has to be reachable: a row that
+    // matched text nowhere on screen is the defect v1 shipped on the ledger. Off by
+    // default for the reason the cell gives — no `hideBelow`, because a column you had
+    // to ask for should appear once you have asked.
+    column.accessor('notes', {
+        ...heading('stock-takes.column.notes', {
+            defaultHidden: true,
+            width: 'max-w-[20rem]',
+        }),
+        cell: ({ row }) => <NotesCell notes={row.original.notes} />,
     }),
     column.accessor('created_at', {
         ...heading('stock-takes.column.created_at', { hideBelow: 'sm' }),

@@ -6,6 +6,7 @@ import { ComboboxFilter } from '@/components/data/combobox-filter';
 import { DataTable } from '@/components/data/data-table';
 import { DateCell } from '@/components/data/date-cell';
 import { FilterPanel } from '@/components/data/filter-panel';
+import { NotesCell } from '@/components/data/notes-cell';
 import { columnsFor } from '@/components/data/table';
 import { EmptyState } from '@/components/feedback/empty-state';
 import { Button } from '@/components/ui/button';
@@ -15,7 +16,6 @@ import {
     ReasonCell,
     WarehouseCell,
 } from '@/pages/stock-movements/_components/movement-cells';
-import { NotesCell } from '@/pages/stock-movements/_components/notes-cell';
 import { QuantityCell } from '@/pages/stock-movements/_components/quantity-cell';
 import { RecordMovementButton } from '@/pages/stock-movements/_components/record-movement-button';
 import { SourceCell } from '@/pages/stock-movements/_components/source-cell';

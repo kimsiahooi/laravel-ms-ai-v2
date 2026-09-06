@@ -21,6 +21,7 @@ return [
         'posted_by' => 'Direkod oleh',
         'posted_at' => 'Direkod',
         'created_at' => 'Dimulakan',
+        'notes' => 'Nota',
     ],
 
     'status' => [

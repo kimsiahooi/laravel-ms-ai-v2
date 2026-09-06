@@ -3401,6 +3401,14 @@ Both ledger rows carry `Stock take #1` and the poster's id.
   about 100px wide, overflowing the row by a few pixels and wrapping every label onto a
   third line — on the screen most likely to be used on a phone. Two up on mobile now, with
   the last card spanning the empty cell, three from `sm`.
+- **Notes were searched and shown nowhere** — the third time this codebase has shipped
+  that defect, after the ledger and transfers, and both of those had it written down as
+  fixed. `StockTake::search()` matches on notes, so searching "Ipoh floor" returned a row
+  whose visible cells contained none of those words. There is a `defaultHidden` Notes
+  column now, one tick away in the Columns panel, exactly as the other two lists have.
+  `NotesCell` was promoted to `components/data/` on the way: two identical copies already
+  existed in stock movements' and stock transfers' `_components/`, and this was the third
+  consumer.
 
 #### Open, carried forward
 

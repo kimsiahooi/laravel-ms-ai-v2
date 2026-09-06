@@ -5,6 +5,7 @@ import { ComboboxFilter } from '@/components/data/combobox-filter';
 import { DataTable } from '@/components/data/data-table';
 import { DateCell } from '@/components/data/date-cell';
 import { FilterPanel } from '@/components/data/filter-panel';
+import { NotesCell } from '@/components/data/notes-cell';
 import { columnsFor } from '@/components/data/table';
 import { EmptyState } from '@/components/feedback/empty-state';
 import { Button } from '@/components/ui/button';
@@ -13,7 +14,6 @@ import { TransferButton } from '@/pages/stock-transfers/_components/transfer-but
 import {
     EndpointCell,
     ItemCell,
-    NotesCell,
     QuantityCell,
 } from '@/pages/stock-transfers/_components/transfer-cells';
 import { index as products } from '@/routes/products';

@@ -643,6 +643,7 @@
     "stock-takes.action.view": "Buka helaian kiraan",
     "stock-takes.column.created_at": "Dimulakan",
     "stock-takes.column.id": "Kiraan #",
+    "stock-takes.column.notes": "Nota",
     "stock-takes.column.opened_by": "Dibuka oleh",
     "stock-takes.column.posted_at": "Direkod",
     "stock-takes.column.posted_by": "Direkod oleh",
