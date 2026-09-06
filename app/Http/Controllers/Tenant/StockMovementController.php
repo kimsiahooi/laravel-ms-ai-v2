@@ -68,7 +68,14 @@ final class StockMovementController
             ->unique()
             ->values();
 
-        $reason = StockMovementReason::tryFrom($this->queryValue($request, 'reason'));
+        // Several at once, meaning ANY of them — the same reading as the warehouse
+        // filter beside it. Unknown values are dropped rather than refused: a stale
+        // bookmark should narrow by what it still recognises, not 500.
+        $reasons = collect(explode(',', $this->queryValue($request, 'reason')))
+            ->map(static fn (string $value): ?StockMovementReason => StockMovementReason::tryFrom(trim($value)))
+            ->filter()
+            ->unique()
+            ->values();
 
         $query = StockMovement::query()->with(['warehouse.location', 'stockable', 'user']);
 
@@ -76,8 +83,8 @@ final class StockMovementController
             $query->whereIn('warehouse_id', $selected);
         }
 
-        if ($reason !== null) {
-            $query->where('reason', $reason);
+        if ($reasons->isNotEmpty()) {
+            $query->whereIn('reason', $reasons);
         }
 
         ['rows' => $movements, 'filters' => $filters] = $this->resourceList(
@@ -88,7 +95,7 @@ final class StockMovementController
             searchUsing: self::searchBy(...),
             extra: [
                 'warehouse' => $selected->implode(','),
-                'reason' => $reason === null ? '' : $reason->value,
+                'reason' => $reasons->map(static fn (StockMovementReason $r): string => $r->value)->implode(','),
             ],
         );
 

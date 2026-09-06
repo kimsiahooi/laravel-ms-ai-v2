@@ -3136,6 +3136,45 @@ the reason in words, in the reader's language.
   lightness until all five cleared it. Final: **light ≥ 5.38:1, dark ≥ 5.87:1**, five
   distinct hues in both, cross-checked against the real rendered badges (5.55 and 5.37).
 
+### The reason filter takes several ✅
+
+Reported from use: the warehouse filter beside it took several and the reason filter took
+one, so "everything except transfers" was not a question the screen could be asked.
+
+It filled the quadrant the filter kit was missing. `SelectFilter` translates its choices
+and takes one; `ComboboxFilter` takes several but searches the workspace's own rows. A
+movement reason is neither — ten values at most, named in `lang/`, and only the ones a
+workspace has actually used are ever offered, so a search box would be furniture over four
+items. **`CheckboxFilter`** is the fourth corner: several at once, over a short translated
+list, no search.
+
+|            | one            | several            |
+|------------|----------------|--------------------|
+| translated | `SelectFilter` | **`CheckboxFilter`** |
+| workspace  | —              | `ComboboxFilter`   |
+
+- **The state behind both multi-selects is now one hook.** `usePickedValues` holds the
+  comma-string ↔ array conversion and the 300ms settle. They differ in how choices are
+  shown and not at all in what ticking one means, and two copies would be two filters in
+  one panel that felt subtly different.
+- The server reads `reason` as a list the same way it reads `warehouse`, and **drops
+  values it does not recognise rather than refusing them** — a stale bookmark should
+  narrow by what it still understands, not 500.
+- Labels are associated by id rather than by wrapping: Radix renders a button, which
+  neither a browser nor Biome accepts as a label's implicit control.
+
+#### Verified in the browser
+
+- Two reasons ticked → 322 rows, exactly 18 adjustments + 304 transfer-ins, so **any-of**
+  rather than all-of. One ticked → 18, and the trigger names it instead of counting it.
+- Three rapid ticks → **one** request. "Any reason" clears the key out of the URL entirely.
+- `?reason=not_a_reason` → 200 and no filter; `?reason=adjustment,not_a_reason` → 18, so
+  the good half still narrows.
+- The refactored `ComboboxFilter` still works: two warehouses → 13, and both filters
+  together → 2.
+- en / ms with both hint forms — the singular for none ticked, the plural naming the
+  count for two. 375px, where the panel is a sheet and every checkbox is reachable.
+
 ## Phases 3–8 — Modules ⬜
 
 | Phase | Modules | Status |

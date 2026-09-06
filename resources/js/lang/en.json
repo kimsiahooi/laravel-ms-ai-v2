@@ -601,6 +601,8 @@
     "stock-movements.filter.all_reasons": "Any reason",
     "stock-movements.filter.all_warehouses": "Any warehouse",
     "stock-movements.filter.reason": "Reason",
+    "stock-movements.filter.reason_hint": "[0,1] Tick more than one to widen the search — a movement need only have one of them.|[2,*] Showing movements with any of these :count reasons, not movements somehow having all of them.",
+    "stock-movements.filter.reasons_selected": "Any of :count reasons",
     "stock-movements.filter.warehouse": "Warehouse",
     "stock-movements.filter.warehouse_empty": "No warehouses match.",
     "stock-movements.filter.warehouse_hint": "[0,1] Tick more than one to widen the search — a movement need only be in one of them.|[2,*] Showing movements in any of these :count warehouses, not movements somehow in all of them.",

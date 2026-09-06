@@ -21,6 +21,8 @@ return [
         'warehouse_empty' => '没有匹配的仓库。',
         'reason' => '原因',
         'all_reasons' => '任何原因',
+        'reasons_selected' => ':count 个原因中的任意一个',
+        'reason_hint' => '[0,1] 勾选多个可以扩大范围——变动只要符合其中一个就会出现。|[2,*] 显示符合这 :count 个原因中任意一个的变动，而不是同时符合全部。',
     ],
 
     'column' => [

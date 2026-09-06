@@ -21,6 +21,8 @@ return [
         'warehouse_empty' => 'Tiada gudang sepadan.',
         'reason' => 'Sebab',
         'all_reasons' => 'Mana-mana sebab',
+        'reasons_selected' => 'Mana-mana daripada :count sebab',
+        'reason_hint' => '[0,1] Tandakan lebih daripada satu untuk meluaskan carian — pergerakan cuma perlu ada salah satu daripadanya.|[2,*] Memaparkan pergerakan dengan mana-mana daripada :count sebab ini, bukan yang mempunyai kesemuanya.',
     ],
 
     'column' => [

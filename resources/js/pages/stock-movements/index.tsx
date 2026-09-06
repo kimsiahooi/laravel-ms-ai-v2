@@ -1,11 +1,11 @@
 import { Head, Link, setLayoutProps } from '@inertiajs/react';
 import { ArrowLeftRight } from 'lucide-react';
+import { CheckboxFilter } from '@/components/data/checkbox-filter';
 import { heading } from '@/components/data/column-header';
 import { ComboboxFilter } from '@/components/data/combobox-filter';
 import { DataTable } from '@/components/data/data-table';
 import { DateCell } from '@/components/data/date-cell';
 import { FilterPanel } from '@/components/data/filter-panel';
-import { SelectFilter } from '@/components/data/select-filter';
 import { columnsFor } from '@/components/data/table';
 import { EmptyState } from '@/components/feedback/empty-state';
 import { Button } from '@/components/ui/button';
@@ -142,7 +142,7 @@ export default function StockMovementsIndex({
                                   )}
 
                                   {showReasonFilter && (
-                                      <SelectFilter
+                                      <CheckboxFilter
                                           value={filter.values.reason ?? ''}
                                           onChange={(reason) =>
                                               filter.set('reason', reason)
@@ -155,6 +155,8 @@ export default function StockMovementsIndex({
                                           )}
                                           label="stock-movements.filter.reason"
                                           allLabel="stock-movements.filter.all_reasons"
+                                          manyLabel="stock-movements.filter.reasons_selected"
+                                          hint="stock-movements.filter.reason_hint"
                                       />
                                   )}
                               </FilterPanel>

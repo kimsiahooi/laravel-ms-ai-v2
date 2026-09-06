@@ -601,6 +601,8 @@
     "stock-movements.filter.all_reasons": "Mana-mana sebab",
     "stock-movements.filter.all_warehouses": "Mana-mana gudang",
     "stock-movements.filter.reason": "Sebab",
+    "stock-movements.filter.reason_hint": "[0,1] Tandakan lebih daripada satu untuk meluaskan carian — pergerakan cuma perlu ada salah satu daripadanya.|[2,*] Memaparkan pergerakan dengan mana-mana daripada :count sebab ini, bukan yang mempunyai kesemuanya.",
+    "stock-movements.filter.reasons_selected": "Mana-mana daripada :count sebab",
     "stock-movements.filter.warehouse": "Gudang",
     "stock-movements.filter.warehouse_empty": "Tiada gudang sepadan.",
     "stock-movements.filter.warehouse_hint": "[0,1] Tandakan lebih daripada satu untuk meluaskan carian — pergerakan hanya perlu berada di salah satu daripadanya.|[2,*] Menunjukkan pergerakan di mana-mana daripada :count gudang ini, bukan pergerakan yang entah bagaimana berada di kesemuanya.",

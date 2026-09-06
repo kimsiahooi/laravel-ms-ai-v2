@@ -601,6 +601,8 @@
     "stock-movements.filter.all_reasons": "任何原因",
     "stock-movements.filter.all_warehouses": "任何仓库",
     "stock-movements.filter.reason": "原因",
+    "stock-movements.filter.reason_hint": "[0,1] 勾选多个可以扩大范围——变动只要符合其中一个就会出现。|[2,*] 显示符合这 :count 个原因中任意一个的变动，而不是同时符合全部。",
+    "stock-movements.filter.reasons_selected": ":count 个原因中的任意一个",
     "stock-movements.filter.warehouse": "仓库",
     "stock-movements.filter.warehouse_empty": "没有匹配的仓库。",
     "stock-movements.filter.warehouse_hint": "[0,1] 勾选多项可扩大范围——变动只需发生在其中一个仓库即可。|[2,*] 正在显示发生在这 :count 个仓库中任一个的变动，而非同时发生在全部仓库的变动。",

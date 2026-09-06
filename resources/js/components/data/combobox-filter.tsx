@@ -1,5 +1,6 @@
 import { Check, ChevronsUpDown } from 'lucide-react';
-import { useEffect, useId, useMemo, useState } from 'react';
+import { useId, useMemo, useState } from 'react';
+import { usePickedValues } from '@/components/data/use-picked-values';
 import { Button } from '@/components/ui/button';
 import {
     Command,
@@ -90,40 +91,7 @@ export function ComboboxFilter({
     const hintId = `${id}-hint`;
     const [open, setOpen] = useState(false);
 
-    const applied = useMemo(
-        () => (value === '' ? [] : value.split(',')),
-        [value],
-    );
-
-    // Ticked here, sent shortly after. Three boxes should be one request and one
-    // history entry, not three of each — the same reason and the same 300ms as the
-    // search box in ListToolbar.
-    const [picked, setPicked] = useState<string[]>(applied);
-
-    // The server's answer is the source of truth: a Clear elsewhere, or the back
-    // button, must be reflected here rather than fought.
-    useEffect(() => {
-        setPicked(applied);
-    }, [applied]);
-
-    useEffect(() => {
-        const next = picked.join(',');
-
-        if (next === value) {
-            return;
-        }
-
-        const timer = setTimeout(() => onChange(next), 300);
-
-        return () => clearTimeout(timer);
-    }, [picked, value, onChange]);
-
-    const toggle = (option: string) =>
-        setPicked((current) =>
-            current.includes(option)
-                ? current.filter((each) => each !== option)
-                : [...current, option],
-        );
+    const { picked, toggle, clear } = usePickedValues(value, onChange);
 
     // Item values are ids, so cmdk's own matching would search the digits. This maps an
     // id back to the name somebody is actually typing, and the filter below uses it.
@@ -210,7 +178,7 @@ export function ComboboxFilter({
                                 <CommandItem
                                     value={ALL}
                                     onSelect={() => {
-                                        setPicked([]);
+                                        clear();
                                         setOpen(false);
                                     }}
                                 >

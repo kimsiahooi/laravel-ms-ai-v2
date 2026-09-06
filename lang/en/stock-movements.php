@@ -22,6 +22,8 @@ return [
         'warehouse_empty' => 'No warehouses match.',
         'reason' => 'Reason',
         'all_reasons' => 'Any reason',
+        'reasons_selected' => 'Any of :count reasons',
+        'reason_hint' => '[0,1] Tick more than one to widen the search — a movement need only have one of them.|[2,*] Showing movements with any of these :count reasons, not movements somehow having all of them.',
     ],
 
     'column' => [

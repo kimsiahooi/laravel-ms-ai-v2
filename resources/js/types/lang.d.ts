@@ -605,6 +605,8 @@ export type TranslationKey =
     | 'stock-movements.filter.all_reasons'
     | 'stock-movements.filter.all_warehouses'
     | 'stock-movements.filter.reason'
+    | 'stock-movements.filter.reason_hint'
+    | 'stock-movements.filter.reasons_selected'
     | 'stock-movements.filter.warehouse'
     | 'stock-movements.filter.warehouse_empty'
     | 'stock-movements.filter.warehouse_hint'
