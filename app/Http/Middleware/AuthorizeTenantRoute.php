@@ -26,23 +26,31 @@ final class AuthorizeTenantRoute
 {
     public function handle(Request $request, Closure $next): Response
     {
-        $permission = $this->permissionFor($request);
+        $permissions = $this->permissionsFor($request);
 
+        // `canAny`, so a route several screens share can name all of them and let any
+        // one through — the on-hand lookup answers the same question for movements and
+        // for transfers, and gating it on one would 403 a reader of the other.
         abort_if(
-            $permission !== null && $request->user()?->can($permission) !== true,
+            $permissions !== [] && $request->user()?->canAny($permissions) !== true,
             403,
         );
 
         return $next($request);
     }
 
-    /** The permission the current route requires, or null if it's open. */
-    private function permissionFor(Request $request): ?string
+    /**
+     * The permissions the current route accepts — any one of them is enough. Empty
+     * means the route is open to any signed-in user.
+     *
+     * @return list<string>
+     */
+    private function permissionsFor(Request $request): array
     {
         $name = $request->route()?->getName();
 
         if ($name === null) {
-            return null;
+            return [];
         }
 
         // Export downloads a resource's data, so gate it on that resource's view —
@@ -52,10 +60,10 @@ final class AuthorizeTenantRoute
             $permission = (string) $request->route('resource').'.view';
 
             return in_array($permission, TenantPermissions::names(), true)
-                ? $permission
-                : null;
+                ? [$permission]
+                : [];
         }
 
-        return TenantPermissions::routeMap()[$name] ?? null;
+        return (array) (TenantPermissions::routeMap()[$name] ?? []);
     }
 }

@@ -74,14 +74,18 @@ final class TenantPermissions
      * or its create permission for screens that have no edit (stock takes,
      * production orders).
      *
-     * @var array<string, string>
+     * A list of permissions rather than one means **any of them will do**, for a route
+     * several screens share — see `stock.on-hand`.
+     *
+     * @var array<string, string|list<string>>
      */
     private const ROUTE_OVERRIDES = [
-        // The on-hand lookup returns a stock level, so it is gated like the screen that
-        // asks for it rather than left open to any signed-in user. Movements is its only
-        // consumer today; when transfers and stock takes call it too, this needs to
-        // become "any stock screen's view permission" rather than one of them.
-        'stock.on-hand' => 'stock-movements.view',
+        // The on-hand lookup returns a stock level, so it is gated like the screens that
+        // ask for it rather than left open to any signed-in user. **Any of them will do**:
+        // it answers the same question for each, and gating it on one screen's permission
+        // would 403 somebody who may read a different one. Add a screen here when it
+        // starts calling the lookup.
+        'stock.on-hand' => ['stock-movements.view', 'stock-transfers.view'],
         'products.bom' => 'products.update',
         'warehouses.reorder-levels.update' => 'warehouses.update',
         'stock-takes.post' => 'stock-takes.create',
@@ -151,7 +155,7 @@ final class TenantPermissions
      * record, so the permission depends on the row rather than the route, and
      * {@see MediaController} reads it off the owner.
      *
-     * @return array<string, string>
+     * @return array<string, string|list<string>>
      */
     public static function routeMap(): array
     {

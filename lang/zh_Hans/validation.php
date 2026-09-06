@@ -12,6 +12,7 @@ return [
     'boolean' => ':attribute必须是真或假。',
     'decimal' => ':attribute必须有 :decimal 位小数。',
     'distinct' => ':attribute有重复的值。',
+    'different' => ':attribute和:other必须不同。',
     'email' => ':attribute必须是有效的电子邮件地址。',
     'enum' => '所选的:attribute无效。',
     'exists' => '所选的:attribute无效。',
@@ -76,6 +77,8 @@ return [
         'type' => '类型',
         'unit' => '单位',
         'warehouse_id' => '仓库',
+        'from_warehouse_id' => '来源仓库',
+        'to_warehouse_id' => '目标仓库',
     ],
 
 ];

@@ -43,9 +43,9 @@ export type StockPickerEntry = {
  * and wrong for a warehouse: two sites with a "Main store" are ordinary, and a picker
  * offering "Main store" twice is a picker you cannot use.
  *
- * Lives in this module's `_components/` rather than `components/form/` because it has
- * exactly one consumer today. Transfers and stock takes are its second and third, and
- * that is when it should move — see the rule of three in ARCHITECTURE.md.
+ * Promoted here from stock movements' `_components/` when transfers became its second
+ * consumer — the rule of three's "second, if the logic is non-trivial", and grouping two
+ * tables into one picker with headings is not trivial. Stock takes will be the third.
  *
  * Submits through a hidden input, like every other field here: the visible control is
  * Radix's and the wire value is ours, so the two need something to agree through.

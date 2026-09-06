@@ -23,6 +23,15 @@ export type ValidationMessage = {
     key: TranslationKey;
     /** The field's name, e.g. `validation.attributes.admin_email`. */
     attribute?: TranslationKey;
+    /**
+     * Other placeholders that are themselves field names, e.g. `different`'s `:other`.
+     *
+     * Separate from `params` for the same reason `attribute` is: they have to be
+     * translated before they can be interpolated, or a Malay sentence ends up naming an
+     * English field. Separate from `attribute` because a rule can name a second field
+     * without that field being the one at fault.
+     */
+    others?: Record<string, TranslationKey>;
     /** Everything else the message interpolates, e.g. `{ max: 255 }`. */
     params?: TranslationParams;
 };
@@ -59,10 +68,16 @@ export function resolveMessage(t: Translate, message: string): string {
         return message;
     }
 
-    const { key, attribute, params } = payload;
+    const { key, attribute, others, params } = payload;
 
     return t(key, {
         ...params,
+        ...Object.fromEntries(
+            Object.entries(others ?? {}).map(([name, value]) => [
+                name,
+                t(value),
+            ]),
+        ),
         ...(attribute ? { attribute: t(attribute) } : {}),
     });
 }

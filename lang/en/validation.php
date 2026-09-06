@@ -27,6 +27,7 @@ return [
     'boolean' => 'The :attribute field must be true or false.',
     'decimal' => 'The :attribute field must have :decimal decimal places.',
     'distinct' => 'The :attribute field has a duplicate value.',
+    'different' => 'The :attribute and :other must be different.',
     'email' => 'The :attribute field must be a valid email address.',
     'enum' => 'The selected :attribute is invalid.',
     'exists' => 'The selected :attribute is invalid.',
@@ -96,6 +97,8 @@ return [
         'type' => 'type',
         'unit' => 'unit',
         'warehouse_id' => 'warehouse',
+        'from_warehouse_id' => 'source warehouse',
+        'to_warehouse_id' => 'destination warehouse',
     ],
 
 ];

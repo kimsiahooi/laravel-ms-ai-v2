@@ -3003,12 +3003,83 @@ them all.
   a reading the table also makes. Still above the ~250 signal, and now mostly docblock and
   the table options; no obvious third extraction, so leaving it.
 
+## Phase 4 · Stock — transfers ✅
+
+Stock moving between two warehouses. The first screen to drive `StockService::transfer()`,
+whose lock ordering `stock:hammer --deadlock` proved but which had no caller until now.
+
+**A transfer is a document, and the ledger cannot be one.** It writes two movements — one
+negative at the source, one positive at the destination — and each knows only its own
+warehouse. Nothing in `stock_movements` says the two belong together, so "what was moved,
+and where to" is a question the ledger cannot answer. `stock_transfers` is that answer. It
+is not a duplicate of the pair: they say what happened to each warehouse, it says what
+somebody did.
+
+- **`RecordStockTransfer`, an Action, not a fourth method on StockService.** The service's
+  invariant is that `warehouse_stocks` and `stock_movements` never disagree, and the
+  document is no part of it. Keeping it out also leaves `transfer()` byte-for-byte as the
+  hammer proved it. The Action's outer transaction is what makes document and movements
+  atomic — `transfer()` opens its own, which Laravel turns into a savepoint.
+- **`quantity` is an unsigned magnitude here**, unlike the ledger's signed column: a
+  document has no direction to encode because `from` and `to` are already columns.
+- **The `different` rule needed a translation and a primitive.** `different` had no message
+  in `lang/*/validation.php`, so it would have rendered in English in all three locales —
+  `check:i18n` caught it, which is the gate doing exactly its job. `:other` is itself a
+  field name, so `ValidationMessage` gained an `others` map: params that are translated
+  before interpolation, the same reason `attribute` is separate. The browser now says "The
+  destination warehouse and source warehouse must be different" in the reader's language,
+  with both names translated.
+- **The on-hand lookup's gate became any-of.** A note left on `stock.on-hand` said it would
+  need to when a second screen called it; that happened, so `ROUTE_OVERRIDES` values may
+  now be a list and `AuthorizeTenantRoute` uses `canAny`. Gating it on movements alone
+  would have 403'd somebody who may read transfers but not the ledger.
+- **`StockPickerField` and `OnHandLine` were promoted** from stock movements'
+  `_components/` to `components/form/` — the rule of three's "second, if the logic is
+  non-trivial". Stock takes will be the third.
+
+Two things v1 got wrong that are fixed rather than ported:
+
+- **Search now covers a warehouse's own name.** v1 matched code and site only while its
+  docblock claimed otherwise, so looking for a warehouse by the name on the door quietly
+  returned nothing. Driven: searching "Finished goods" finds its transfers.
+- **Notes are visible.** v1 stored and searched them and displayed them nowhere — the same
+  defect the ledger had. Here they are a `defaultHidden` column, one tick away in the
+  Columns panel.
+
+Added beyond v1: a warehouse filter matching **either end**, since a transfer involves a
+warehouse whether stock left it or arrived at it, and the ledger already answers the
+one-directional question.
+
+#### Verified in the browser
+
+- One transfer of 3 → **1 document, 2 ledger rows summing to zero**, on-hand 120 → 117 at
+  the source and 0 → 3 at the destination.
+- 9999 against 117 available → refused on the quantity with "Only 117 available at the
+  source, and this would move 9999", and **nothing left behind**: still 1 document, still 2
+  movements, both on-hand figures unchanged.
+- Same warehouse at both ends → refused in the browser with **zero requests sent**.
+- Search by warehouse name; filter by source-only and destination-only warehouses both
+  return the rows, an uninvolved warehouse returns none.
+- 375px: From and To drop out and the route rides under the item name with an arrow; the
+  table scrolls inside its card and the body does not.
+- en / ms / zh_Hans across list, dialog and validation messages. SSR on, console clean.
+
+#### Open, carried forward
+
+- The two prerequisite empty states — fewer than two warehouses, and an empty catalogue —
+  were **not driven**: the demo workspace has six warehouses and a full catalogue, and
+  manufacturing the states would mean destroying data. The ordinary empty state was.
+- No deep link from a warehouse into a prefilled transfer. v1 has one (`?from=<id>` opens
+  the dialog); it needs a button on the warehouse screen to be worth adding.
+- No barcode scan into the picker — Phase 8, along with movements.
+- Notes are written to all three rows, as in v1: the document and both movements.
+
 ## Phases 3–8 — Modules ⬜
 
 | Phase | Modules | Status |
 |---|---|---|
 | 3 · Catalog | **categories ✅ · suppliers ✅ · customers ✅ · raw materials ✅ · products ✅** (core · image · BOM) | ✅ |
-| 4 · Stock | **locations ✅ · warehouses ✅ · StockService ✅ · movements ✅** (+ notes column, column preferences) · transfers, reorder levels, stock takes | 🚧 |
+| 4 · Stock | **locations ✅ · warehouses ✅ · StockService ✅ · movements ✅ · transfers ✅** (+ notes column, column preferences) · reorder levels, stock takes | 🚧 |
 | 5 · Orders | purchase orders, purchase returns, sales orders, sales returns, production orders | ⬜ |
 | 6 · Insights | reports, activity log | ⬜ |
 | 7 · Team & settings | users, roles/RBAC, business settings, document numbering, e-invoice | ⬜ |

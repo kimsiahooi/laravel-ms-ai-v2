@@ -55,6 +55,7 @@ const FACTORY_ARGS: Record<string, unknown[]> = {
     RawMaterialRequest: [['kg']],
     ProductRequest: [['kg'], [1], [1]],
     WarehouseRequest: [[1]],
+    StockTransferRequest: [['product:1'], [1, 2]],
     StockMovementRequest: [['product:1'], [1], 'in'],
     UserRequest: [false],
     PurchaseOrderRequest: [['MYR']],

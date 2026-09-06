@@ -13,6 +13,7 @@ return [
     'boolean' => 'Ruangan :attribute mestilah benar atau palsu.',
     'decimal' => 'Ruangan :attribute mestilah mempunyai :decimal tempat perpuluhan.',
     'distinct' => 'Ruangan :attribute mempunyai nilai berulang.',
+    'different' => ':attribute dan :other mestilah berbeza.',
     'email' => 'Ruangan :attribute mestilah alamat e-mel yang sah.',
     'enum' => ':attribute yang dipilih tidak sah.',
     'exists' => ':attribute yang dipilih tidak sah.',
@@ -77,6 +78,8 @@ return [
         'type' => 'jenis',
         'unit' => 'unit',
         'warehouse_id' => 'gudang',
+        'from_warehouse_id' => 'gudang sumber',
+        'to_warehouse_id' => 'gudang destinasi',
     ],
 
 ];

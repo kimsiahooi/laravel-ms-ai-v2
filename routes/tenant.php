@@ -14,6 +14,7 @@ use App\Http\Controllers\Tenant\ProductController;
 use App\Http\Controllers\Tenant\RawMaterialController;
 use App\Http\Controllers\Tenant\StockLookupController;
 use App\Http\Controllers\Tenant\StockMovementController;
+use App\Http\Controllers\Tenant\StockTransferController;
 use App\Http\Controllers\Tenant\SupplierController;
 use App\Http\Controllers\Tenant\WarehouseController;
 use App\Http\Middleware\AuthorizeTenantRoute;
@@ -149,6 +150,13 @@ Route::middleware(['web', InitializeTenancyByPath::class, SetTenantUrlDefault::c
             Route::prefix('stock-movements')->name('stock-movements.')->group(function (): void {
                 Route::get('/', [StockMovementController::class, 'index'])->name('index');
                 Route::post('/', [StockMovementController::class, 'store'])->name('store');
+            });
+
+            // No update or delete, like the ledger: a transfer is a record of something
+            // that happened, corrected by transferring back rather than by editing.
+            Route::prefix('stock-transfers')->name('stock-transfers.')->group(function (): void {
+                Route::get('/', [StockTransferController::class, 'index'])->name('index');
+                Route::post('/', [StockTransferController::class, 'store'])->name('store');
             });
 
             // A read-only lookup the movement dialog makes while somebody is choosing,

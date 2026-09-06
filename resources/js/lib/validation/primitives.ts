@@ -556,3 +556,55 @@ export function lines<T extends z.ZodType>({
         })
         .optional();
 }
+
+/**
+ * `different:other` — two fields that must not hold the same value.
+ *
+ * A check on the object rather than on a field, because zod cannot see a sibling from
+ * inside one. Returns the callback for `.superRefine()`, so a schema reads in the order
+ * Laravel's rules do: fields first, then the rule that spans them.
+ *
+ * The issue is filed against `field`, not the pair, so it lands under the input the
+ * reader should change — Laravel does the same, reporting `different` on the attribute
+ * carrying the rule rather than on the one it names.
+ *
+ * Both names are translated: `:other` is a field name too, and a Malay sentence naming
+ * an English field is the bug `message.ts` describes.
+ */
+export function different({
+    field,
+    other,
+    attribute,
+    otherAttribute,
+}: {
+    /** The field the rule is written on, and where the message lands. */
+    field: string;
+    /** The field it must differ from. */
+    other: string;
+    attribute: TranslationKey;
+    otherAttribute: TranslationKey;
+}) {
+    return (value: Record<string, unknown>, ctx: z.RefinementCtx): void => {
+        const picked = value[field];
+
+        // Nothing to compare until both are filled, and `required` has already said so.
+        // Two empty boxes are not "the same warehouse twice".
+        if (picked === undefined || picked === null || picked === '') {
+            return;
+        }
+
+        if (picked !== value[other]) {
+            return;
+        }
+
+        ctx.addIssue({
+            code: 'custom',
+            path: [field],
+            message: encodeMessage({
+                key: 'validation.different',
+                attribute,
+                others: { other: otherAttribute },
+            }),
+        });
+    };
+}

@@ -1,6 +1,9 @@
 import { usePage } from '@inertiajs/react';
 import { useMemo, useState } from 'react';
+import { OnHandLine } from '@/components/form/on-hand-line';
 import { ResourceFormDialog } from '@/components/form/resource-form-dialog';
+import type { StockPickerEntry } from '@/components/form/stock-picker-field';
+import { StockPickerField } from '@/components/form/stock-picker-field';
 import { TextField } from '@/components/form/text-field';
 import { Label } from '@/components/ui/label';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
@@ -10,9 +13,6 @@ import {
     MOVEMENT_TYPES,
     stockMovementSchema,
 } from '@/lib/validation/schemas/stock-movement';
-import { OnHandLine } from '@/pages/stock-movements/_components/on-hand-line';
-import type { StockPickerEntry } from '@/pages/stock-movements/_components/stock-picker-field';
-import { StockPickerField } from '@/pages/stock-movements/_components/stock-picker-field';
 import { store } from '@/routes/stock-movements';
 import type { TranslationKey } from '@/types/lang';
 
