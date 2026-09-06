@@ -13,7 +13,10 @@ use App\Http\Controllers\Concerns\RespondsWithToast;
 use App\Http\Controllers\Concerns\SortsResourceQuery;
 use App\Http\Requests\Tenant\WarehouseRequest;
 use App\Models\Location;
+use App\Models\Product;
+use App\Models\RawMaterial;
 use App\Models\Warehouse;
+use App\Services\WarehouseInventory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
@@ -25,10 +28,10 @@ use Inertia\Response;
  * Warehouses: list, create, edit, delete. Same shape as every other list — a dialog
  * over it, every write returning `back()`.
  *
- * No detail screen. v1 has one, and it is a stock report: a UNION over products and
- * raw materials, left-joined to on-hand quantities and reorder levels. Every table it
- * reads arrives with StockService, so the screen arrives then too rather than as an
- * empty frame now.
+ * And a detail screen, which is the odd one out: not a record but a position — what
+ * this warehouse holds right now, and the level at which each item wants restocking.
+ * The question spans four tables and two of them are the catalogue, so the query lives
+ * in {@see WarehouseInventory} rather than here.
  *
  * Deleting is a soft delete, and unguarded — for the moment. What makes a warehouse
  * undeletable is stock still sitting in it, and there is nowhere to put stock yet.
@@ -94,6 +97,54 @@ final class WarehouseController
             // The filter's options: only sites that have one. A site with no warehouse
             // is a choice that can only return nothing.
             'sitesWithWarehouses' => OptionData::collect($sites),
+        ]);
+    }
+
+    /**
+     * One warehouse, and what is in it.
+     *
+     * The list here is not an Eloquent one — the catalogue lives in two tables and the
+     * rows are a UNION over both — so {@see RendersResourceIndex} cannot build it. The
+     * service returns the same `filters` pieces the trait would, and this method
+     * assembles them into the shape `ResourceFilters` promises so `DataTable` cannot
+     * tell the difference.
+     */
+    public function show(Request $request, Warehouse $warehouse, WarehouseInventory $inventory): Response
+    {
+        $warehouse->load('location');
+
+        $search = $this->queryValue($request, 'search');
+        // An unrecognised scope is no scope, never an echoed one: putting it back in
+        // `filters` would leave `?show=nonsense` in the URL looking like it did something.
+        $show = $this->queryValue($request, 'show');
+        $show = in_array($show, WarehouseInventory::SCOPES, true) ? $show : '';
+
+        $page = $inventory->page(
+            warehouse: $warehouse,
+            search: $search,
+            show: $show,
+            sort: $this->queryValue($request, 'sort') ?: null,
+            direction: $this->queryValue($request, 'direction') ?: null,
+            perPage: $this->perPage($request),
+        );
+
+        return Inertia::render('warehouses/show', [
+            'warehouse' => WarehouseData::fromWarehouse($warehouse),
+            'items' => $page['rows'],
+            'summary' => $inventory->counts($warehouse),
+            // Which of the two empty states to show. An empty warehouse and an empty
+            // workspace are the same picture and different problems: one is fixed by
+            // moving stock in, the other by adding a product first, and offering the
+            // wrong one sends somebody to a screen that cannot help them.
+            'hasItems' => Product::query()->exists() || RawMaterial::query()->exists(),
+            'filters' => [
+                'search' => $search,
+                'per_page' => $this->perPage($request),
+                'sort' => $page['sort'],
+                'direction' => $page['direction'],
+                'sortable' => $page['sortable'],
+                'extra' => array_filter(['show' => $show]),
+            ],
         ]);
     }
 

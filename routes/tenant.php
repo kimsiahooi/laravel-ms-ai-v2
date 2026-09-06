@@ -17,6 +17,7 @@ use App\Http\Controllers\Tenant\StockMovementController;
 use App\Http\Controllers\Tenant\StockTransferController;
 use App\Http\Controllers\Tenant\SupplierController;
 use App\Http\Controllers\Tenant\WarehouseController;
+use App\Http\Controllers\Tenant\WarehouseReorderLevelController;
 use App\Http\Middleware\AuthorizeTenantRoute;
 use App\Http\Middleware\SetTenantUrlDefault;
 use Illuminate\Auth\Middleware\RequirePassword;
@@ -141,6 +142,20 @@ Route::middleware(['web', InitializeTenancyByPath::class, SetTenantUrlDefault::c
             Route::prefix('warehouses')->name('warehouses.')->group(function (): void {
                 Route::get('/', [WarehouseController::class, 'index'])->name('index');
                 Route::post('/', [WarehouseController::class, 'store'])->name('store');
+
+                // The first `show` in the app, and the first screen that is a position
+                // rather than a record: what this warehouse holds, and when each item
+                // wants restocking. `warehouses.show` maps to `warehouses.view` without
+                // an override — TenantPermissions gives every screen's show route the
+                // screen's own view permission.
+                Route::get('{warehouse}', [WarehouseController::class, 'show'])->name('show');
+
+                // The only write the detail screen makes. PUT rather than PATCH: there
+                // is one field, and setting it replaces whatever was there — including
+                // replacing it with nothing, which is how a level is cleared.
+                Route::put('{warehouse}/reorder-levels', [WarehouseReorderLevelController::class, 'update'])
+                    ->name('reorder-levels.update');
+
                 Route::patch('{warehouse}', [WarehouseController::class, 'update'])->name('update');
                 Route::delete('{warehouse}', [WarehouseController::class, 'destroy'])->name('destroy');
             });

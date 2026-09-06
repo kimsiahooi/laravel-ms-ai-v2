@@ -6,7 +6,6 @@ namespace App\Http\Requests\Tenant;
 
 use App\Services\StockService;
 use App\Support\StockItem;
-use Closure;
 
 /**
  * Moving stock from one warehouse to another.
@@ -45,20 +44,5 @@ final class StockTransferRequest extends TenantFormRequest
             'quantity' => ['required', ...$this->decimalRules()],
             'notes' => ['nullable', 'string', 'max:1000'],
         ];
-    }
-
-    /**
-     * The picked item must name a row that exists and is not trashed.
-     *
-     * A closure rather than `exists`, because which table to look in is part of the
-     * value — see {@see StockItem::decode()}, which is the check as well as the parser.
-     */
-    private function itemExists(): Closure
-    {
-        return static function (string $attribute, mixed $value, Closure $fail): void {
-            if (! is_string($value) || StockItem::decode($value) === null) {
-                $fail('validation.exists')->translate();
-            }
-        };
     }
 }

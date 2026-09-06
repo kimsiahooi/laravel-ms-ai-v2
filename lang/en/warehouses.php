@@ -78,6 +78,59 @@ return [
         'address_placeholder' => 'Street, town, postcode',
     ],
 
+    /*
+    | The detail screen — what one warehouse holds, and when each item wants
+    | restocking. The only editable thing on it is the reorder level.
+    */
+    'detail' => [
+        'search_placeholder' => 'Search item or SKU…',
+        'view_movements' => 'View movements',
+
+        'in_stock' => 'Items in stock',
+        'in_stock_hint' => 'something on the shelf right now',
+        'needs_reorder' => 'Needs reorder',
+        'needs_reorder_hint' => 'at or below the level set here',
+
+        'column' => [
+            'item' => 'Item',
+            'sku' => 'SKU',
+            'type' => 'Type',
+            'on_hand' => 'On hand',
+            'level' => 'Reorder level',
+        ],
+
+        'badge' => 'Reorder',
+
+        'level_for' => 'Reorder level for :name',
+        'level_placeholder' => 'Not set',
+        'level_hint' => 'Type the level at which this item wants restocking here. Leave it empty for no warning.',
+
+        'filter' => [
+            'show' => 'Show',
+            'stocked' => 'In this warehouse',
+            'attention' => 'Needs reorder',
+            'all' => 'Every item',
+        ],
+
+        'empty' => [
+            'title' => 'Nothing in the catalogue yet',
+            'description' => 'Add a product or a raw material first — then you can move it in here and say when it wants restocking.',
+            'action' => 'Go to products',
+        ],
+
+        'no_stock' => [
+            'title' => 'Nothing in this warehouse yet',
+            'description' => 'Move stock in and it will appear here. You can also set a reorder level for something before it arrives.',
+            'action' => 'Record a movement',
+            'action_all' => 'Show every item',
+        ],
+
+        'no_match' => [
+            'title' => 'No items match',
+            'description' => 'Nothing in this warehouse matches “:term”. Switch Show to every item to search the whole catalogue.',
+        ],
+    ],
+
     'confirm' => [
         'delete_title' => 'Delete :name?',
         'delete_description' => 'Movements already recorded through this warehouse keep their history — you simply will not be able to pick it for anything new.',

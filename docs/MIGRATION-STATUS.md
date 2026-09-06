@@ -3175,12 +3175,153 @@ list, no search.
 - en / ms with both hint forms — the singular for none ticked, the plural naming the
   count for two. 375px, where the panel is a sheet and every checkbox is reachable.
 
+## Phase 4 · Stock — the warehouse screen, and reorder levels ✅
+
+The first screen in the app that is a **position rather than a record**. Everything else
+in Phase 4 says what happened; this says what is true right now — what one warehouse
+holds, and the level at which each item wants restocking.
+
+It is also the first `show` route, and it fills a gap that had been growing since
+`warehouse_stocks` landed: **there was no way to see on-hand stock anywhere**. The ledger
+lists movements and the transfer dialog answers for one pair at a time. This answers
+"what have I got, and where".
+
+### The question spans four tables, two of which are the catalogue
+
+A workspace's catalogue lives in `products` **and** `raw_materials`, with no parent to
+select from — so one paginated, sortable, searchable list over both is a `UNION ALL`, and
+`check-structure.sh` is right that a controller is not where that belongs.
+
+**`App\Services\WarehouseInventory`** is the read-side counterpart to `StockService`.
+That class is the only thing that *writes* stock; this is the only thing that asks this
+question. The join predicates live in the `ON` clause on purpose: moving `warehouse_id`
+out to a `WHERE` turns both LEFT JOINs into inner ones and silently drops every item the
+warehouse has never stocked — which is exactly the set somebody comes here to set a level
+for.
+
+**`needs_reorder` is computed in SQL, and that is the point.** The badge on a row, the
+`attention` filter and the count above the list are the same question, and asking it
+three times in two languages is how a badge ends up disagreeing with the number over it.
+One `CASE` in the union leg; everything else reads the column. It also means MySQL
+compares the two `decimal(15,4)`s exactly, which PHP would need `bccomp` and a pair of
+numeric-string assertions to promise.
+
+### A row exists only when a level is set
+
+No `default(0)` and no row for "no opinion". Setting a level to zero **deletes** the row,
+because a threshold of zero and no threshold at all mean the same thing — nothing to warn
+about — and storing both would leave every reader of the table remembering to exclude one
+of them. The alert condition is then `min_stock IS NOT NULL` by construction rather than
+by rule, and the table stays proportional to the decisions actually taken rather than to
+catalogue × warehouses.
+
+That distinction reaches the screen: `min_stock` is nullable in `WarehouseItemData`, the
+box shows a "Not set" placeholder rather than a `0`, and a `0` somebody types is an undo.
+
+### An input in the row, not a dialog per row
+
+Every other write in the app opens a form, and that is right for a record with several
+fields. This is one number, and setting them up means going down a list doing the same
+thing twenty times — a dialog would turn twenty keystrokes' worth of decision into twenty
+open-type-save-close cycles.
+
+- **Commits on blur and on Enter**, not per keystroke. Typing `120` would otherwise be
+  three saves, the first two wrong, and the middle one would briefly flag the row.
+- **No toast**, alone among the app's writes. The row is the receipt: the number comes
+  back from the server and the badge appears or disappears with it. Twenty notifications
+  for twenty edits whose result is already on screen is not confirmation, it is noise.
+- The box re-seeds from the server's answer without an effect — the pattern React
+  documents for state tracking a prop — which is what turns a typed `12.50` back into
+  `12.5` and what restores the old number after a refusal.
+
+### Two v1 defaults reconsidered
+
+- **v1's default view was `on_hand > 0 OR (min_stock > 0 AND on_hand < min_stock)`.** The
+  second half is unreachable: if a level is set and on hand is not below it, then
+  `on_hand >= min_stock > 0` and the first half already matched. Same rows, half the
+  words — now written as "this warehouse holds it, or has an opinion about it".
+- **v1's tabs became one filter with three states**, `In this warehouse` (the default) /
+  `Needs reorder` / `Every item`, using the existing `SelectFilter`. The "no filter" entry
+  is deliberately *not* "everything": a five-hundred-item catalogue in a warehouse holding
+  forty is four hundred and sixty rows of zero.
+- **v1's reorder tooltip is gone.** It restated two numbers that are columns on the same
+  row, and on a phone it was a sentence nobody could reach. What replaced it is making
+  sure both numbers are always readable — on hand moves under the item's name below `sm`
+  rather than disappearing.
+
+### Fixed on the way past
+
+- **`itemExists()` was in three FormRequests** — movements, transfers and the on-hand
+  lookup — and this would have been the fourth. Promoted to `TenantFormRequest`.
+- **`decimal()` had no empty-able sibling.** `optionalDecimal()` is it, and the shared
+  half is now `checkDecimal()`, so the two cannot drift on what a scale violation says.
+  Not `decimal().optional()`, which still refuses `''` — a form sends an untouched input
+  as the empty string, so "optional" has to mean empty-able to be worth anything.
+- **`StockItem::key()`** builds the `product:5` shape from the two columns a morph is
+  stored in, for callers holding a row rather than a model. `encode()` now goes through
+  it, and so does `StockItemOptionData`.
+
+#### Verified in a real browser (Playwright, SSR on, `data-server-rendered="true"`)
+
+- **The write, end to end.** Level 20 on an item holding 18 → badge appears, summary goes
+  0 → 1, one PUT and one follow-up GET. Level **18** against 18 on hand → still flagged,
+  which is the `<=` the copy promises. Level 17 → badge gone.
+- **`12.50` came back as `12.5`** — the server trims and the box follows it.
+- **`1.12345` → refused with "must have 0-4 decimal places" and zero requests sent**; the
+  zod gate stopped it. `-5` → "must be greater than or equal to 0", also no request.
+- **`0` deleted the row and `''` deleted the row**, both leaving the placeholder and the
+  count at 0. Confirmed in the database, not just on screen.
+- **Scopes**: default 2 rows, `attention` 1, `all` 19 with nine zeroes on the first page —
+  the case that justifies the default.
+- **The search trap v1 has is closed.** Searching an unstocked item under the default
+  scope says "Nothing in this warehouse matches “Aladdin”. Switch Show to every item to
+  search the whole catalogue" — and following that finds it.
+- **Both empty states driven, including the one transfers could not.** A freshly
+  provisioned workspace showed "Nothing in the catalogue yet" pointing at products; an
+  empty warehouse in a stocked workspace showed "Nothing in this warehouse yet" with two
+  ways on. The second is load-bearing: the toolbar is not rendered when a list is empty,
+  so the Show control the copy wanted to name was not on screen until it was offered as a
+  button.
+- **Ten hostile URLs, ten 200s**, tables intact: `?sort[]=`, `?search[]=`, `?per_page[]=`,
+  `?page[]=`, `?show[]=`, `?sort=name);DROP TABLE products;--`, `?show=nonsense`, and
+  `?sort=needs_reorder` — a column that genuinely exists in the derived table but is off
+  the allow-list, and still falls back to `name`. An unrecognised `show` is dropped from
+  the echoed filters rather than left in the URL looking like it did something.
+- **Permissions, both halves.** A view-only user sees the level as plain text with no
+  input; a hand-made `PUT` from that session is **403**. The hidden control was never the
+  boundary.
+- **Column preferences work on the new list.** SKU ships `defaultHidden`, and turning it
+  on survives a hard refresh **server-rendered** — present in the SSR HTML, not added
+  after hydration. Reset clears the stored layout back to null.
+- 375 / 768 / 1024: no sideways body scroll at any width, and at 375 the reorder box is
+  fully on screen — it was not on the first attempt, which is what moved the on-hand
+  column under the name.
+- Light and dark, contrast measured through a canvas rather than read off `oklch()`
+  strings: the Reorder badge is **5.71:1** light and **8.79:1** dark, the input text
+  18.97:1 and its placeholder 7.66:1 in dark.
+- en / ms / zh_Hans, including the interpolated aria-label ("Folding step stool 的补货水平")
+  and the unit symbols (个, 米).
+- Console: zero errors, three Vite font-preload warnings that every page in the app has.
+
+#### Open, carried forward
+
+- **Existing workspaces need `php artisan tenants:migrate`** — one new migration,
+  `warehouse_reorder_levels`.
+- **No cross-warehouse "what is low everywhere" view.** This screen answers per warehouse,
+  which is where the decision is made; the roll-up is a dashboard panel and belongs to
+  Phase 6, where `WarehouseInventory` will have a second caller.
+- **No deep link from a warehouse into a prefilled movement or transfer.** "View
+  movements" filters the ledger to this warehouse; it does not open the dialog with the
+  warehouse chosen. v1 has `?from=<id>` on transfers.
+- `warehouses/show.tsx` is 198 lines after the empty states moved to
+  `_components/warehouse-empty.tsx`.
+
 ## Phases 3–8 — Modules ⬜
 
 | Phase | Modules | Status |
 |---|---|---|
 | 3 · Catalog | **categories ✅ · suppliers ✅ · customers ✅ · raw materials ✅ · products ✅** (core · image · BOM) | ✅ |
-| 4 · Stock | **locations ✅ · warehouses ✅ · StockService ✅ · movements ✅ · transfers ✅** (+ notes column, column preferences) · reorder levels, stock takes | 🚧 |
+| 4 · Stock | **locations ✅ · warehouses ✅ · StockService ✅ · movements ✅ · transfers ✅ · reorder levels ✅** (+ notes column, column preferences, warehouse detail) · stock takes | 🚧 |
 | 5 · Orders | purchase orders, purchase returns, sales orders, sales returns, production orders | ⬜ |
 | 6 · Insights | reports, activity log | ⬜ |
 | 7 · Team & settings | users, roles/RBAC, business settings, document numbering, e-invoice | ⬜ |

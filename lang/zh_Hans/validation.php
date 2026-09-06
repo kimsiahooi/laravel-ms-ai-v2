@@ -60,6 +60,7 @@ return [
         'items.*.quantity' => '数量',
         'items.*.raw_material_id' => '原材料',
         'location_id' => '站点',
+        'min_stock' => '补货水平',
         'name' => '名称',
         'notes' => '备注',
         'phone' => '电话',

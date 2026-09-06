@@ -39,7 +39,7 @@ final class StockItemOptionData extends Data
     public static function fromModel(Model $item): self
     {
         return new self(
-            value: $item->getMorphClass().':'.$item->getKey(),
+            value: StockItem::encode($item),
             name: $item->name,
             sku: $item->sku,
             type: StockItemType::from($item->getMorphClass()),

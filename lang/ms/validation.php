@@ -61,6 +61,7 @@ return [
         'items.*.quantity' => 'kuantiti',
         'items.*.raw_material_id' => 'bahan mentah',
         'location_id' => 'tapak',
+        'min_stock' => 'paras pesanan semula',
         'name' => 'nama',
         'notes' => 'nota',
         'phone' => 'telefon',

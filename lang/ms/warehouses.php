@@ -77,6 +77,59 @@ return [
         'address_placeholder' => 'Jalan, bandar, poskod',
     ],
 
+    /*
+    | Skrin butiran — apa yang ada dalam satu gudang, dan bila setiap item perlu
+    | ditambah semula. Hanya paras pesanan semula boleh diubah di sini.
+    */
+    'detail' => [
+        'search_placeholder' => 'Cari item atau SKU…',
+        'view_movements' => 'Lihat pergerakan',
+
+        'in_stock' => 'Item ada stok',
+        'in_stock_hint' => 'ada di rak sekarang',
+        'needs_reorder' => 'Perlu pesan semula',
+        'needs_reorder_hint' => 'pada atau bawah paras yang ditetapkan di sini',
+
+        'column' => [
+            'item' => 'Item',
+            'sku' => 'SKU',
+            'type' => 'Jenis',
+            'on_hand' => 'Ada',
+            'level' => 'Paras pesanan semula',
+        ],
+
+        'badge' => 'Pesan semula',
+
+        'level_for' => 'Paras pesanan semula untuk :name',
+        'level_placeholder' => 'Tidak ditetapkan',
+        'level_hint' => 'Taip paras di mana item ini perlu ditambah semula. Biarkan kosong jika tiada amaran.',
+
+        'filter' => [
+            'show' => 'Papar',
+            'stocked' => 'Dalam gudang ini',
+            'attention' => 'Perlu pesan semula',
+            'all' => 'Semua item',
+        ],
+
+        'empty' => [
+            'title' => 'Katalog masih kosong',
+            'description' => 'Tambah produk atau bahan mentah dahulu — kemudian barulah ia boleh dipindahkan masuk dan diberi paras pesanan semula.',
+            'action' => 'Pergi ke produk',
+        ],
+
+        'no_stock' => [
+            'title' => 'Belum ada apa-apa dalam gudang ini',
+            'description' => 'Pindahkan stok masuk dan ia akan muncul di sini. Anda juga boleh tetapkan paras pesanan semula untuk sesuatu sebelum ia tiba.',
+            'action' => 'Rekod pergerakan',
+            'action_all' => 'Papar semua item',
+        ],
+
+        'no_match' => [
+            'title' => 'Tiada item sepadan',
+            'description' => 'Tiada apa-apa dalam gudang ini sepadan dengan “:term”. Tukar Papar kepada semua item untuk mencari seluruh katalog.',
+        ],
+    ],
+
     'confirm' => [
         'delete_title' => 'Padam :name?',
         'delete_description' => 'Pergerakan yang telah direkodkan melalui gudang ini mengekalkan sejarahnya — anda cuma tidak boleh memilihnya untuk perkara baharu.',

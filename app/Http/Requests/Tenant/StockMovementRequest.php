@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Tenant;
 
-use App\Support\StockItem;
-use Closure;
 use Illuminate\Validation\Rule;
 
 /**
@@ -55,20 +53,5 @@ final class StockMovementRequest extends TenantFormRequest
             'quantity' => ['required', ...$this->decimalRules($bound)],
             'notes' => ['nullable', 'string', 'max:1000'],
         ];
-    }
-
-    /**
-     * The picked item must name a row that exists and is not trashed.
-     *
-     * A closure rather than `exists`, because which table to look in is part of the
-     * value — see {@see StockItem::decode()}, which is the check as well as the parser.
-     */
-    private function itemExists(): Closure
-    {
-        return static function (string $attribute, mixed $value, Closure $fail): void {
-            if (! is_string($value) || StockItem::decode($value) === null) {
-                $fail('validation.exists')->translate();
-            }
-        };
     }
 }

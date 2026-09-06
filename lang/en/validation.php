@@ -80,6 +80,7 @@ return [
         'items.*.quantity' => 'quantity',
         'items.*.raw_material_id' => 'material',
         'location_id' => 'site',
+        'min_stock' => 'reorder level',
         'name' => 'name',
         'notes' => 'notes',
         'phone' => 'phone',

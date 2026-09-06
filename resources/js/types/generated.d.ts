@@ -141,6 +141,16 @@ address: string | null,
 created_at: string,
 creator: string | null,
 };
+export type WarehouseItemData = {
+item: string,
+name: string,
+sku: string,
+type: App.Enums.StockItemType,
+unit: App.Enums.Unit,
+on_hand: string,
+min_stock: string | null,
+needs_reorder: boolean,
+};
 export type WarehouseOptionData = {
 id: number,
 name: string,
@@ -152,7 +162,7 @@ export type Country = 'MY' | 'SG';
 export type Dimension = 'mass' | 'volume' | 'length' | 'count';
 export type StockItemType = 'product' | 'raw_material';
 export type StockMovementReason = 'adjustment' | 'stock_take' | 'transfer_in' | 'transfer_out' | 'purchase_receipt' | 'purchase_return' | 'sales_fulfillment' | 'sales_return' | 'production_consume' | 'production_output';
-export type TableKey = 'admin-tenants' | 'admin-tenants-trashed' | 'categories' | 'customers' | 'locations' | 'products' | 'raw-materials' | 'stock-movements' | 'stock-transfers' | 'suppliers' | 'warehouses';
+export type TableKey = 'admin-tenants' | 'admin-tenants-trashed' | 'categories' | 'customers' | 'locations' | 'products' | 'raw-materials' | 'stock-movements' | 'stock-transfers' | 'suppliers' | 'warehouse-items' | 'warehouses';
 export type Unit = 'g' | 'kg' | 't' | 'ml' | 'l' | 'mm' | 'cm' | 'm' | 'pcs' | 'box' | 'roll' | 'sheet' | 'pair' | 'set';
 }
 }

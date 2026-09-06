@@ -428,66 +428,111 @@ type DecimalOptions = {
  * numeric schema would read an empty box as a legitimate zero and report the wrong
  * failure, or none. Parsing is left until after the shape has been checked.
  *
- * `superRefine` with early returns rather than a chain of `.refine()`s, so exactly one
- * issue is produced: `"abc"` fails all four checks, and which message surfaces should
- * be the first that applies, not whichever the issue list happens to order first.
+ * Empty is the one thing this decides for itself — it is the difference between this
+ * and {@see optionalDecimal}, and everything after it is shared. See
+ * {@see checkDecimal}.
  */
-export function decimal({
-    attribute,
-    scale = DECIMAL_SCALE,
-    max = DECIMAL_MAX,
-    gt = 0,
-    gte,
-}: DecimalOptions) {
+export function decimal(options: DecimalOptions) {
+    return z
+        .string(message('validation.string', options.attribute))
+        .trim()
+        .superRefine((value, ctx) => {
+            if (value === '') {
+                ctx.addIssue({
+                    code: 'custom',
+                    message: message('validation.required', options.attribute),
+                });
+
+                return;
+            }
+
+            checkDecimal(value, ctx, options);
+        });
+}
+
+/**
+ * The same field where an empty box is a legitimate answer — `['nullable', …]`.
+ *
+ * Not `decimal(...).optional()`, which would still refuse `''`: a form sends an
+ * untouched input as the empty string, not as `undefined`, so "optional" has to mean
+ * empty-able to be worth anything. `.optional()` is on top as well, for the other shape
+ * the field takes — absent from a payload that never rendered it.
+ *
+ * **Empty is not zero.** The one caller so far is a reorder level, where the difference
+ * carries the whole meaning: zero is a threshold somebody chose and empty is no
+ * threshold at all. Turning one into the other here would put that decision in the
+ * wrong layer, so this reports nothing and lets the server decide what absence means.
+ */
+export function optionalDecimal(options: DecimalOptions) {
+    return z
+        .string(message('validation.string', options.attribute))
+        .trim()
+        .superRefine((value, ctx) => {
+            if (value === '') {
+                return;
+            }
+
+            checkDecimal(value, ctx, options);
+        })
+        .optional();
+}
+
+/**
+ * Everything both of the above check, for a value already known to be non-empty.
+ *
+ * Early returns rather than a chain of checks, so exactly one issue is produced:
+ * `"abc"` fails all four, and which message surfaces should be the first that applies
+ * rather than whichever the issue list happens to order first.
+ */
+function checkDecimal(
+    value: string,
+    ctx: z.RefinementCtx,
+    {
+        attribute,
+        scale = DECIMAL_SCALE,
+        max = DECIMAL_MAX,
+        gt = 0,
+        gte,
+    }: DecimalOptions,
+) {
+    const fail = (
+        key: TranslationKey,
+        params?: Record<string, string | number>,
+    ) => {
+        ctx.addIssue({
+            code: 'custom',
+            message: message(key, attribute, params),
+        });
+    };
+
+    const parsed = Number(value);
+
+    if (!Number.isFinite(parsed)) {
+        return fail('validation.numeric');
+    }
+
     // Laravel's own `decimal` rule, verbatim: an optional sign, digits, an optional
     // point, digits. It is what makes `1e3` — which `numeric` accepts — a failure here
     // too, so the two layers agree on more than the digit count.
-    const shape = /^[+-]?\d*\.?(\d*)$/;
+    const digits = /^[+-]?\d*\.?(\d*)$/.exec(value)?.[1];
 
-    return z
-        .string(message('validation.string', attribute))
-        .trim()
-        .superRefine((value, ctx) => {
-            const fail = (
-                key: TranslationKey,
-                params?: Record<string, string | number>,
-            ) => {
-                ctx.addIssue({
-                    code: 'custom',
-                    message: message(key, attribute, params),
-                });
-            };
+    if (digits === undefined || digits.length > scale) {
+        // `:decimal` is "0-4", the way Laravel renders a range — see
+        // ReplacesAttributes::replaceDecimal.
+        return fail('validation.decimal', { decimal: `0-${scale}` });
+    }
 
-            if (value === '') {
-                return fail('validation.required');
-            }
+    if (gte !== undefined) {
+        if (parsed < gte) {
+            return fail('validation.gte.numeric', { value: gte });
+        }
+    } else if (parsed <= gt) {
+        return fail('validation.gt.numeric', { value: gt });
+    }
 
-            const parsed = Number(value);
-
-            if (!Number.isFinite(parsed)) {
-                return fail('validation.numeric');
-            }
-
-            const digits = shape.exec(value)?.[1];
-
-            if (digits === undefined || digits.length > scale) {
-                // `:decimal` is "0-4", the way Laravel renders a range — see
-                // ReplacesAttributes::replaceDecimal.
-                return fail('validation.decimal', { decimal: `0-${scale}` });
-            }
-
-            if (gte !== undefined) {
-                if (parsed < gte) {
-                    return fail('validation.gte.numeric', { value: gte });
-                }
-            } else if (parsed <= gt) {
-                return fail('validation.gt.numeric', { value: gt });
-            }
-
-            if (parsed > max) {
-                return fail('validation.max.numeric', { max });
-            }
-        });
+    if (parsed > max) {
+        return fail('validation.max.numeric', { max });
+    }
 }
 
 /**

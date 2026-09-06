@@ -77,6 +77,59 @@ return [
         'address_placeholder' => '街道、城市、邮编',
     ],
 
+    /*
+    | 详情页 —— 某个仓库现有什么，以及每个项目何时需要补货。页面上唯一可修改的
+    | 就是补货水平。
+    */
+    'detail' => [
+        'search_placeholder' => '搜索项目或 SKU…',
+        'view_movements' => '查看出入库',
+
+        'in_stock' => '有库存的项目',
+        'in_stock_hint' => '此刻货架上还有的',
+        'needs_reorder' => '需要补货',
+        'needs_reorder_hint' => '已达到或低于这里设定的水平',
+
+        'column' => [
+            'item' => '项目',
+            'sku' => 'SKU',
+            'type' => '类型',
+            'on_hand' => '现有',
+            'level' => '补货水平',
+        ],
+
+        'badge' => '补货',
+
+        'level_for' => ':name 的补货水平',
+        'level_placeholder' => '未设定',
+        'level_hint' => '在此输入该项目需要补货的水平。留空则不发出提醒。',
+
+        'filter' => [
+            'show' => '显示',
+            'stocked' => '本仓库内',
+            'attention' => '需要补货',
+            'all' => '全部项目',
+        ],
+
+        'empty' => [
+            'title' => '目录里还没有东西',
+            'description' => '先添加产品或原材料 —— 之后才能把它移入这里，并说明何时需要补货。',
+            'action' => '前往产品',
+        ],
+
+        'no_stock' => [
+            'title' => '本仓库还是空的',
+            'description' => '把库存移入后就会出现在这里。你也可以在东西到货前，先为它设定补货水平。',
+            'action' => '记录出入库',
+            'action_all' => '显示全部项目',
+        ],
+
+        'no_match' => [
+            'title' => '没有匹配的项目',
+            'description' => '本仓库里没有与“:term”匹配的内容。把「显示」切换为全部项目即可搜索整个目录。',
+        ],
+    ],
+
     'confirm' => [
         'delete_title' => '删除:name？',
         'delete_description' => '已通过该仓库记录的出入库仍保留其历史——你只是无法再为新的单据选择它。',

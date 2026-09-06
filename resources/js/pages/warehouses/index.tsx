@@ -13,7 +13,7 @@ import { useTranslation } from '@/hooks/use-translation';
 import { NewWarehouseButton } from '@/pages/warehouses/_components/new-warehouse-button';
 import { WarehouseActions } from '@/pages/warehouses/_components/warehouse-actions';
 import { index as locationsIndex } from '@/routes/locations';
-import { index } from '@/routes/warehouses';
+import { index, show } from '@/routes/warehouses';
 import type { Paginated, ResourceFilters } from '@/types';
 
 /** Generated from App\Data\WarehouseData — `bun run types:generate`. */
@@ -40,7 +40,16 @@ const columns = column.columns([
         ...heading('warehouses.column.name'),
         cell: ({ row }) => (
             <>
-                <span className="font-medium">{row.original.name}</span>
+                {/* The name is the way in to what is actually inside the building.
+                    A link rather than a menu entry: a detail screen reached only
+                    through a row menu is one most people never find, and everybody
+                    on this list already has `warehouses.view`. */}
+                <Link
+                    href={show({ warehouse: row.original.id })}
+                    className="rounded-sm font-medium underline-offset-4 ring-offset-background transition-colors hover:underline focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2"
+                >
+                    {row.original.name}
+                </Link>
                 {/* The site has no column of its own on a phone, and it is the one
                     thing that distinguishes two warehouses with the same name. */}
                 <span className="block text-muted-foreground text-xs md:hidden">

@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Http\Requests\Tenant;
 
 use App\Support\ActiveExists;
+use App\Support\StockItem;
+use Closure;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
@@ -97,5 +99,27 @@ abstract class TenantFormRequest extends FormRequest
             $bound,
             'max:'.self::DECIMAL_MAX,
         ];
+    }
+
+    /**
+     * A stock picker's value: one string naming a live product or raw material.
+     *
+     * A closure rather than `exists`, because *which table to look in is part of the
+     * value* — see {@see StockItem::decode()}, which is the check as well as the
+     * parser. It returns null for a wrong shape, an unknown type, an id that does not
+     * exist and a row that has been soft-deleted, and all four deserve the same answer:
+     * the thing you picked is not something you can pick.
+     *
+     * Here rather than in each request because there are four of them now — movements,
+     * transfers, the on-hand lookup and reorder levels — and a copy that drifted would
+     * mean one screen accepting an item another refuses.
+     */
+    protected function itemExists(): Closure
+    {
+        return static function (string $attribute, mixed $value, Closure $fail): void {
+            if (! is_string($value) || StockItem::decode($value) === null) {
+                $fail('validation.exists')->translate();
+            }
+        };
     }
 }

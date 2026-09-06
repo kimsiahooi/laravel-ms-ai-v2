@@ -32,7 +32,19 @@ final class StockItem
      */
     public static function encode(Model $item): string
     {
-        return $item->getMorphClass().':'.$item->getKey();
+        return self::key($item->getMorphClass(), (int) $item->getKey());
+    }
+
+    /**
+     * The same value from the two columns a morph is actually stored in.
+     *
+     * For callers holding a row rather than a model — the warehouse inventory reads a
+     * UNION over two catalogue tables and never hydrates one. The separator lives in
+     * this class alone, which is the point: {@see decode()} splits on it.
+     */
+    public static function key(string $type, int $id): string
+    {
+        return $type.':'.$id;
     }
 
     /**
