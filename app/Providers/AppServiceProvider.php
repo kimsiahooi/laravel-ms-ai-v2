@@ -4,6 +4,8 @@ namespace App\Providers;
 
 use App\Models\Product;
 use App\Models\RawMaterial;
+use App\Models\StockTake;
+use App\Models\StockTransfer;
 use App\Support\ReservedSlugs;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -69,6 +71,11 @@ class AppServiceProvider extends ServiceProvider
         Relation::morphMap([
             'product' => Product::class,
             'raw_material' => RawMaterial::class,
+            // What a ledger row points back at — see the `source` columns on
+            // `stock_movements`. Same reasoning as the two above, and the same table:
+            // these strings are written into rows nobody is allowed to rewrite.
+            'stock_take' => StockTake::class,
+            'stock_transfer' => StockTransfer::class,
         ]);
     }
 

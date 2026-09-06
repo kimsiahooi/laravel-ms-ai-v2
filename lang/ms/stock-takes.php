@@ -123,12 +123,6 @@ return [
         'posted_locked' => 'Pengiraan stok yang telah direkod tidak boleh dipadam.',
     ],
 
-    // Dicap pada setiap baris lejar yang dihasilkan oleh kiraan, supaya sesuatu
-    // pergerakan boleh dijejaki kembali kepada helaian yang menyebabkannya.
-    'movement' => [
-        'notes' => 'Pengiraan stok #:id',
-    ],
-
     'empty' => [
         'title' => 'Belum ada pengiraan stok',
         'description' => 'Mulakan satu untuk mengira apa yang sebenarnya ada dalam sesebuah gudang.',

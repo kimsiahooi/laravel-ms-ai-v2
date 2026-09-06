@@ -34,6 +34,7 @@ return [
         'recorded' => 'Recorded',
         'user' => 'By',
         'notes' => 'Notes',
+        'source' => 'Source',
     ],
 
     'item_type' => [
@@ -115,5 +116,12 @@ return [
 
     'toast' => [
         'recorded' => 'Movement recorded.',
+    ],
+
+    // Built at render time from `source_type` and `source_id` so the words are
+    // the reader's, not the poster's — see the ledger's source cell.
+    'source' => [
+        'stock_take' => 'Stock take #:id',
+        'stock_transfer' => 'Transfer #:id',
     ],
 ];

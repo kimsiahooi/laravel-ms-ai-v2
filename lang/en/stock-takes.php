@@ -119,12 +119,6 @@ return [
         'posted_locked' => 'A posted stock take cannot be deleted.',
     ],
 
-    // Stamped on every ledger row the count posts, so a movement can be traced back to
-    // the sheet that caused it.
-    'movement' => [
-        'notes' => 'Stock take #:id',
-    ],
-
     'empty' => [
         'title' => 'No stock takes yet',
         'description' => 'Start one to count what a warehouse is actually holding.',

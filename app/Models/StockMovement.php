@@ -103,6 +103,21 @@ class StockMovement extends Model
         return $this->morphTo()->withTrashed();
     }
 
+    /**
+     * The document that caused this row — a stock take, a transfer, later an order.
+     *
+     * Null for a hand-recorded adjustment, which nothing but a person caused, and null
+     * again for every row written before the `source` columns existed. `withTrashed`
+     * because the ledger outlives what it points at: a stock take can be deleted and the
+     * movements it posted must stay, still able to say where they came from.
+     *
+     * @return MorphTo<Model, $this>
+     */
+    public function source(): MorphTo
+    {
+        return $this->morphTo()->withTrashed();
+    }
+
     /** @return BelongsTo<User, $this> */
     public function user(): BelongsTo
     {

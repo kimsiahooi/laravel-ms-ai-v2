@@ -3415,6 +3415,91 @@ Both ledger rows carry `Stock take #1` and the poster's id.
 - **A mis-added found line cannot be removed**, only left uncounted, which makes it inert
   at posting. Cheaper than a delete-line route and its permission; revisit if it annoys.
 
+## Phase 4 · Stock — what caused a ledger row ✅
+
+A follow-up to stock takes, prompted by a question about the notes it was leaving on
+`stock_movements`. The answer was that it should not have been leaving any.
+
+**The bug.** `PostStockTake` stamped `__('stock-takes.movement.notes', ['id' => $take->id])`
+on every row it posted. That resolves in the *poster's* locale and is then stored, so a
+count posted in Malay left `Pengiraan stok #12` in a column every locale reads. Proven
+rather than argued, inside a rolled-back transaction:
+
+```
+posted with locale=en  ->  'Stock take #6'
+posted with locale=ms  ->  'Pengiraan stok #7'
+```
+
+It broke this codebase's own rule, the one `StockTransferData` states outright: every field
+is a value, not a sentence. `RecordStockTransfer` had it right all along — it passes the
+user's typed notes through and never generates prose.
+
+**Why a column rather than a fix to the string.** v1 has already run this experiment. It
+built all of Phase 5 and hand-stamped a reference in six separate Actions:
+`"PO #{$order->id}"`, `"SO #{$order->id}"`, `"MO #{$order->id}"`, `"Purchase return #…"`,
+`"Sales return #…"`, `"Stock take #…"`. Six callers, six string concatenations, a reference
+that has to be parsed back out of prose, and a `notes` column meaning two different things
+at once. Phase 5 brings those six callers here. Adding the column while a stock take is the
+only one is the cheapest this will ever be.
+
+### The change
+
+`stock_movements` gains nullable `source_type` / `source_id` (`nullableMorphs`), **declared
+in the table's own create migration rather than added by a later one** — nothing is
+deployed to a real user yet, so there is no history worth preserving and a straight schema
+reads better than a schema plus a patch. `StockService` threads an optional `?Model $source`
+through `record()`, `transfer()` and `setLevel()` to the single private `writeMovement()`
+that writes every row.
+
+Nullable because most rows have no document: a hand-recorded adjustment is caused by a
+person and nothing else, which is an absent value rather than a missing one.
+
+- **No foreign key**, deliberately. A morph cannot have one, and the ledger outlives what
+  it points at — a deleted stock take must not take its movements with it, the same reason
+  the warehouse is `restrictOnDelete`.
+- **Through the morph map**, so the column holds `stock_take`, not a class name a namespace
+  change would strand. `MovementSource` names the two keys so the browser gets a union and
+  Phase 5 has to declare each new kind rather than let a string turn up.
+- **`RecordStockTransfer` writes its document first** now, so the movements can point at
+  it. Order inside the transaction is free; the alternative is writing the rows and
+  updating them afterwards, which is two writes where one will do.
+- `record()` and `transfer()` keep their bodies — the addition is a trailing nullable
+  parameter, so the lock ordering `stock:hammer --deadlock` proved is untouched.
+- The words are chosen at render time in `_components/source-cell.tsx`, which links a
+  stock take to its count sheet and renders a transfer as plain text, because transfers
+  are a list with no detail page to open.
+
+### Verified
+
+Inside a rolled-back transaction (movements 634 before and after, twice):
+
+- A transfer's **two legs now carry the same `stock_transfer:7`** — the rows finally say
+  they belong together, which the `stock_transfers` migration had noted the ledger could
+  not express.
+- A take **posted in Malay** stored `source=stock_take:8` and `notes='kiraan suku tahunan'`
+  — the person's own words, no system sentence in any language.
+
+A throwaway workspace provisioned through the app and then deleted confirmed a fresh tenant
+gets both columns and the `stock_movements_source_type_source_id_index`, which also
+exercised the create → migrate → seed pipeline end to end for the first time.
+
+In the browser against built assets with SSR, the same ledger row renders as **Stock take
+#5** / **Pengiraan stok #5** / **盘点单 #5**, all linking to `/demo/stock-takes/5` — chosen
+by the reader, not frozen by the poster.
+
+#### Open, carried forward
+
+- **Staging must be re-migrated from scratch** (`tenants:migrate --fresh`, or drop and
+  re-provision). The column moved into an existing migration, so a workspace that already
+  ran it will not pick the change up — which is only acceptable because nothing there is
+  real yet.
+- **A transfer's label is not a link**, because transfers have no detail screen. If one is
+  ever added, `source-cell.tsx` is the single place that changes.
+- **Movements written before this** — the seeder's 610 transfer rows among them — have a
+  null source, and cannot honestly be given one: most have no document to point at.
+- Phase 5 should pass `$source` from every order Action rather than inventing a note, and
+  add its case to `MovementSource`.
+
 ## Phases 3–8 — Modules ⬜
 
 | Phase | Modules | Status |

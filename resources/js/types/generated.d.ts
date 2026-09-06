@@ -94,6 +94,8 @@ quantity: string,
 reason: App.Enums.StockMovementReason,
 user: string | null,
 notes: string | null,
+source_type: App.Enums.MovementSource | null,
+source_id: number | null,
 created_at: string,
 };
 export type StockOnHandData = {
@@ -186,6 +188,7 @@ site: string,
 namespace Enums {
 export type Country = 'MY' | 'SG';
 export type Dimension = 'mass' | 'volume' | 'length' | 'count';
+export type MovementSource = 'stock_take' | 'stock_transfer';
 export type StockItemType = 'product' | 'raw_material';
 export type StockMovementReason = 'adjustment' | 'stock_take' | 'transfer_in' | 'transfer_out' | 'purchase_receipt' | 'purchase_return' | 'sales_fulfillment' | 'sales_return' | 'production_consume' | 'production_output';
 export type StockTakeStatus = 'draft' | 'posted' | 'cancelled';

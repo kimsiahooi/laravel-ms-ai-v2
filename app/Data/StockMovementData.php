@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Data;
 
+use App\Enums\MovementSource;
 use App\Enums\StockItemType;
 use App\Enums\StockMovementReason;
 use App\Models\StockMovement;
@@ -38,7 +39,15 @@ final class StockMovementData extends Data
         public string $quantity,
         public StockMovementReason $reason,
         public ?string $user,
+        /** What a person typed. Never a system reference — that is what `source` is. */
         public ?string $notes,
+        /**
+         * The document that caused this row, as a value the screen turns into words.
+         * Null for a hand-recorded adjustment and for every row written before the
+         * `source` columns existed.
+         */
+        public ?MovementSource $source_type,
+        public ?int $source_id,
         public string $created_at,
     ) {}
 
@@ -64,6 +73,12 @@ final class StockMovementData extends Data
             reason: $movement->reason,
             user: $movement->user?->name,
             notes: $movement->notes,
+            // tryFrom, not from: the column is written through the morph map, and a key
+            // this enum has not been taught must not break the whole ledger.
+            source_type: $movement->source_type === null
+                ? null
+                : MovementSource::tryFrom($movement->source_type),
+            source_id: $movement->source_id,
             created_at: $movement->created_at->toIso8601String(),
         );
     }

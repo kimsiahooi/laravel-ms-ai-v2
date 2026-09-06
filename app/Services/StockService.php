@@ -49,6 +49,13 @@ final class StockService
      * Apply a signed delta to on-hand and append the ledger row that explains it.
      *
      * @param  string  $delta  positive in, negative out
+     * @param  Model|null  $source  the document that caused this — a stock take, a
+     *                              transfer, later an order. Recorded as a relationship
+     *                              rather than spelled into `$notes`, which is where v1
+     *                              put it six times over: a reference built by string
+     *                              concatenation can only be one language and has to be
+     *                              parsed to be read back. `$notes` stays what a person
+     *                              typed.
      *
      * @throws InsufficientStockException when it would drive on-hand below zero
      */
@@ -59,11 +66,12 @@ final class StockService
         StockMovementReason $reason,
         ?User $user = null,
         ?string $notes = null,
+        ?Model $source = null,
     ): StockMovement {
-        return DB::transaction(function () use ($warehouse, $stockable, $delta, $reason, $user, $notes): StockMovement {
+        return DB::transaction(function () use ($warehouse, $stockable, $delta, $reason, $user, $notes, $source): StockMovement {
             $this->applyLockedDelta($warehouse, $stockable, $delta);
 
-            return $this->writeMovement($warehouse, $stockable, $delta, $reason, $user, $notes);
+            return $this->writeMovement($warehouse, $stockable, $delta, $reason, $user, $notes, $source);
         });
     }
 
@@ -91,15 +99,18 @@ final class StockService
         string $quantity,
         ?User $user = null,
         ?string $notes = null,
+        ?Model $source = null,
     ): array {
-        return DB::transaction(function () use ($from, $to, $stockable, $quantity, $user, $notes): array {
+        return DB::transaction(function () use ($from, $to, $stockable, $quantity, $user, $notes, $source): array {
             foreach ($this->orderedIds($from, $to) as $warehouseId) {
                 $this->lockRow($warehouseId, $stockable);
             }
 
+            // Both legs carry the same source, which is what finally joins them: two rows
+            // reading `transfer_out` and `transfer_in` never said they belonged together.
             return [
-                $this->record($from, $stockable, $this->negate($quantity), StockMovementReason::TransferOut, $user, $notes),
-                $this->record($to, $stockable, $quantity, StockMovementReason::TransferIn, $user, $notes),
+                $this->record($from, $stockable, $this->negate($quantity), StockMovementReason::TransferOut, $user, $notes, $source),
+                $this->record($to, $stockable, $quantity, StockMovementReason::TransferIn, $user, $notes, $source),
             ];
         });
     }
@@ -129,8 +140,9 @@ final class StockService
         StockMovementReason $reason = StockMovementReason::StockTake,
         ?User $user = null,
         ?string $notes = null,
+        ?Model $source = null,
     ): ?StockMovement {
-        return DB::transaction(function () use ($warehouse, $stockable, $target, $reason, $user, $notes): ?StockMovement {
+        return DB::transaction(function () use ($warehouse, $stockable, $target, $reason, $user, $notes, $source): ?StockMovement {
             $stock = $this->lockRow($warehouse->id, $stockable);
             $current = $stock === null ? $this->zero() : $this->decimal((string) $stock->quantity);
             $delta = bcsub($this->decimal($target), $current, self::SCALE);
@@ -144,7 +156,7 @@ final class StockService
 
             $this->applyLockedDelta($warehouse, $stockable, $delta);
 
-            return $this->writeMovement($warehouse, $stockable, $delta, $reason, $user, $notes);
+            return $this->writeMovement($warehouse, $stockable, $delta, $reason, $user, $notes, $source);
         });
     }
 
@@ -265,6 +277,7 @@ final class StockService
         StockMovementReason $reason,
         ?User $user,
         ?string $notes,
+        ?Model $source = null,
     ): StockMovement {
         return StockMovement::query()->forceCreate([
             'warehouse_id' => $warehouse->id,
@@ -274,6 +287,10 @@ final class StockService
             'reason' => $reason,
             'user_id' => $user?->id,
             'notes' => $notes,
+            // Through the morph map, so the column holds `stock_take` rather than a
+            // class name that a namespace change would strand — see AppServiceProvider.
+            'source_type' => $source?->getMorphClass(),
+            'source_id' => $source?->getKey(),
         ]);
     }
 

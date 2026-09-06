@@ -49,11 +49,14 @@ final class RecordStockTransfer
         ?string $notes = null,
     ): StockTransfer {
         return DB::transaction(function () use ($from, $to, $stockable, $quantity, $user, $notes): StockTransfer {
-            $this->stock->transfer($from, $to, $stockable, $quantity, $user, $notes);
-
+            // The document is written first now, because the movements point back at it.
+            // Order inside the transaction is free — either both land or neither does —
+            // and the alternative is writing the ledger rows and updating them after,
+            // which is two writes where one will do.
+            //
             // forceCreate for the reason the model gives: nothing about a transfer is
             // mass-assignable from a request, so every column is named right here.
-            return StockTransfer::query()->forceCreate([
+            $transfer = StockTransfer::query()->forceCreate([
                 'from_warehouse_id' => $from->id,
                 'to_warehouse_id' => $to->id,
                 'stockable_type' => $stockable->getMorphClass(),
@@ -62,6 +65,12 @@ final class RecordStockTransfer
                 'user_id' => $user?->id,
                 'notes' => $notes,
             ]);
+
+            // A short source leaves nothing behind: the refusal throws, and the document
+            // above rolls back with it.
+            $this->stock->transfer($from, $to, $stockable, $quantity, $user, $notes, $transfer);
+
+            return $transfer;
         });
     }
 }

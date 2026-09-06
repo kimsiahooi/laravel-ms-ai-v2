@@ -18,6 +18,7 @@ import {
 import { NotesCell } from '@/pages/stock-movements/_components/notes-cell';
 import { QuantityCell } from '@/pages/stock-movements/_components/quantity-cell';
 import { RecordMovementButton } from '@/pages/stock-movements/_components/record-movement-button';
+import { SourceCell } from '@/pages/stock-movements/_components/source-cell';
 import { index as products } from '@/routes/products';
 import { index } from '@/routes/stock-movements';
 import { index as warehousesIndex } from '@/routes/warehouses';
@@ -55,6 +56,17 @@ const columns = column.columns([
     column.accessor('reason', {
         ...heading('stock-movements.column.reason', { hideBelow: 'lg' }),
         cell: ({ row }) => <ReasonCell reason={row.original.reason} />,
+    }),
+    // Beside the reason, which is the coarse version of the same question: `reason`
+    // says a stock take did this, `source` says which one.
+    column.accessor('source_id', {
+        ...heading('stock-movements.column.source', { hideBelow: 'xl' }),
+        cell: ({ row }) => (
+            <SourceCell
+                type={row.original.source_type}
+                id={row.original.source_id}
+            />
+        ),
     }),
     // No `hideBelow`: a column you had to ask for should appear once you have asked.
     column.accessor('notes', {

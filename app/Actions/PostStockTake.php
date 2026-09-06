@@ -129,13 +129,19 @@ final class PostStockTake
             return;
         }
 
+        // `notes` carries what a person typed when opening the count, exactly as a
+        // transfer passes its own along; the take itself is handed over as the source.
+        // It used to be `__('stock-takes.movement.notes')`, which froze the poster's
+        // language into a column every locale reads — post in Malay and an English
+        // reader saw Malay forever. A relationship has no language to freeze.
         $movement = $this->stock->setLevel(
             $take->warehouse,
             $stockable,
             (string) $line->counted_quantity,
             StockMovementReason::StockTake,
             $user,
-            __('stock-takes.movement.notes', ['id' => $take->id]),
+            $take->notes,
+            $take,
         );
 
         // Null came back because the count agreed with the on-hand and the service

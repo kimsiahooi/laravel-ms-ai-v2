@@ -33,6 +33,7 @@ return [
         'recorded' => 'Direkod',
         'user' => 'Oleh',
         'notes' => 'Nota',
+        'source' => 'Sumber',
     ],
 
     'item_type' => [
@@ -114,5 +115,12 @@ return [
 
     'toast' => [
         'recorded' => 'Pergerakan direkodkan.',
+    ],
+
+    // Built at render time from `source_type` and `source_id` so the words are
+    // the reader's, not the poster's — see the ledger's source cell.
+    'source' => [
+        'stock_take' => 'Pengiraan stok #:id',
+        'stock_transfer' => 'Pemindahan #:id',
     ],
 ];

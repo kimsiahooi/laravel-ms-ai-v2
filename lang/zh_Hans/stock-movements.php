@@ -33,6 +33,7 @@ return [
         'recorded' => '记录时间',
         'user' => '操作人',
         'notes' => '备注',
+        'source' => '来源',
     ],
 
     'item_type' => [
@@ -114,5 +115,12 @@ return [
 
     'toast' => [
         'recorded' => '变动已记录。',
+    ],
+
+    // Built at render time from `source_type` and `source_id` so the words are
+    // the reader's, not the poster's — see the ledger's source cell.
+    'source' => [
+        'stock_take' => '盘点单 #:id',
+        'stock_transfer' => '调拨单 #:id',
     ],
 ];
