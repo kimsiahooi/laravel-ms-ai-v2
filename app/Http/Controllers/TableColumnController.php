@@ -5,21 +5,23 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Enums\TableKey;
+use App\Http\Controllers\Concerns\RespondsWithToast;
 use App\Models\CentralUser;
 use App\Models\User;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Validation\Rule;
 
 /**
- * Saves which columns somebody looks at on one list.
+ * Which columns somebody looks at: saving one list, and clearing every list.
  *
  * Central (not tenant-prefixed) is not an option here the way it is for the language
  * switcher: this writes to the signed-in user's row, and a workspace's users live in the
  * workspace's own database. Hence two routes, one per area — see routes/tenant.php for
  * why a workspace cannot simply post to the central one.
  *
- * One `__invoke` serves both, because Laravel's `Authenticate` middleware calls
+ * One controller serves both areas, because Laravel's `Authenticate` middleware calls
  * `shouldUse()` on the guard that passes: inside an `auth:central` route `$request->user()`
  * already *is* the CentralUser. No area sniffing needed.
  *
@@ -40,7 +42,10 @@ use Illuminate\Validation\Rule;
  */
 final class TableColumnController extends Controller
 {
-    public function __invoke(Request $request): Response
+    use RespondsWithToast;
+
+    /** Save one list's layout. */
+    public function update(Request $request): Response
     {
         // Every rule below has a translated message. `required_with` deliberately does
         // not appear: it has none, and `check:i18n` only reads app/Http/Requests, so an
@@ -85,5 +90,30 @@ final class TableColumnController extends Controller
         $user->forceFill(['table_columns' => $stored === [] ? null : $stored])->save();
 
         return response()->noContent();
+    }
+
+    /**
+     * Put every list back to the columns it declares.
+     *
+     * The counterpart to the panel's own Reset, which only ever knows about the list it is
+     * open on. Somebody who has rearranged six screens and wants to start over would
+     * otherwise have to visit six screens to do it.
+     *
+     * Unlike {@see update} this *is* a navigation — somebody pressed a button and is
+     * waiting — so it redirects with a toast rather than answering 204. Reachable only
+     * from the tenant settings screen; a super-admin has no settings area, and with two
+     * lists the per-panel Reset covers them.
+     */
+    public function destroy(Request $request): RedirectResponse
+    {
+        $user = $request->user();
+
+        if ($user instanceof User || $user instanceof CentralUser) {
+            $user->forceFill(['table_columns' => null])->save();
+        }
+
+        $this->toast(__('settings.columns.toast'));
+
+        return back();
     }
 }

@@ -75,8 +75,13 @@ Route::middleware(['web', InitializeTenancyByPath::class, SetTenantUrlDefault::c
             // resource, so every signed-in user may set their own. A separate route from
             // the central one for the reason the locale switcher gives above — the
             // session, and the user row this writes to, live in the tenant database.
-            Route::put('table-columns', TableColumnController::class)
+            Route::put('table-columns', [TableColumnController::class, 'update'])
                 ->name('tenant.table-columns.update');
+
+            // Clear every list at once, from Settings -> Appearance. Same reasoning as
+            // the PUT above: a preference about the reader, so no permission mapping.
+            Route::delete('table-columns', [TableColumnController::class, 'destroy'])
+                ->name('tenant.table-columns.destroy');
 
             // Catalog. Route names are bare — `categories.index`, not `tenant.categories.index`
             // — because that is the shape TenantPermissions::routeMap() keys on.

@@ -42,7 +42,20 @@ return [
     'appearance' => [
         'head' => '外观设置',
         'title' => '外观',
-        'description' => '选择本设备上的应用外观',
+        'description' => '选择应用的外观',
+        'theme_scope' => '仅对本设备生效。',
+    ],
+
+    'columns' => [
+        'title' => '列表的列',
+        'description' => '每个列表显示哪些列、按什么顺序。跟随你的账号，在所有设备上生效。',
+        'customised' => '{0} 没有列表被改过，全部显示默认的列。|{1} 有 1 个列表显示的列与默认不同。|[2,*] 有 :count 个列表显示的列与默认不同。',
+        'action' => '重置所有列表',
+        'confirm_title' => '重置所有列表？',
+        'confirm_description' => '每个列表都会恢复成最初的列和顺序。账号的其他设置不受影响，你随时可以重新调整。',
+        'confirm_action' => '重置所有列表',
+        'confirming' => '正在重置…',
+        'toast' => '所有列表已恢复默认的列。',
     ],
 
     'delete' => [

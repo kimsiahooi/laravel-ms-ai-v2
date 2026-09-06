@@ -2950,6 +2950,29 @@ last for everyone who had. Proven by putting the old behaviour back: with a cust
 layout saved, a column declared between `warehouse` and `reason` landed at index 6 instead
 of 4. It now inserts after the nearest earlier column the reader still has.
 
+#### Reset every list, from Settings → Appearance ✅
+
+The panel's own Reset only knows the list it is open on, so starting over meant visiting
+ten screens. Settings → Appearance now carries a **Table columns** section that clears
+them all.
+
+- **The count is free.** `tableColumns` already rides on every page so the table can seed
+  itself, and only lists somebody actually changed are ever stored — so its size *is* the
+  number of customised lists. No new query, no new prop.
+- It states the count, disables itself at zero (the sentence above already says why, so
+  the button needs no second copy), and asks before acting: one press can undo work across
+  ten screens, which is more than a settings toggle should do quietly. No typed phrase —
+  nothing here is irreversible, and asking that hard would only teach people to click through.
+- `DELETE {tenant}/table-columns`, beside the PUT. Unlike the save this **is** a
+  navigation — somebody pressed a button and is waiting — so it redirects with a flash
+  toast rather than answering 204.
+- **Tenant settings only.** `/admin` has no settings area at all, and building one for a
+  single button is not the trade; a super-admin has two lists and each has its own Reset.
+- The page used to say *"Choose how the app looks on this device"*, which stopped being
+  true the moment a per-account setting landed on it. The page description is now
+  scope-neutral and each section states its own reach: the theme is written to this
+  browser, a column layout follows the account everywhere.
+
 #### Open, carried forward
 
 - **Existing workspaces need `php artisan tenants:migrate`.** New ones are migrated on

@@ -42,7 +42,20 @@ return [
     'appearance' => [
         'head' => 'Tetapan penampilan',
         'title' => 'Penampilan',
-        'description' => 'Pilih rupa aplikasi pada peranti ini',
+        'description' => 'Pilih rupa aplikasi',
+        'theme_scope' => 'Hanya untuk peranti ini.',
+    ],
+
+    'columns' => [
+        'title' => 'Lajur senarai',
+        'description' => 'Lajur yang dipaparkan setiap senarai, dan susunannya. Mengikut akaun anda, pada setiap peranti.',
+        'customised' => '{0} Tiada senarai diubah — semuanya memaparkan lajur biasa.|{1} Satu senarai memaparkan lajur selain daripada yang biasa.|[2,*] :count senarai memaparkan lajur selain daripada yang biasa.',
+        'action' => 'Set semula semua senarai',
+        'confirm_title' => 'Set semula semua senarai?',
+        'confirm_description' => 'Setiap senarai kembali kepada lajur asalnya, mengikut susunan asal. Tiada apa-apa lagi pada akaun anda berubah, dan anda boleh menyusunnya semula bila-bila masa.',
+        'confirm_action' => 'Set semula semua senarai',
+        'confirming' => 'Menetapkan semula…',
+        'toast' => 'Semua senarai kembali kepada lajur biasa.',
     ],
 
     'delete' => [

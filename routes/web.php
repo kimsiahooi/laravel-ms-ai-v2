@@ -51,7 +51,7 @@ Route::prefix('admin')->name('admin.')->group(function (): void {
         // Which columns this admin looks at, per list. Inside the auth group because it
         // writes to their own row; `auth:central` makes $request->user() the CentralUser,
         // so the same controller serves this and the workspace route.
-        Route::put('table-columns', TableColumnController::class)->name('table-columns.update');
+        Route::put('table-columns', [TableColumnController::class, 'update'])->name('table-columns.update');
 
         Route::prefix('tenants')->name('tenants.')->group(function (): void {
             Route::get('/', [TenantController::class, 'index'])->name('index');

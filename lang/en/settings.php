@@ -50,7 +50,20 @@ return [
     'appearance' => [
         'head' => 'Appearance settings',
         'title' => 'Appearance',
-        'description' => 'Choose how the app looks on this device',
+        'description' => 'Choose how the app looks',
+        'theme_scope' => 'Applies to this device only.',
+    ],
+
+    'columns' => [
+        'title' => 'Table columns',
+        'description' => 'Which columns each list shows, and in what order. Follows your account, on every device.',
+        'customised' => '{0} No list has been changed — every one is showing its usual columns.|{1} One list is showing something other than its usual columns.|[2,*] :count lists are showing something other than their usual columns.',
+        'action' => 'Reset every list',
+        'confirm_title' => 'Reset every list?',
+        'confirm_description' => 'Every list goes back to the columns it started with, in their original order. Nothing else about your account changes, and you can rearrange them again at any time.',
+        'confirm_action' => 'Reset every list',
+        'confirming' => 'Resetting…',
+        'toast' => 'Every list is back to its usual columns.',
     ],
 
     'delete' => [
