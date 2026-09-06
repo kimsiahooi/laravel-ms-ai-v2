@@ -17,7 +17,24 @@ return [
 
     'ssr' => [
         'enabled' => true,
-        'url' => 'http://127.0.0.1:13714',
+
+        /*
+         * Where Laravel POSTs a page to have it rendered.
+         *
+         * The port is pinned rather than left to the default, and it has to match
+         * `inertia({ ssr: { port } })` in vite.config.ts — that option is what the built
+         * bundle binds, and it is baked in at build time. If the two disagree, Laravel
+         * posts into a closed port, falls back to client rendering, and **logs nothing**;
+         * see docs/CODING-STANDARDS.md.
+         *
+         * It is deliberate because 13714 is every Inertia app's default, and this server
+         * is expected to host a second Laravel app on another subdomain. Two SSR
+         * processes cannot hold one loopback port: the second to start fails to bind, and
+         * the first keeps answering — so one app would silently render the other app's
+         * pages. The next app on this box takes 13715.
+         */
+        'url' => env('INERTIA_SSR_URL', 'http://127.0.0.1:13714'),
+
         // 'bundle' => base_path('bootstrap/ssr/ssr.mjs'),
 
     ],

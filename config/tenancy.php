@@ -233,6 +233,9 @@ return [
      */
     'seeder_parameters' => [
         '--class' => 'TenantDatabaseSeeder', // root seeder class for a TENANT database
-        // '--force' => true, // This needs to be true to seed tenant databases in production
+        // Required in production: without it the seeder refuses to run there, and the
+        // day you add a permission to TenantPermissions you need `tenants:seed` to
+        // reach every existing workspace.
+        '--force' => true,
     ],
 ];

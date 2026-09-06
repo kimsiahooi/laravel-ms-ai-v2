@@ -17,7 +17,14 @@ export default defineConfig({
                 }),
             ],
         }),
-        inertia(),
+        // Where the built SSR bundle listens, baked in at build time. Both values must
+        // match `inertia.ssr.url` in config/inertia.php — see the note there.
+        //
+        // `host` is the one that matters in production: the default is `0.0.0.0`, so an
+        // unauthenticated render endpoint would be reachable from the internet on a
+        // public box. Laravel only ever posts to it over loopback, so binding it there
+        // costs nothing and removes the exposure entirely.
+        inertia({ ssr: { host: '127.0.0.1', port: 13714 } }),
         react({
             babel: {
                 plugins: ['babel-plugin-react-compiler'],
