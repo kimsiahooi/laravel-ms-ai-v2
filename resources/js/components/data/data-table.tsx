@@ -8,9 +8,10 @@ import type {
     SortingState,
 } from '@tanstack/react-table';
 import { useTable } from '@tanstack/react-table';
-import { ArrowDown, ArrowUp, ArrowUpDown, SearchX } from 'lucide-react';
+import { SearchX } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useCallback, useMemo } from 'react';
+import { ColumnHead } from '@/components/data/column-head';
 import {
     configurableColumns,
     defaultLayout,
@@ -30,7 +31,6 @@ import {
     Table,
     TableBody,
     TableCell,
-    TableHead,
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
@@ -331,63 +331,13 @@ export function DataTable<TRow extends RowData>({
                                 key={group.id}
                                 className="hover:bg-transparent"
                             >
-                                {group.headers.map((header) => {
-                                    const meta = header.column.columnDef.meta;
-                                    const sortable = filters.sortable.includes(
-                                        header.column.id,
-                                    );
-                                    const active =
-                                        sortable &&
-                                        filters.sort === header.column.id;
-
-                                    return (
-                                        <TableHead
-                                            key={header.id}
-                                            colSpan={header.colSpan}
-                                            aria-sort={
-                                                active
-                                                    ? filters.direction ===
-                                                      'asc'
-                                                        ? 'ascending'
-                                                        : 'descending'
-                                                    : undefined
-                                            }
-                                            className={cn(
-                                                'h-11 font-medium text-muted-foreground text-xs first:pl-4 last:pr-4',
-                                                columnClasses(meta),
-                                            )}
-                                        >
-                                            {header.isPlaceholder ? null : sortable ? (
-                                                <button
-                                                    type="button"
-                                                    onClick={header.column.getToggleSortingHandler()}
-                                                    className={cn(
-                                                        'group -mx-2 inline-flex items-center gap-1 rounded-sm px-2 py-1 hover:text-foreground focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
-                                                        meta?.align === 'end' &&
-                                                            'flex-row-reverse',
-                                                        active &&
-                                                            'text-foreground',
-                                                    )}
-                                                >
-                                                    <table.FlexRender
-                                                        header={header}
-                                                    />
-                                                    <SortIcon
-                                                        direction={
-                                                            active
-                                                                ? filters.direction
-                                                                : null
-                                                        }
-                                                    />
-                                                </button>
-                                            ) : (
-                                                <table.FlexRender
-                                                    header={header}
-                                                />
-                                            )}
-                                        </TableHead>
-                                    );
-                                })}
+                                {group.headers.map((header) => (
+                                    <ColumnHead
+                                        key={header.id}
+                                        header={header}
+                                        filters={filters}
+                                    />
+                                ))}
                             </TableRow>
                         ))}
                     </TableHeader>
@@ -494,23 +444,5 @@ export function DataTable<TRow extends RowData>({
                 />
             )}
         </Card>
-    );
-}
-
-/**
- * The sort arrow. An inactive column still renders one, dimmed, so a header does not
- * change width the moment it is clicked.
- */
-function SortIcon({ direction }: { direction: 'asc' | 'desc' | null }) {
-    if (direction === 'asc') {
-        return <ArrowUp className="size-3.5" />;
-    }
-
-    if (direction === 'desc') {
-        return <ArrowDown className="size-3.5" />;
-    }
-
-    return (
-        <ArrowUpDown className="size-3.5 opacity-40 transition-opacity group-hover:opacity-100" />
     );
 }

@@ -2984,7 +2984,12 @@ them all.
 - After heavy drift the reconciled order can read oddly, since each recovered column lands
   after its declared predecessor. Only reachable from a corrupted row, and every column is
   still present and aligned; Reset fixes it.
-- `data-table.tsx` is 516 lines and still wants its header-row block extracted.
+- ~~`data-table.tsx` wants its header-row block extracted.~~ Done: the header cell is now
+  `components/data/column-head.tsx`, taking the file from 516 to 448 lines. It uses the
+  standalone `FlexRender` export rather than the `table.FlexRender` bound to an instance,
+  which is what lets it live away from the table that owns one. Still above the ~250
+  signal; the three-way empty-state block is the next candidate, but it earns its own
+  change rather than riding along with this one.
 
 ## Phases 3–8 — Modules ⬜
 
