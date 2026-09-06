@@ -2975,6 +2975,14 @@ them all.
 
 #### Open, carried forward
 
+- **`csrfToken()` now lives in `lib/csrf.ts`.** It had been left in the hook that uses it,
+  on the note that it would move on its second consumer — which had the rule wrong.
+  Rule-of-three governs *components*; `lib/` is defined by kind, "pure functions, never
+  imports React". A pure function inside a React hook was the wrong home on day one, not
+  on its second caller. It gained a `typeof document` guard on the way, since it now sits
+  where something could reasonably call it at module scope, and the docblock records why
+  `decodeURIComponent` is load-bearing: the token is base64 and routinely carries `=` and
+  `+`, so sending it raw is a 419 with no explanation.
 - **Existing workspaces need `php artisan tenants:migrate`.** New ones are migrated on
   provision; the demo tenant was migrated by hand.
 - Per-user isolation was verified across two *different* user records — `owner@demo.test`

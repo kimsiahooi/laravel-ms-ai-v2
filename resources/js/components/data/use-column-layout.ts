@@ -7,6 +7,7 @@ import {
     isDefaultLayout,
 } from '@/components/data/column-layout';
 import { useTranslation } from '@/hooks/use-translation';
+import { csrfToken } from '@/lib/csrf';
 import { update as updateAdminColumns } from '@/routes/admin/table-columns';
 import { update as updateTenantColumns } from '@/routes/tenant/table-columns';
 
@@ -21,13 +22,6 @@ const SAVE_DELAY = 500;
  * a stack of identical complaints is worse than the silence it replaced.
  */
 const FAILURE_TOAST = 'table-columns-save-failed';
-
-/** Laravel's CSRF cookie, which it checks back as the `X-XSRF-TOKEN` header. */
-function csrfToken(): string {
-    const match = document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]*)/);
-
-    return match?.[1] === undefined ? '' : decodeURIComponent(match[1]);
-}
 
 /**
  * The reader's column layout for one list: seeded from what they saved, written back when
