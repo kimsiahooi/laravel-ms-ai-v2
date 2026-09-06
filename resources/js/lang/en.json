@@ -828,6 +828,7 @@
     "warehouses.column.created": "Added",
     "warehouses.column.creator": "Added by",
     "warehouses.column.name": "Warehouse",
+    "warehouses.column.needs_reorder": "Needs reorder",
     "warehouses.column.site": "Site",
     "warehouses.column.view_site": "View :name in sites",
     "warehouses.confirm.delete_description": "Movements already recorded through this warehouse keep their history — you simply will not be able to pick it for anything new.",

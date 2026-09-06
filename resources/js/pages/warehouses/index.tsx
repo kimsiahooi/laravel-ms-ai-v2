@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { usePermissions } from '@/hooks/use-permissions';
 import { useTranslation } from '@/hooks/use-translation';
 import { NewWarehouseButton } from '@/pages/warehouses/_components/new-warehouse-button';
+import { ReorderCountCell } from '@/pages/warehouses/_components/reorder-count-cell';
 import { WarehouseActions } from '@/pages/warehouses/_components/warehouse-actions';
 import { index as locationsIndex } from '@/routes/locations';
 import { index, show } from '@/routes/warehouses';
@@ -87,6 +88,17 @@ const columns = column.columns([
                 {/* i18n-allow */}
                 {row.original.address ?? '—'}
             </span>
+        ),
+    }),
+    // Late, but hidden at no width — and those are not in tension. Name, code, site
+    // and address are one thing: they say which building this is, and a live number
+    // dropped among them interrupts that. This belongs with what the row has *become*,
+    // beside the date. On a phone the three columns above are hidden anyway, so it
+    // still lands directly after the name, which is where it matters most.
+    column.accessor('needs_reorder', {
+        ...heading('warehouses.column.needs_reorder', { align: 'end' }),
+        cell: ({ row }) => (
+            <ReorderCountCell count={row.original.needs_reorder} />
         ),
     }),
     column.accessor('created_at', {

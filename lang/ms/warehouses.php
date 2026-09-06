@@ -27,6 +27,7 @@ return [
         'site' => 'Tapak',
         'address' => 'Alamat',
         'created' => 'Ditambah',
+        'needs_reorder' => 'Perlu pesan semula',
         'creator' => 'Ditambah oleh',
         'view_site' => 'Lihat :name dalam tapak',
     ],

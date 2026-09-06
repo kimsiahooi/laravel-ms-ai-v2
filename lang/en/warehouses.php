@@ -28,6 +28,7 @@ return [
         'site' => 'Site',
         'address' => 'Address',
         'created' => 'Added',
+        'needs_reorder' => 'Needs reorder',
         'creator' => 'Added by',
         'view_site' => 'View :name in sites',
     ],

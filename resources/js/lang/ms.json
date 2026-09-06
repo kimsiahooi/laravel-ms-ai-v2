@@ -828,6 +828,7 @@
     "warehouses.column.created": "Ditambah",
     "warehouses.column.creator": "Ditambah oleh",
     "warehouses.column.name": "Gudang",
+    "warehouses.column.needs_reorder": "Perlu pesan semula",
     "warehouses.column.site": "Tapak",
     "warehouses.column.view_site": "Lihat :name dalam tapak",
     "warehouses.confirm.delete_description": "Pergerakan yang telah direkodkan melalui gudang ini mengekalkan sejarahnya — anda cuma tidak boleh memilihnya untuk perkara baharu.",

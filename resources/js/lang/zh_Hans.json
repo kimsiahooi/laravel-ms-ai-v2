@@ -828,6 +828,7 @@
     "warehouses.column.created": "添加时间",
     "warehouses.column.creator": "添加人",
     "warehouses.column.name": "仓库",
+    "warehouses.column.needs_reorder": "需要补货",
     "warehouses.column.site": "站点",
     "warehouses.column.view_site": "在站点中查看:name",
     "warehouses.confirm.delete_description": "已通过该仓库记录的出入库仍保留其历史——你只是无法再为新的单据选择它。",

@@ -832,6 +832,7 @@ export type TranslationKey =
     | 'warehouses.column.created'
     | 'warehouses.column.creator'
     | 'warehouses.column.name'
+    | 'warehouses.column.needs_reorder'
     | 'warehouses.column.site'
     | 'warehouses.column.view_site'
     | 'warehouses.confirm.delete_description'

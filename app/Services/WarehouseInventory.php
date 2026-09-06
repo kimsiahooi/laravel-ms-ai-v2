@@ -11,6 +11,7 @@ use App\Http\Controllers\Concerns\SortsResourceQuery;
 use App\Models\Warehouse;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -56,6 +57,31 @@ final class WarehouseInventory
      * @var list<string>
      */
     public const SCOPES = ['attention', 'all'];
+
+    /**
+     * The one definition of "at or below its reorder level", as SQL.
+     *
+     * Written in the `rl` / `ws` aliases that {@see leg()} and {@see needsReorderCounts()}
+     * both give the two tables, so the row's badge, this screen's summary and the count
+     * beside a warehouse in the list are one rule rather than three that agree today.
+     * `min_stock IS NOT NULL` is redundant in the second query — it selects from that
+     * table — and stays so the string is the same string.
+     */
+    private const NEEDS_REORDER = 'rl.min_stock IS NOT NULL AND COALESCE(ws.quantity, 0) <= rl.min_stock';
+
+    /**
+     * The catalogue tables a `stockable_type` names, and the guard that keeps a
+     * threshold left behind by a deleted item from counting.
+     *
+     * The union excludes trashed rows a leg at a time, which the reorder-level query
+     * cannot do — it never touches the catalogue. Without this the number on the
+     * warehouse list would drift above the number on the warehouse's own screen the
+     * first time somebody deleted a product they had set a level for.
+     */
+    private const LIVE_STOCKABLE = "(rl.stockable_type = 'product' AND EXISTS ("
+        .'SELECT 1 FROM products p WHERE p.id = rl.stockable_id AND p.deleted_at IS NULL'
+        .")) OR (rl.stockable_type = 'raw_material' AND EXISTS ("
+        .'SELECT 1 FROM raw_materials m WHERE m.id = rl.stockable_id AND m.deleted_at IS NULL))';
 
     /**
      * The default: alphabetical.
@@ -147,6 +173,47 @@ final class WarehouseInventory
     }
 
     /**
+     * How many items are at or below their reorder level, per warehouse.
+     *
+     * For the warehouse **list**, where the question is which building needs somebody
+     * to look at it. One query for every row on the page rather than v1's one query per
+     * row — that shape put a UNION over the whole catalogue in a loop, so a page of
+     * twenty-five warehouses scanned the catalogue twenty-five times.
+     *
+     * **It reads `warehouse_reorder_levels`, not the catalogue, and that is what makes
+     * it cheap.** A threshold only exists as a row — see the migration on why zero is
+     * never stored — so an item with no row cannot possibly need reordering and there is
+     * nothing to scan for. The work is proportional to the decisions somebody has taken,
+     * not to catalogue × warehouses.
+     *
+     * Counted across every warehouse rather than the page's, because the page's ids are
+     * only known after paginating and the whole table is smaller than one page of the
+     * catalogue would be. Warehouses with none are absent from the result; the caller
+     * reads a missing key as zero.
+     *
+     * @return array<int, int> warehouse id => how many need reordering
+     */
+    public function needsReorderCounts(): array
+    {
+        /** @var Collection<int, object{warehouse_id: int, total: int}> $rows */
+        $rows = DB::table('warehouse_reorder_levels as rl')
+            ->leftJoin('warehouse_stocks as ws', function ($join): void {
+                $join->on('ws.warehouse_id', '=', 'rl.warehouse_id')
+                    ->on('ws.stockable_type', '=', 'rl.stockable_type')
+                    ->on('ws.stockable_id', '=', 'rl.stockable_id');
+            })
+            ->whereRaw(self::NEEDS_REORDER)
+            ->whereRaw('('.self::LIVE_STOCKABLE.')')
+            ->groupBy('rl.warehouse_id')
+            ->selectRaw('rl.warehouse_id as warehouse_id, COUNT(*) as total')
+            ->get();
+
+        return $rows
+            ->mapWithKeys(static fn (object $row): array => [(int) $row->warehouse_id => (int) $row->total])
+            ->all();
+    }
+
+    /**
      * Which rows the screen is asking about.
      *
      * The default is not "everything". A catalogue of five hundred items in a warehouse
@@ -212,8 +279,7 @@ final class WarehouseInventory
             StockItemType::RawMaterial => ['raw_materials', 'raw_material'],
         };
 
-        $alert = 'CASE WHEN rl.min_stock IS NOT NULL AND COALESCE(ws.quantity, 0) <= rl.min_stock'
-            .' THEN 1 ELSE 0 END as needs_reorder';
+        $alert = 'CASE WHEN '.self::NEEDS_REORDER.' THEN 1 ELSE 0 END as needs_reorder';
 
         return DB::table($table)
             ->addSelect([

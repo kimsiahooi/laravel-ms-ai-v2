@@ -57,7 +57,7 @@ final class WarehouseController
      */
     private const SORTABLE = ['name', 'code', 'created_at'];
 
-    public function index(Request $request): Response
+    public function index(Request $request, WarehouseInventory $inventory): Response
     {
         // The site filter. Ids are cast and then checked against the sites that
         // actually have a warehouse, so a hand-typed `?site=99999` or `?site=abc` is
@@ -80,11 +80,19 @@ final class WarehouseController
             $query->whereIn('location_id', $selected);
         }
 
+        // One query for the whole list, not one per row — see the service. Counted
+        // over every warehouse rather than the page's, because the page's ids are only
+        // known after paginating and a missing key already reads as zero.
+        $needsReorder = $inventory->needsReorderCounts();
+
         ['rows' => $warehouses, 'filters' => $filters] = $this->resourceList(
             request: $request,
             query: $query,
             sortable: self::SORTABLE,
-            toData: WarehouseData::fromWarehouse(...),
+            toData: static fn (Warehouse $warehouse): WarehouseData => WarehouseData::fromWarehouse(
+                $warehouse,
+                $needsReorder[$warehouse->id] ?? 0,
+            ),
             searchUsing: self::searchBy(...),
             extra: ['site' => $selected->implode(',')],
         );
@@ -128,10 +136,12 @@ final class WarehouseController
             perPage: $this->perPage($request),
         );
 
+        $summary = $inventory->counts($warehouse);
+
         return Inertia::render('warehouses/show', [
-            'warehouse' => WarehouseData::fromWarehouse($warehouse),
+            'warehouse' => WarehouseData::fromWarehouse($warehouse, $summary['needs_reorder']),
             'items' => $page['rows'],
-            'summary' => $inventory->counts($warehouse),
+            'summary' => $summary,
             // Which of the two empty states to show. An empty warehouse and an empty
             // workspace are the same picture and different problems: one is fixed by
             // moving stock in, the other by adding a product first, and offering the

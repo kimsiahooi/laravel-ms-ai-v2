@@ -27,6 +27,7 @@ return [
         'site' => '站点',
         'address' => '地址',
         'created' => '添加时间',
+        'needs_reorder' => '需要补货',
         'creator' => '添加人',
         'view_site' => '在站点中查看:name',
     ],

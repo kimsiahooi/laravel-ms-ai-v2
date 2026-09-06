@@ -140,6 +140,7 @@ code: string | null,
 address: string | null,
 created_at: string,
 creator: string | null,
+needs_reorder: number,
 };
 export type WarehouseItemData = {
 item: string,
