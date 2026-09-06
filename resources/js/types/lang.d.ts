@@ -108,6 +108,7 @@ export type TranslationKey =
     | 'common.columns.move_up'
     | 'common.columns.narrow_hidden'
     | 'common.columns.reset'
+    | 'common.columns.save_failed'
     | 'common.columns.sorted_hint'
     | 'common.columns.trigger'
     | 'common.confirm.type_to_confirm'

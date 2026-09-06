@@ -51,6 +51,7 @@ return [
         'narrow_hidden' => '在窄屏上同样会隐藏',
         'sorted_hint' => '列表正按此列排序',
         'last_hint' => '至少要保留一列',
+        'save_failed' => '无法保存你的列设置，重新加载后会恢复原样。',
     ],
 
     'list' => [

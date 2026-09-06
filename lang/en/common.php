@@ -61,6 +61,7 @@ return [
         'narrow_hidden' => 'Also hidden on narrow screens',
         'sorted_hint' => 'The list is sorted by this',
         'last_hint' => 'At least one column has to stay',
+        'save_failed' => 'Could not save your columns. They will go back to normal when you reload.',
     ],
 
     'list' => [

@@ -104,6 +104,7 @@
     "common.columns.move_up": "把:column往前移",
     "common.columns.narrow_hidden": "在窄屏上同样会隐藏",
     "common.columns.reset": "恢复默认",
+    "common.columns.save_failed": "无法保存你的列设置，重新加载后会恢复原样。",
     "common.columns.sorted_hint": "列表正按此列排序",
     "common.columns.trigger": "列",
     "common.confirm.type_to_confirm": "输入 :phrase 以确认",

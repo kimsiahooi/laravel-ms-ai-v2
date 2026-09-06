@@ -104,6 +104,7 @@
     "common.columns.move_up": "Alihkan :column ke hadapan",
     "common.columns.narrow_hidden": "Turut disembunyikan pada skrin sempit",
     "common.columns.reset": "Kembali kepada asal",
+    "common.columns.save_failed": "Tidak dapat menyimpan pilihan lajur anda. Ia akan kembali seperti biasa apabila anda muat semula.",
     "common.columns.sorted_hint": "Senarai ini disusun mengikut lajur ini",
     "common.columns.trigger": "Lajur",
     "common.confirm.type_to_confirm": "Taip :phrase untuk mengesahkan",

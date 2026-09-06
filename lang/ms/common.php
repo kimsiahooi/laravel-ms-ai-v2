@@ -51,6 +51,7 @@ return [
         'narrow_hidden' => 'Turut disembunyikan pada skrin sempit',
         'sorted_hint' => 'Senarai ini disusun mengikut lajur ini',
         'last_hint' => 'Sekurang-kurangnya satu lajur perlu kekal',
+        'save_failed' => 'Tidak dapat menyimpan pilihan lajur anda. Ia akan kembali seperti biasa apabila anda muat semula.',
     ],
 
     'list' => [

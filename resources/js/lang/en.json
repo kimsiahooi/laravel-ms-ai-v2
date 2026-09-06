@@ -104,6 +104,7 @@
     "common.columns.move_up": "Move :column earlier",
     "common.columns.narrow_hidden": "Also hidden on narrow screens",
     "common.columns.reset": "Reset to default",
+    "common.columns.save_failed": "Could not save your columns. They will go back to normal when you reload.",
     "common.columns.sorted_hint": "The list is sorted by this",
     "common.columns.trigger": "Columns",
     "common.confirm.type_to_confirm": "Type :phrase to confirm",

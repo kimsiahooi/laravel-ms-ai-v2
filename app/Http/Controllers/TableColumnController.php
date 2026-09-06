@@ -7,8 +7,8 @@ namespace App\Http\Controllers;
 use App\Enums\TableKey;
 use App\Models\CentralUser;
 use App\Models\User;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Validation\Rule;
 
 /**
@@ -28,10 +28,19 @@ use Illuminate\Validation\Rule;
  * form: nothing is typed, nothing is submitted, and there is no field for an error to land
  * under. A FormRequest here would exist only to be added to `check:validation`'s exempt
  * list, which is ceremony rather than safety.
+ *
+ * **Answers 204, and does not redirect back.** This is the one place the parallel with
+ * {@see LocaleController} breaks, and deliberately: a language switch is a navigation and
+ * should re-render, while this is a save nobody is waiting for. Returning `back()` made it
+ * an Inertia visit, which meant every failure went through Inertia's page lifecycle — a
+ * 500 or an expired session threw a full-screen error overlay in front of somebody who had
+ * ticked a checkbox, saying nothing about columns, while a dropped connection said nothing
+ * at all. An empty response lets the browser decide what a failure means; see
+ * use-column-layout.ts, which turns one into a sentence about columns.
  */
 final class TableColumnController extends Controller
 {
-    public function __invoke(Request $request): RedirectResponse
+    public function __invoke(Request $request): Response
     {
         // Every rule below has a translated message. `required_with` deliberately does
         // not appear: it has none, and `check:i18n` only reads app/Http/Requests, so an
@@ -53,7 +62,9 @@ final class TableColumnController extends Controller
         $user = $request->user();
 
         if (! $user instanceof User && ! $user instanceof CentralUser) {
-            return back();
+            // A console user, or a guard that resolved to neither. Nothing to write, and
+            // nothing worth telling the browser about a preference it cannot store.
+            return response()->noContent();
         }
 
         $stored = is_array($user->table_columns) ? $user->table_columns : [];
@@ -73,6 +84,6 @@ final class TableColumnController extends Controller
         // here and nowhere else, exactly as `locale` is.
         $user->forceFill(['table_columns' => $stored === [] ? null : $stored])->save();
 
-        return back();
+        return response()->noContent();
     }
 }

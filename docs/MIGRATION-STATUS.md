@@ -2911,6 +2911,18 @@ would be guessing at a shape nothing needs yet.
 - **No `TenantPermissions` mapping, deliberately.** An unmapped route stays open to any
   signed-in user, which is right for a preference about the reader rather than a resource.
 - Saving is debounced 500 ms: six changes in a row produced **one** request, measured.
+- **Saved with `fetch` against a 204, not through Inertia's router**, and a failure is
+  visible. The first cut used `router.put` for the CSRF handling it gives away free, and
+  the cost was that a background save joined the page lifecycle. Driven with the endpoint
+  forced to 500: the column stayed on screen looking saved, no toast appeared, and what the
+  reader *did* get was Inertia's full-screen error overlay — which fires for an expired
+  session too, the likeliest real case, and says nothing about columns. A dropped
+  connection was silent, and so was a 422. Now every failure shape lands in one `catch` and
+  becomes one sentence.
+- **A failed save keeps the change and says so.** Reverting is the other honest option and
+  the worse one: the arrangement still works for this session, which is what was asked for,
+  and taking it back over an unrelated server fault punishes the reader twice. The toast
+  carries a stable id, so five failed saves in a row produced exactly **one** toast.
 
 **The seed is a server prop, and that is the whole SSR story.** The table builds its header
 row from it during render, so both sides start from the same value. Verified the hard way
