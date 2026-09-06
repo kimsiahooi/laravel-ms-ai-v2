@@ -2987,9 +2987,13 @@ them all.
 - ~~`data-table.tsx` wants its header-row block extracted.~~ Done: the header cell is now
   `components/data/column-head.tsx`, taking the file from 516 to 448 lines. It uses the
   standalone `FlexRender` export rather than the `table.FlexRender` bound to an instance,
-  which is what lets it live away from the table that owns one. Still above the ~250
-  signal; the three-way empty-state block is the next candidate, but it earns its own
-  change rather than riding along with this one.
+  which is what lets it live away from the table that owns one. The three-way empty-state
+  block followed into `components/data/list-empty.tsx`, taking it to 386 — and taking `t`,
+  `Button`, `EmptyState` and `SearchX` out of `data-table.tsx` entirely, which is the sign
+  the seam was in the right place. `ListEmpty` derives `narrowed` and `searching` from
+  `search` and `filter.count` rather than being handed them, so there is no second copy of
+  a reading the table also makes. Still above the ~250 signal, and now mostly docblock and
+  the table options; no obvious third extraction, so leaving it.
 
 ## Phases 3–8 — Modules ⬜
 

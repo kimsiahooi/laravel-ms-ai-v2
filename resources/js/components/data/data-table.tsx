@@ -8,7 +8,6 @@ import type {
     SortingState,
 } from '@tanstack/react-table';
 import { useTable } from '@tanstack/react-table';
-import { SearchX } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useCallback, useMemo } from 'react';
 import { ColumnHead } from '@/components/data/column-head';
@@ -20,12 +19,11 @@ import {
     toColumnVisibility,
 } from '@/components/data/column-layout';
 import { ColumnPanel } from '@/components/data/column-panel';
+import { ListEmpty } from '@/components/data/list-empty';
 import { ListToolbar } from '@/components/data/list-toolbar';
 import { PaginationBar } from '@/components/data/pagination-bar';
 import { columnClasses, features } from '@/components/data/table';
 import { useColumnLayout } from '@/components/data/use-column-layout';
-import { EmptyState } from '@/components/feedback/empty-state';
-import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import {
     Table,
@@ -34,7 +32,6 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import { useTranslation } from '@/hooks/use-translation';
 import { cn } from '@/lib/utils';
 import type { FilterApi, Paginated, ResourceFilters } from '@/types';
 
@@ -113,8 +110,6 @@ export function DataTable<TRow extends RowData>({
     only,
     toolbar,
 }: Props<TRow>) {
-    const { t } = useTranslation();
-
     // Both slices are derived from the server's answer, never mirrored into state.
     // A second copy would lag the props by one round trip, and the table would show a
     // sort arrow the rows do not actually have.
@@ -287,11 +282,10 @@ export function DataTable<TRow extends RowData>({
     });
 
     const rows = table.getRowModel().rows;
-    const searching = filters.search !== '';
-    // Narrowed by anything at all. The distinction matters twice below: a list showing
-    // nothing because of a filter is not an empty list, and hiding the toolbar in that
-    // state would take away the only control that can undo it.
-    const narrowed = searching || filter.count > 0;
+    // Narrowed by anything at all — hiding the toolbar in that state would take away the
+    // only control that can undo it. {@see ListEmpty} derives the same reading for its
+    // own purposes rather than being handed this one.
+    const narrowed = filters.search !== '' || filter.count > 0;
 
     return (
         <Card className="gap-0 overflow-hidden py-0">
@@ -368,72 +362,16 @@ export function DataTable<TRow extends RowData>({
                         ))}
                     </TableBody>
                 </Table>
-            ) : narrowed ? (
-                <div className="px-4 py-12">
-                    <EmptyState
-                        icon={SearchX}
-                        title={noMatch?.title ?? t('common.list.no_matches')}
-                        description={
-                            // The search wording names the term, which is only
-                            // meaningful when there is one. A list narrowed by a filter
-                            // alone gets its own sentence rather than "nothing matches
-                            // ''".
-                            searching
-                                ? (noMatch?.description ??
-                                  t('common.list.no_matches_hint', {
-                                      search: filters.search,
-                                  }))
-                                : t('common.list.no_matches_filtered')
-                        }
-                        action={
-                            // One button per thing that can be undone, rather than one
-                            // compound label that has to describe every combination.
-                            <>
-                                {searching && (
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        onClick={() => onSearch('')}
-                                    >
-                                        {t('common.actions.clear_search')}
-                                    </Button>
-                                )}
-                                {filter.count > 0 && (
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        onClick={filter.clear}
-                                    >
-                                        {t('common.filter.clear_all')}
-                                    </Button>
-                                )}
-                            </>
-                        }
-                    />
-                </div>
-            ) : page.total > 0 ? (
-                // A real state, not a theoretical one: delete the last row of the last
-                // page and the redirect carries `?page=N` to a page that no longer
-                // exists. v1 showed "no results match ''" here, quoting a search
-                // nobody made.
-                <div className="px-4 py-12">
-                    <EmptyState
-                        icon={SearchX}
-                        title={t('common.list.page_empty')}
-                        description={t('common.list.page_empty_hint')}
-                        action={
-                            <Button
-                                type="button"
-                                variant="outline"
-                                onClick={() => onPage(1)}
-                            >
-                                {t('common.list.back_to_first')}
-                            </Button>
-                        }
-                    />
-                </div>
             ) : (
-                <div className="px-4 py-12">{emptyState}</div>
+                <ListEmpty
+                    search={filters.search}
+                    noMatch={noMatch}
+                    filter={filter}
+                    total={page.total}
+                    emptyState={emptyState}
+                    onClearSearch={() => onSearch('')}
+                    onFirstPage={() => onPage(1)}
+                />
             )}
 
             {page.total > 0 && (
