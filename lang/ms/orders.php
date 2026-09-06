@@ -16,6 +16,8 @@ return [
         'quantity_placeholder' => 'cth. 12',
         'unit_price' => 'Harga seunit',
         'unit_price_placeholder' => 'cth. 9.50',
+        'unit_cost' => 'Kos seunit',
+        'unit_cost_placeholder' => 'cth. 9.50',
         'discount' => 'Diskaun',
         'discount_value' => 'Nilai diskaun',
         'taxable' => 'Bercukai',

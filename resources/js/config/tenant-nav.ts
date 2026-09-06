@@ -8,6 +8,7 @@ import {
     MapPin,
     Package,
     Settings2,
+    ShoppingCart,
     Tags,
     Truck,
     Warehouse,
@@ -17,6 +18,7 @@ import { index as categories } from '@/routes/categories';
 import { index as customers } from '@/routes/customers';
 import { index as locations } from '@/routes/locations';
 import { index as products } from '@/routes/products';
+import { index as purchaseOrders } from '@/routes/purchase-orders';
 import { index as rawMaterials } from '@/routes/raw-materials';
 import { index as businessSettings } from '@/routes/settings';
 import { index as stockMovements } from '@/routes/stock-movements';
@@ -43,7 +45,7 @@ import type { TenantNavGroup } from '@/types/navigation';
  *
  * Each module adds its own line as it lands. Groups arrive with their first member
  * rather than up front — an empty group renders as a heading with nothing under it.
- * Still to come: the rest of Stock, then Orders, Insights, Team.
+ * Still to come: the rest of Orders, then Insights, Team.
  */
 export function tenantNavGroups(
     can?: (permission: string) => boolean,
@@ -127,6 +129,21 @@ export function tenantNavGroups(
                     href: stockTakes(),
                     icon: ClipboardList,
                     permission: 'stock-takes.view',
+                },
+            ],
+        },
+        {
+            // "Orders", plural and labelled from its first member, because the other
+            // three — purchase returns, sales orders, sales returns — are the rest of
+            // this phase rather than a someday. Purchases sit above sales when they
+            // arrive: a workspace buys before it has anything to sell.
+            label: 'tenant.nav.orders',
+            items: [
+                {
+                    title: 'purchase-orders.title',
+                    href: purchaseOrders(),
+                    icon: ShoppingCart,
+                    permission: 'purchase-orders.view',
                 },
             ],
         },

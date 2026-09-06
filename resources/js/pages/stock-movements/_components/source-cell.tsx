@@ -1,8 +1,20 @@
+import type { InertiaLinkProps } from '@inertiajs/react';
 import { InlineLink } from '@/components/inline-link';
 import { useTranslation } from '@/hooks/use-translation';
+import { show as showPurchaseOrder } from '@/routes/purchase-orders';
 import { show as showStockTake } from '@/routes/stock-takes';
 
 type Source = App.Enums.MovementSource;
+
+/** Where each source can be looked at, or null where there is nothing to look at. */
+const LINKS: Record<
+    Source,
+    ((id: number) => NonNullable<InertiaLinkProps['href']>) | null
+> = {
+    stock_take: (id) => showStockTake({ stockTake: id }),
+    stock_transfer: null,
+    purchase_order: (id) => showPurchaseOrder({ purchaseOrder: id }),
+};
 
 /**
  * What caused this row, named in the reader's language and opened where there is
@@ -14,10 +26,15 @@ type Source = App.Enums.MovementSource;
  * language into a column every locale reads. The row now holds `stock_take` and `12`, and
  * the sentence is built at render time out of the asking reader's bundle.
  *
- * **Only some sources have a screen.** A stock take has a count sheet to go and look at; a
- * transfer does not, because transfers are a list with no detail page. Rather than link to
- * something that does not exist, the label renders as plain text — and the day transfers
- * grow a detail screen, this is the one place that changes.
+ * **Only some sources have a screen.** A stock take has a count sheet and a purchase order
+ * has its document, so both are followable — and a receipt is exactly the row somebody
+ * questions ("where did forty of these come from?"), which makes the link back to the order
+ * the shortest answer there is. A transfer has no detail page, so its label renders as plain
+ * text rather than pointing at something that does not exist; the day transfers grow one,
+ * this is the single place that changes.
+ *
+ * `LINKS` is a `Record` over the whole enum rather than a chain of `if`s, so a fifth source
+ * is a compile error here until somebody has said whether it can be opened.
  */
 export function SourceCell({
     type,
@@ -35,14 +52,11 @@ export function SourceCell({
     }
 
     const label = t(`stock-movements.source.${type}`, { id });
+    const href = LINKS[type];
 
-    if (type === 'stock_take') {
-        return (
-            <InlineLink href={showStockTake({ stockTake: id })}>
-                {label}
-            </InlineLink>
-        );
+    if (href === null) {
+        return <span className="whitespace-nowrap">{label}</span>;
     }
 
-    return <span className="whitespace-nowrap">{label}</span>;
+    return <InlineLink href={href(id)}>{label}</InlineLink>;
 }

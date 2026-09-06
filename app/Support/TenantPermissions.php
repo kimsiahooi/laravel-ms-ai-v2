@@ -98,6 +98,16 @@ final class TenantPermissions
         'stock-takes.lines' => 'stock-takes.create',
         'purchase-orders.receive' => 'purchase-orders.update',
         'purchase-orders.cancel' => 'purchase-orders.update',
+        // The two form pages, and this pair is a **security fix rather than a nicety**.
+        // routeMap() below auto-maps only index/store/show/update/destroy, so a GET page
+        // named `purchase-orders.create` appears in no map at all — and
+        // {@see AuthorizeTenantRoute} treats an unmapped route as open to any signed-in
+        // user. The blank order form and the seeded edit form both render the whole
+        // supplier and material catalog, so unmapped means anybody with a login reads
+        // them. Both point at permissions that already exist and are already seeded, so
+        // no tenant needs re-seeding.
+        'purchase-orders.create' => 'purchase-orders.create',
+        'purchase-orders.edit' => 'purchase-orders.update',
         'purchase-returns.complete' => 'purchase-returns.update',
         'purchase-returns.cancel' => 'purchase-returns.update',
         'sales-orders.fulfill' => 'sales-orders.update',

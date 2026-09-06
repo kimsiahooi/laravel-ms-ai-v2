@@ -123,5 +123,6 @@ return [
     'source' => [
         'stock_take' => 'Stock take #:id',
         'stock_transfer' => 'Transfer #:id',
+        'purchase_order' => 'Purchase order #:id',
     ],
 ];

@@ -26,6 +26,9 @@ use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 #[TypeScript]
 enum MovementSource: string
 {
+    /** A receipt against a purchase order. Has a screen: the order itself. */
+    case PurchaseOrder = 'purchase_order';
+
     case StockTake = 'stock_take';
     case StockTransfer = 'stock_transfer';
 }

@@ -278,3 +278,24 @@ export function formatMoney(amount: string, currency: string): string {
 
     return `${currency} ${negative ? '-' : ''}${body}`;
 }
+
+/**
+ * ISO-8601 → `2026-10-15`, on the wall clock of `timeZone`.
+ *
+ * What `<input type="date">` needs, and the exact inverse of how a picked day is stored:
+ * the server anchors the day to its start in the picker's zone, and this reads it back on
+ * that same clock. Without it the form would seed from a UTC instant and offer a day the
+ * person did not choose.
+ *
+ * Padded by hand rather than through `Intl`, for the reason {@see zoned} gives — digits
+ * are ours, formatting is not.
+ */
+export function formatDateInput(iso: string, timeZone: string): string {
+    const parts = zoned(iso, timeZone);
+
+    if (parts === null) {
+        return '';
+    }
+
+    return `${parts.year}-${pad(parts.month)}-${pad(parts.day)}`;
+}

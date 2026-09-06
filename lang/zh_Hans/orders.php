@@ -16,6 +16,8 @@ return [
         'quantity_placeholder' => '例如：12',
         'unit_price' => '单价',
         'unit_price_placeholder' => '例如：9.50',
+        'unit_cost' => '单位成本',
+        'unit_cost_placeholder' => '例如 9.50',
         'discount' => '折扣',
         'discount_value' => '折扣值',
         'taxable' => '计税',

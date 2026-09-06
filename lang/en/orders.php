@@ -25,6 +25,8 @@ return [
         'quantity_placeholder' => 'e.g. 12',
         'unit_price' => 'Unit price',
         'unit_price_placeholder' => 'e.g. 9.50',
+        'unit_cost' => 'Unit cost',
+        'unit_cost_placeholder' => 'e.g. 9.50',
         'discount' => 'Discount',
         // Never on screen: the accessible name of the box beside the discount type,
         // which the visible "Discount" label already names for a sighted reader.

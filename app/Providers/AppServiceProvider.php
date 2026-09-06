@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Models\Product;
+use App\Models\PurchaseOrder;
 use App\Models\RawMaterial;
 use App\Models\StockTake;
 use App\Models\StockTransfer;
@@ -74,6 +75,7 @@ class AppServiceProvider extends ServiceProvider
             // What a ledger row points back at — see the `source` columns on
             // `stock_movements`. Same reasoning as the two above, and the same table:
             // these strings are written into rows nobody is allowed to rewrite.
+            'purchase_order' => PurchaseOrder::class,
             'stock_take' => StockTake::class,
             'stock_transfer' => StockTransfer::class,
         ]);

@@ -78,6 +78,41 @@ bom: App.Data.BomItemData[],
 created_at: string,
 creator: string | null,
 };
+export type PurchaseOrderData = {
+id: number,
+number: string,
+supplier: string | null,
+supplier_id: number | null,
+status: App.Enums.PurchaseOrderStatus,
+currency: string,
+exchange_rate: string,
+tax_rate: string,
+subtotal: string,
+discount_total: string,
+tax_total: string,
+total: string,
+notes: string | null,
+expected_date: string | null,
+created_by: string | null,
+received_by: string | null,
+received_at: string | null,
+received_warehouse: string | null,
+line_count: number,
+created_at: string,
+};
+export type PurchaseOrderItemData = {
+id: number,
+item: string,
+name: string | null,
+sku: string | null,
+unit: App.Enums.Unit | null,
+quantity: string,
+unit_cost: string,
+discount_type: App.Enums.DiscountType,
+discount_value: string,
+taxable: boolean,
+line_total: string,
+};
 export type RawMaterialData = {
 id: number,
 name: string,
@@ -94,6 +129,7 @@ value: string,
 name: string,
 sku: string,
 type: App.Enums.StockItemType,
+default_amount: string | null,
 };
 export type StockMovementData = {
 id: number,
@@ -202,12 +238,13 @@ export type Country = 'MY' | 'SG';
 export type Dimension = 'mass' | 'volume' | 'length' | 'count';
 export type DiscountType = 'none' | 'percent' | 'amount';
 export type DocumentType = 'purchase_order' | 'purchase_return' | 'sales_order' | 'sales_return';
-export type MovementSource = 'stock_take' | 'stock_transfer';
+export type MovementSource = 'purchase_order' | 'stock_take' | 'stock_transfer';
 export type NumberReset = 'yearly' | 'never';
+export type PurchaseOrderStatus = 'pending' | 'received' | 'cancelled';
 export type StockItemType = 'product' | 'raw_material';
 export type StockMovementReason = 'adjustment' | 'stock_take' | 'transfer_in' | 'transfer_out' | 'purchase_receipt' | 'purchase_return' | 'sales_fulfillment' | 'sales_return' | 'production_consume' | 'production_output';
 export type StockTakeStatus = 'draft' | 'posted' | 'cancelled';
-export type TableKey = 'admin-tenants' | 'admin-tenants-trashed' | 'categories' | 'customers' | 'locations' | 'products' | 'raw-materials' | 'stock-movements' | 'stock-takes' | 'stock-transfers' | 'suppliers' | 'warehouse-items' | 'warehouses';
+export type TableKey = 'admin-tenants' | 'admin-tenants-trashed' | 'categories' | 'customers' | 'locations' | 'products' | 'purchase-orders' | 'raw-materials' | 'stock-movements' | 'stock-takes' | 'stock-transfers' | 'suppliers' | 'warehouse-items' | 'warehouses';
 export type Unit = 'g' | 'kg' | 't' | 'ml' | 'l' | 'mm' | 'cm' | 'm' | 'pcs' | 'box' | 'roll' | 'sheet' | 'pair' | 'set';
 }
 }

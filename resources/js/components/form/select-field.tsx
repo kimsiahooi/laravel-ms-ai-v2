@@ -41,6 +41,17 @@ type Props = {
     placeholder: TranslationKey;
     /** Adds a "not set" entry and drops the required marker. */
     optional?: boolean;
+    /**
+     * Told what was picked, when something else on the form depends on it.
+     *
+     * The field keeps owning the value — the hidden input is still what the server
+     * reads, and a caller that ignores this gets exactly the control it had before.
+     * The same escape hatch {@see StockPickerField} carries, added for the same kind
+     * of reason: a purchase order's exchange rate is only a question while the order
+     * is in a currency other than the workspace's own, and the currency picker is the
+     * only thing that knows which it is.
+     */
+    onChange?: (value: string) => void;
 };
 
 /**
@@ -72,6 +83,7 @@ export function SelectField({
     defaultValue,
     placeholder,
     optional,
+    onChange,
 }: Props) {
     const { t } = useTranslation();
     const id = useId();
@@ -115,7 +127,12 @@ export function SelectField({
             */}
             <Select
                 value={value}
-                onValueChange={(next) => setValue(next === NONE ? '' : next)}
+                onValueChange={(next) => {
+                    const chosen = next === NONE ? '' : next;
+
+                    setValue(chosen);
+                    onChange?.(chosen);
+                }}
             >
                 <SelectTrigger
                     id={id}

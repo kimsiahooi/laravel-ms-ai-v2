@@ -33,8 +33,17 @@ type Props = {
     optional?: boolean;
     autoFocus?: boolean;
     autoComplete?: string;
-    /** `email` and `tel` get the right keyboard on a phone. */
-    type?: 'text' | 'email' | 'tel';
+    /**
+     * `email` and `tel` get the right keyboard on a phone; `date` gets the platform's
+     * own calendar and hands back a `Y-m-d` string.
+     *
+     * `date` is not the "date picker gets its own component" the note below rules out
+     * — that is about a widget. This is still one `<Input>` with one value, the way
+     * `email` is, and the browser's picker is the platform doing well what a package
+     * would be added to do. Its rendered VALUE is always `Y-m-d`, never a localised
+     * one, so it is safe under SSR where a formatted date would not be.
+     */
+    type?: 'text' | 'email' | 'tel' | 'date';
     /**
      * The on-screen keyboard for a field that holds digits.
      *

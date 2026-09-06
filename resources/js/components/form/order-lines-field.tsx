@@ -28,14 +28,22 @@ export type OrderLine = {
     taxable: boolean;
 };
 
-/** The columns after the item, which is headed by whatever the module calls its goods. */
-const HEADINGS: TranslationKey[] = [
-    'orders.line.quantity',
-    'orders.line.unit_price',
-    'orders.line.discount',
-    'orders.line.taxable',
-    'orders.line.amount',
-];
+/**
+ * The columns after the item.
+ *
+ * A function of the price label rather than a module constant: what that column is
+ * called depends on which side of the trade is asking, and a heading that disagreed
+ * with the field beneath it would be worse than no heading at all.
+ */
+function headingsFor(priceLabel: TranslationKey): TranslationKey[] {
+    return [
+        'orders.line.quantity',
+        priceLabel,
+        'orders.line.discount',
+        'orders.line.taxable',
+        'orders.line.amount',
+    ];
+}
 
 /**
  * The lines of an order: what is being bought or sold, at what price, and what the whole
@@ -68,6 +76,9 @@ export function OrderLinesField({
     currency,
     taxRate,
     itemLabel,
+    priceField = 'unit_price',
+    priceLabel = 'orders.line.unit_price',
+    pricePlaceholder = 'orders.line.unit_price_placeholder',
 }: {
     lines: OrderLine[];
     onChange: (lines: OrderLine[]) => void;
@@ -79,8 +90,14 @@ export function OrderLinesField({
     taxRate: string;
     /** `orders.line.item`, unless a module has its own word for what it sells. */
     itemLabel: TranslationKey;
+    /** The money column's wire name — see {@link OrderLineRow}. Selling by default. */
+    priceField?: string;
+    /** What that column is called. Defaults to the selling wording. */
+    priceLabel?: TranslationKey;
+    pricePlaceholder?: TranslationKey;
 }) {
     const { t } = useTranslation();
+    const headings = headingsFor(priceLabel);
     const totals = orderTotals(lines, taxRate);
 
     // Every row is handed the rate; only the tax line's wording has a `:rate` in it.
@@ -124,12 +141,12 @@ export function OrderLinesField({
                 back to the label once the header disappears.
             */}
             <div className={cn('hidden gap-3 sm:grid', COLUMNS)}>
-                {[itemLabel, ...HEADINGS].map((heading, index) => (
+                {[itemLabel, ...headings].map((heading, index) => (
                     <span
                         key={heading}
                         className={cn(
                             'font-medium text-muted-foreground text-xs',
-                            index === HEADINGS.length && 'text-right',
+                            index === headings.length && 'text-right',
                         )}
                     >
                         {t(heading)}
@@ -149,6 +166,9 @@ export function OrderLinesField({
                 <ul className="space-y-4 sm:space-y-3">
                     {lines.map((line, index) => (
                         <OrderLineRow
+                            priceField={priceField}
+                            priceLabel={priceLabel}
+                            pricePlaceholder={pricePlaceholder}
                             key={line.key}
                             line={line}
                             index={index}

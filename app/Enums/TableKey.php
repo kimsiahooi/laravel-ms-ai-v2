@@ -31,6 +31,7 @@ enum TableKey: string
     case Customers = 'customers';
     case Locations = 'locations';
     case Products = 'products';
+    case PurchaseOrders = 'purchase-orders';
     case RawMaterials = 'raw-materials';
     case StockMovements = 'stock-movements';
     case StockTakes = 'stock-takes';

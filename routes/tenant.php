@@ -12,6 +12,7 @@ use App\Http\Controllers\Tenant\CustomerController;
 use App\Http\Controllers\Tenant\LocationController;
 use App\Http\Controllers\Tenant\MediaController;
 use App\Http\Controllers\Tenant\ProductController;
+use App\Http\Controllers\Tenant\PurchaseOrderController;
 use App\Http\Controllers\Tenant\RawMaterialController;
 use App\Http\Controllers\Tenant\StockLookupController;
 use App\Http\Controllers\Tenant\StockMovementController;
@@ -204,6 +205,44 @@ Route::middleware(['web', InitializeTenancyByPath::class, SetTenantUrlDefault::c
                 Route::post('{stockTake}/post', [StockTakeController::class, 'post'])->name('post');
                 Route::post('{stockTake}/cancel', [StockTakeController::class, 'cancel'])->name('cancel');
                 Route::delete('{stockTake}', [StockTakeController::class, 'destroy'])->name('destroy');
+            });
+
+            // The first module with form *pages* rather than a dialog over a list: an
+            // order is a header and a grid of priced lines, which is not something a
+            // modal holds. So `create` and `edit` are real GET routes here.
+            //
+            // **`create` is declared before `{purchaseOrder}`, and the order matters.**
+            // Laravel matches in declaration order, so the reverse would send /create to
+            // `show` and 404 looking for an order numbered "create".
+            //
+            // Every name here is load-bearing: TenantPermissions maps `receive` and
+            // `cancel` to `purchase-orders.update` by override, and `create` and `edit`
+            // by override too — without those two, AuthorizeTenantRoute would find no
+            // entry for the form pages and treat them as open to any signed-in user.
+            //
+            // The parameter is `{purchaseOrder}` rather than `{purchase_order}`, because
+            // that is the name Laravel resolves the model binding from.
+            //
+            // Delete is a soft delete, and only a pending order may be deleted at all —
+            // a received one is named as the source of every ledger row it wrote. See
+            // the controller.
+            Route::prefix('purchase-orders')->name('purchase-orders.')->group(function (): void {
+                Route::get('/', [PurchaseOrderController::class, 'index'])->name('index');
+                Route::get('create', [PurchaseOrderController::class, 'create'])->name('create');
+                Route::post('/', [PurchaseOrderController::class, 'store'])->name('store');
+                Route::get('{purchaseOrder}', [PurchaseOrderController::class, 'show'])->name('show');
+                Route::get('{purchaseOrder}/edit', [PurchaseOrderController::class, 'edit'])->name('edit');
+
+                // PATCH, though the whole order arrives: the lines are replaced wholesale
+                // but the document is not — its number, its status and its receipt
+                // columns are untouchable from here, so this is a partial update of the
+                // row however complete the form is.
+                Route::patch('{purchaseOrder}', [PurchaseOrderController::class, 'update'])->name('update');
+
+                // The two transitions, both out of pending and both terminal.
+                Route::post('{purchaseOrder}/receive', [PurchaseOrderController::class, 'receive'])->name('receive');
+                Route::post('{purchaseOrder}/cancel', [PurchaseOrderController::class, 'cancel'])->name('cancel');
+                Route::delete('{purchaseOrder}', [PurchaseOrderController::class, 'destroy'])->name('destroy');
             });
 
             // A read-only lookup the movement dialog makes while somebody is choosing,

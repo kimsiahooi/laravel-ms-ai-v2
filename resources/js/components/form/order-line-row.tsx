@@ -51,6 +51,9 @@ export function OrderLineRow({
     errors,
     currency,
     itemLabel,
+    priceField,
+    priceLabel,
+    pricePlaceholder,
     onChange,
     onRemove,
 }: {
@@ -60,6 +63,21 @@ export function OrderLineRow({
     errors: Record<string, string>;
     currency: string;
     itemLabel: TranslationKey;
+    /**
+     * What the money column is called on the wire — `unit_cost` when buying,
+     * `unit_price` when selling.
+     *
+     * A prop rather than a constant because the name has to match the server's field
+     * exactly in two places at once: the input's `name`, which is what Inertia
+     * serialises, and the error key, which is what `runGate`'s `focusFirstInvalid`
+     * looks the input up by. Bridging the two names in the page instead left the
+     * message rendering correctly under a box that focus could no longer find.
+     */
+    priceField: string;
+    /** What that column is CALLED — buying costs, selling prices. */
+    priceLabel: TranslationKey;
+    /** Its placeholder, which has to move with the label. */
+    pricePlaceholder: TranslationKey;
     onChange: (line: OrderLine) => void;
     onRemove: () => void;
 }) {
@@ -114,12 +132,12 @@ export function OrderLineRow({
             />
 
             <DecimalCell
-                name={name('unit_price')}
-                label="orders.line.unit_price"
-                placeholder="orders.line.unit_price_placeholder"
+                name={name(priceField)}
+                label={priceLabel}
+                placeholder={pricePlaceholder}
                 value={line.unitPrice}
                 onChange={(unitPrice) => set({ unitPrice })}
-                error={error('unit_price')}
+                error={error(priceField)}
             />
 
             <div className="space-y-2">

@@ -3531,13 +3531,153 @@ by the reader, not frozen by the poster.
 - Phase 5 should pass `$source` from every order Action rather than inventing a note, and
   add its case to `MovementSource`.
 
+## Phase 5 · Orders — the money foundation, and purchase orders ✅
+
+The first modules that handle money, and the first full-page form in the app.
+
+### The foundation, built before any order screen
+
+Four modules depend on all of it, and retrofitting money into four shipped modules is the
+mistake this ordering exists to avoid. Business settings and document numbering came
+forward from phase 7, which had scheduled them *after* the orders that need them; only the
+money half moved, and the company's address, e-invoice identity and logo stayed behind with
+phase 7's own screen.
+
+**Money is computed with bcmath and stored.** v1 kept no totals at all and recomputed them
+in its Data classes as PHP floats, on every read — money in binary floating point, and a
+figure re-derived rather than recorded. `App\Support\Money` does the arithmetic,
+`App\Support\OrderTotals` decides what an order comes to, and the Action stores the four
+figures. A total is never accepted from a request.
+
+`resources/js/lib/money.ts` mirrors it so the form can show a running total without a round
+trip. The arithmetic exists twice because that is unavoidable; the two disagreeing is not.
+Both were run over the same ten cases — percent and fixed discounts, a discount larger than
+its line, an untaxed line among taxed ones, 33.333% off at 8.25% tax, a blank line, and the
+largest value `decimal(15,4)` holds — and they agree **byte for byte**. The mirror uses
+scaled `BigInt`, not doubles: fifteen significant digits is the edge of what a double holds
+exactly, and v1 did this half in floats.
+
+**Tax is rounded once, at the order.** Rounding each line and summing gives a different
+answer — usually by a cent, always on the document somebody reconciles.
+
+Numbering fixes three v1 faults: only sales orders were ever numbered (`purchase_order_prefix`
+was declared, seeded, tested and read by no code); there was no unique index on the number,
+so an auto number could collide with a typed one and v1 needed a retry loop; and the
+financial-year label was a private controller method, so only that controller could agree
+with it. The generator also **refuses to run outside a transaction** rather than allocating
+a number it cannot promise is unique.
+
+Products and raw materials gained a nullable `default_price` / `default_cost` — a
+suggestion a line starts from, never the record.
+
+### Purchase orders
+
+Chosen first because it has no upstream order dependency (the returns read their parent
+order's rows and status, so they cannot come first), its stock posting is IN-only so there
+is no shortfall path on day one, and the other three modules copy its shape.
+
+- Two transitions, both out of Pending, both terminal.
+- `ReceivePurchaseOrder` re-reads the status under `lockForUpdate()` inside its transaction
+  and throws on the lost race — the shape `PostStockTake` settled — then writes one movement
+  per line with `StockMovementReason::PurchaseReceipt` and **`$source: $order`**, which is
+  what the `source` column was added for last week.
+- No `raw_material_snapshot` JSON, unlike v1: the relation is `withTrashed()`, so an
+  archived material still names itself and a corrected catalogue typo is corrected
+  everywhere rather than frozen wrong on every past order.
+- **No unique index on (order, material)** — unlike a stock take, an order may legitimately
+  list the same material twice at different prices. Tiered pricing is real.
+
+### Verified in the browser
+
+Against **built assets with SSR live**. One order of two lines — one at 10% off and taxable,
+one at a fixed MYR 5 off and tax-exempt:
+
+| | Expected | Counted | Line total |
+|---|---|---|---|
+| Serbuk kayu | 10 × 12.50, −10% | taxable | 112.50 |
+| Oak board 18mm | 3 × 40.00, −5.00 | exempt | 115.00 |
+
+The browser previewed subtotal 227.50 / discount 17.50 / tax 6.75 / total 234.25, and the
+server **stored exactly those figures**. The tax is 6% of 112.50, not of 227.50, which is
+the untaxed line being correctly excluded.
+
+- The unit cost **prefilled 12.5 from the catalogue** on picking the material, and only
+  into an empty box.
+- Receiving wrote **exactly two movements**, `reason=purchase_receipt`,
+  `source=purchase_order:4`, on-hand up by the *ordered* quantities (10 and 3, not the
+  discounted amounts — a discount is money, not goods).
+- The ledger's Source column renders the same row as **Purchase order #4** / **Pesanan
+  belian #4** / **采购订单 #4**, each linking to the order.
+- Cancelling wrote **zero** movements. Editing, deleting, re-receiving and cancelling a
+  received order were all refused, with the movement count and on-hand unchanged after every
+  attempt. Opening `/edit` on a received order redirects rather than rendering a form.
+- Light and dark, 375/1440, no horizontal overflow; rows become labelled cards on a phone.
+
+### `expected_date` is an instant, not a bare day
+
+Changed on request after the module was working, and worth recording because it is a
+decision rather than a detail. The column was a `date`; it is a `timestamp` in UTC now,
+like every other moment in this schema.
+
+The screen still asks for a day. The day is anchored to the moment it **began in the zone
+the person picking it was in** — `TimeZones::resolve()`, the same zone the rest of the app
+renders on — and read back on that same clock, so the round trip closes. Verified across
+four zones: picking 15 Oct in Kuala Lumpur stores `2026-10-14T16:00:00Z`, in UTC stores
+`2026-10-15T00:00:00Z`, in Auckland `2026-10-14T11:00:00Z`, and every one of them reads
+back as the 15th where it was set. An edit-and-save cycle leaves the stored instant
+untouched, which is the test a naive version fails by drifting a day each time.
+
+**The trade is real and was accepted knowingly:** an instant renders on the reader's clock,
+so the KL-picked 15th shows as the 14th to a reader in UTC or New York. A calendar day held
+as an instant has to be read on some clock. A `date` column avoids that by having no zone at
+all, at the cost of not being comparable with `received_at` and the other instants the
+ledger keeps. One workspace, one working zone, is the case this is built for.
+
+One bug came out of it, and only from driving it: `<input type="date">` **renders empty**
+for anything that is not `Y-m-d`, without complaint, so feeding it the ISO string made an
+order with a delivery date look like one without. `formatDateInput()` in `lib/format.ts` is
+the inverse of the anchoring, and the box is seeded through it.
+
+### Three corrections along the way
+
+- **The shared editor named its money column `unit_price` on the wire while the server
+  refused `unit_cost`.** The page had bridged it by renaming the error keys, which left the
+  message rendering correctly under a box that `focusFirstInvalid` could no longer find. The
+  name is a prop now, so the input's `name`, the server's field and the key focus searches
+  by are one string — and sales orders get their own word for free.
+- **The catalogue prefill did not work at all**, because `StockItemOptionData` carried no
+  cost. It gained one nullable `default_amount`: buying reads `default_cost`, selling will
+  read `default_price`, and no picker needs both at once.
+- **The form said "Unit price" while the document said "Unit cost".** The label now travels
+  with the field name rather than being fixed to one side of the trade.
+
+### A trap worth knowing
+
+`typescript:transform` prints `All done!` and **silently declines to write** when its
+gitignored manifest's MD5 disagrees with the file on disk — which is what a
+transform-then-restore leaves behind. Three classes went missing that way and the symptom
+(types "missing from `App.Data`") pointed nowhere near the cause. Delete
+`resources/js/types/typescript-transformer-manifest.json` and run it again.
+
+#### Open, carried forward
+
+- **Existing workspaces need `php artisan tenants:migrate`**; staging needs
+  `--fresh`, because the catalogue price columns were folded into existing create migrations.
+- **The live totals preview assumes 2 decimal places.** Correct for every allowed currency
+  today; adding JPY would need the currency's scale passed from the server. Stored figures
+  are right regardless — only the preview would be off.
+- **No supplier-price history.** The prefill is one number per material, not "what this
+  supplier charged last time".
+- Sales orders next, then purchase returns, then sales returns. E-invoice sits on top of
+  sales orders and stays deferred.
+
 ## Phases 3–8 — Modules ⬜
 
 | Phase | Modules | Status |
 |---|---|---|
 | 3 · Catalog | **categories ✅ · suppliers ✅ · customers ✅ · raw materials ✅ · products ✅** (core · image · BOM) | ✅ |
 | 4 · Stock | **locations ✅ · warehouses ✅ · StockService ✅ · movements ✅ · transfers ✅ · reorder levels ✅ · stock takes ✅** (+ notes column, column preferences, warehouse detail) | ✅ |
-| 5 · Orders | money foundation 🚧 · purchase orders 🚧 · purchase returns · sales orders · sales returns | 🚧 |
+| 5 · Orders | **money foundation ✅ · purchase orders ✅** · sales orders · purchase returns · sales returns | 🚧 |
 | 6 · Insights | reports, activity log | ⬜ |
 | 7 · Team & settings | users, roles/RBAC, **business settings ✅ · document numbering ✅** (both pulled forward into phase 5, which needed them), e-invoice | 🚧 |
 | 8 · Cross-cutting | exports, barcode/QR scanning, tenant dashboard, admin dashboard | ⬜ |
