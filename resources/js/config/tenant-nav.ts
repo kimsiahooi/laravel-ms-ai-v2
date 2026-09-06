@@ -7,6 +7,7 @@ import {
     LayoutGrid,
     MapPin,
     Package,
+    Settings2,
     Tags,
     Truck,
     Warehouse,
@@ -17,6 +18,7 @@ import { index as customers } from '@/routes/customers';
 import { index as locations } from '@/routes/locations';
 import { index as products } from '@/routes/products';
 import { index as rawMaterials } from '@/routes/raw-materials';
+import { index as businessSettings } from '@/routes/settings';
 import { index as stockMovements } from '@/routes/stock-movements';
 import { index as stockTakes } from '@/routes/stock-takes';
 import { index as stockTransfers } from '@/routes/stock-transfers';
@@ -125,6 +127,24 @@ export function tenantNavGroups(
                     href: stockTakes(),
                     icon: ClipboardList,
                     permission: 'stock-takes.view',
+                },
+            ],
+        },
+        {
+            // Unlabelled, like the dashboard's group above it. A heading is the
+            // shell's word for a RUN of modules, and this is one entry — "Workspace"
+            // over a single line would be furniture. It gets a heading when the second
+            // workspace-wide screen arrives.
+            //
+            // Filed here rather than in the account-settings sidebar because these
+            // settings belong to the business: everyone in the workspace sees the same
+            // ones, and only a role holding `settings.view` sees them at all.
+            items: [
+                {
+                    title: 'business-settings.title',
+                    href: businessSettings(),
+                    icon: Settings2,
+                    permission: 'settings.view',
                 },
             ],
         },

@@ -683,6 +683,19 @@ a reason unrelated to the change under test — the mistake the i18n gate alread
 once. `config/typescript-transformer.php` exists solely to make the output directory
 overridable; PHPStan rejected reading it from `env()` in the provider, correctly.
 
+**A trap the package sets, found in phase 5.** The transformer keeps
+`resources/js/types/typescript-transformer-manifest.json` — gitignored, purely a local
+cache — holding an MD5 of what it last wrote. When that hash and the file on disk disagree
+it takes the file for hand-edited and **silently declines to overwrite it, while still
+printing `All done!`**. Three new `#[TypeScript]` classes went missing that way, and
+`types:check` reported them as absent from `App.Data` with nothing to say why. Writing to a
+different output directory produced all of them, which is what isolated it.
+
+Anything that transforms into a temp directory and then restores the real files — which is
+what the staleness gate does, and what a subagent had done by hand — leaves the manifest
+describing content the file no longer holds. **If `typescript:transform` claims success and
+changes nothing, delete that manifest and run it again.**
+
 **Proved rather than assumed.** The gate was broken deliberately both ways — a property
 added to a Data class without regenerating, and a field hand-patched into
 `generated.d.ts` — and it failed on each, leaving the tree unmodified. The wire shape was
@@ -1138,6 +1151,13 @@ Reading v1's schema settles it: `raw_materials` is `name`, `sku`, `barcode`, `un
 cost, no price, no quantity. Nothing in the catalog holds a number. The decimal rules and
 their zod mirrors arrive with the stock and order modules that actually store amounts,
 which is where the `decimal:0,4` guard against MySQL's silent rounding starts mattering.
+
+**Revisited in phase 5, exactly as that last sentence anticipated.** `raw_materials` gained
+a nullable `default_cost` and `products` a nullable `default_price` when purchase orders
+arrived — a *suggestion* an order line starts from, never the record. The line stores what
+was actually paid, so changing a catalogue price moves no history, and null is a real
+answer ("we have never bought it") that zero would misstate. v1 had no such columns and
+retyped every price on every line.
 
 **`unit` is an enum, not free text — and it carries the physics.** This came out of a
 direct question ("unit can be presets? coz in future i want to convert, like gram to kg")
@@ -2039,7 +2059,10 @@ show a dash when their row goes; `bom_items.raw_material_id` is NOT NULL and can
 product's bill calls for, and names the products. The alternative considered was to let
 the delete happen and flag the stale line in the editor — easier deleting, something to
 fix later. Refusing keeps bills correct by construction, which matters more once
-production orders start reading them in phase 5.
+something reads them to build from. That was going to be phase 5's production orders;
+production has since moved out of this product to the separate manufacturing system, so
+the reader is that system rather than a module here. The reasoning is unchanged — a bill
+that is wrong is worse than a material that will not delete.
 
 Two halves, and both are needed:
 
@@ -3514,7 +3537,7 @@ by the reader, not frozen by the poster.
 |---|---|---|
 | 3 · Catalog | **categories ✅ · suppliers ✅ · customers ✅ · raw materials ✅ · products ✅** (core · image · BOM) | ✅ |
 | 4 · Stock | **locations ✅ · warehouses ✅ · StockService ✅ · movements ✅ · transfers ✅ · reorder levels ✅ · stock takes ✅** (+ notes column, column preferences, warehouse detail) | ✅ |
-| 5 · Orders | purchase orders, purchase returns, sales orders, sales returns, production orders | ⬜ |
+| 5 · Orders | money foundation 🚧 · purchase orders 🚧 · purchase returns · sales orders · sales returns | 🚧 |
 | 6 · Insights | reports, activity log | ⬜ |
-| 7 · Team & settings | users, roles/RBAC, business settings, document numbering, e-invoice | ⬜ |
+| 7 · Team & settings | users, roles/RBAC, **business settings ✅ · document numbering ✅** (both pulled forward into phase 5, which needed them), e-invoice | 🚧 |
 | 8 · Cross-cutting | exports, barcode/QR scanning, tenant dashboard, admin dashboard | ⬜ |

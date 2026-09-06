@@ -6,6 +6,7 @@ use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\Settings\SecurityController;
 use App\Http\Controllers\TableColumnController;
+use App\Http\Controllers\Tenant\BusinessSettingsController;
 use App\Http\Controllers\Tenant\CategoryController;
 use App\Http\Controllers\Tenant\CustomerController;
 use App\Http\Controllers\Tenant\LocationController;
@@ -236,5 +237,26 @@ Route::middleware(['web', InitializeTenancyByPath::class, SetTenantUrlDefault::c
                 ->name('user-password.update');
 
             Route::inertia('settings/appearance', 'settings/appearance')->name('appearance.edit');
+
+            // The workspace's own settings, filed under the same URL prefix as the
+            // account ones because that is where a person looks for "settings" — but
+            // they are a different kind of thing: these belong to the business and are
+            // permission-gated, while profile, security and appearance belong to
+            // whoever is signed in and are open to everyone.
+            //
+            // **The names are fixed, not chosen.** TenantPermissions maps
+            // `settings.index` to `settings.view` and `settings.update` to
+            // `settings.update`, and that catalog is already seeded in every workspace.
+            // Anything else here is a route AuthorizeTenantRoute cannot find, which it
+            // treats as open to any signed-in user — so a nicer name would silently
+            // hand the tax rate to everybody.
+            Route::get('settings/business', [BusinessSettingsController::class, 'index'])
+                ->name('settings.index');
+
+            // PUT, not PATCH: the form carries every field and replaces the row whole.
+            // A partial update has no meaning for a single row of settings that are
+            // read together.
+            Route::put('settings/business', [BusinessSettingsController::class, 'update'])
+                ->name('settings.update');
         });
     });

@@ -44,6 +44,11 @@ return new class extends Migration
             $table->foreignIdFor(Supplier::class)->nullable()->constrained()->nullOnDelete();
             // Holds an App\Enums\Unit code, same as raw_materials.
             $table->string('unit', 20);
+            // What this normally sells for, so an order line can start from something
+            // rather than from an empty box. **A suggestion, never the record**: the line
+            // stores what was actually charged, so changing this later moves no history.
+            // Nullable because "we have never sold it" is a real answer and zero is not.
+            $table->decimal('default_price', 15, 4)->nullable();
             $table->foreignIdFor(User::class, 'created_by')
                 ->nullable()
                 ->constrained('users')

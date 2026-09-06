@@ -11,6 +11,18 @@ raw_material_id: number,
 name: string,
 quantity: string,
 };
+export type BusinessSettingsData = {
+base_currency: string,
+currencies: string[],
+tax_rate: string,
+tax_label: string,
+purchase_order_prefix: string,
+purchase_return_prefix: string,
+sales_order_prefix: string,
+sales_return_prefix: string,
+number_reset: App.Enums.NumberReset,
+financial_year_start_month: number,
+};
 export type CategoryData = {
 id: number,
 name: string,
@@ -188,7 +200,10 @@ site: string,
 namespace Enums {
 export type Country = 'MY' | 'SG';
 export type Dimension = 'mass' | 'volume' | 'length' | 'count';
+export type DiscountType = 'none' | 'percent' | 'amount';
+export type DocumentType = 'purchase_order' | 'purchase_return' | 'sales_order' | 'sales_return';
 export type MovementSource = 'stock_take' | 'stock_transfer';
+export type NumberReset = 'yearly' | 'never';
 export type StockItemType = 'product' | 'raw_material';
 export type StockMovementReason = 'adjustment' | 'stock_take' | 'transfer_in' | 'transfer_out' | 'purchase_receipt' | 'purchase_return' | 'sales_fulfillment' | 'sales_return' | 'production_consume' | 'production_output';
 export type StockTakeStatus = 'draft' | 'posted' | 'cancelled';

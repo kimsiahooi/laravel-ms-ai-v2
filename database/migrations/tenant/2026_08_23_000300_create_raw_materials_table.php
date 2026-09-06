@@ -45,6 +45,11 @@ return new class extends Migration
             // freely, which made "kg" and "KG" two different units to a stock engine
             // that would later be adding their quantities together.
             $table->string('unit', 20);
+            // What this normally costs to buy, so an order line can start from something
+            // rather than from an empty box. **A suggestion, never the record**: the line
+            // stores what was actually paid, so changing this later moves no history.
+            // Nullable because "we have never bought it" is a real answer and zero is not.
+            $table->decimal('default_cost', 15, 4)->nullable();
             $table->foreignIdFor(User::class, 'created_by')
                 ->nullable()
                 ->constrained('users')

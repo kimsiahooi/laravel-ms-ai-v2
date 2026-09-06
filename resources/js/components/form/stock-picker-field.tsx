@@ -61,6 +61,7 @@ export function StockPickerField({
     searchPlaceholder,
     emptyMessage,
     hint,
+    labelHidden,
 }: {
     name: string;
     label: TranslationKey;
@@ -81,6 +82,8 @@ export function StockPickerField({
     searchPlaceholder: TranslationKey;
     emptyMessage: TranslationKey;
     hint?: TranslationKey;
+    /** Keeps the label for screen readers only — see {@see TextField}. */
+    labelHidden?: boolean | 'sm';
 }) {
     const { t } = useTranslation();
     const id = useId();
@@ -127,7 +130,15 @@ export function StockPickerField({
 
     return (
         <div className="space-y-2">
-            <Label htmlFor={id}>{t(label)}</Label>
+            <Label
+                htmlFor={id}
+                className={cn(
+                    labelHidden === true && 'sr-only',
+                    labelHidden === 'sm' && 'sm:sr-only',
+                )}
+            >
+                {t(label)}
+            </Label>
 
             <input type="hidden" name={name} value={chosen} />
 

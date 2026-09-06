@@ -240,3 +240,41 @@ export function relativeTime(
 
     return null;
 }
+
+/**
+ * Group an integer part in threes: `1234567` → `1,234,567`.
+ *
+ * Done by hand rather than by `Intl.NumberFormat` for the reason {@see zoned} gives about
+ * month names — the separator a locale groups with is ICU data, and ICU data differs
+ * between the SSR runtime and the browser. Digits and commas are ours and cannot drift.
+ *
+ * String in, string out, so a `decimal(15,4)` never passes through a double on its way to
+ * the screen. Nothing here parses the number, which is what keeps `99999999999.9999`
+ * exact.
+ */
+function group(digits: string): string {
+    return digits.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
+/**
+ * A stored amount as money: `1234.5` in MYR → `MYR 1,234.5`.
+ *
+ * **The code, not the symbol.** `Intl` would render `RM`, and would render it differently
+ * on two ICU versions — the same hydration mismatch the date helpers are built to avoid.
+ * A code is also the honest choice in an app where an order may be raised in any of five
+ * currencies: `RM` and `S$` are a glance apart, `MYR` and `SGD` are not.
+ *
+ * **The scale comes from the string, not from a table here.** The server has already
+ * rounded the amount to what the currency can express — see `App\Support\Money::roundTo()`
+ * — so the decimals present are the decimals that matter, and this file holds no second
+ * copy of which currencies divide by a hundred.
+ */
+export function formatMoney(amount: string, currency: string): string {
+    const negative = amount.startsWith('-');
+    const bare = negative ? amount.slice(1) : amount;
+    const [whole, fraction] = bare.split('.');
+    const body =
+        fraction === undefined ? group(whole) : `${group(whole)}.${fraction}`;
+
+    return `${currency} ${negative ? '-' : ''}${body}`;
+}
