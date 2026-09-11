@@ -70,7 +70,7 @@ return [
         'exchange_rate_placeholder' => 'cth. 4.35',
         'exchange_rate_hint' => 'Berapa nilai mata wang anda sendiri bagi satu unit mata wang pesanan, pada hari pesanan dipersetujui.',
         'expected_date' => 'Jangkaan penghantaran',
-        'expected_date_hint' => 'Hari barang sepatutnya tiba. Untuk perancangan sahaja — tiada apa-apa berlaku pada hari itu.',
+        'expected_date_hint' => 'Hari barang sepatutnya tiba, dan masanya jika ada dipersetujui. Untuk perancangan sahaja — tiada apa-apa berlaku pada hari itu.',
         'notes' => 'Nota',
         'notes_placeholder' => 'Terma, rujukan sebut harga, atau apa-apa yang perlu diingat',
     ],

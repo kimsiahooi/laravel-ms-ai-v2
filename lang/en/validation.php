@@ -26,6 +26,7 @@ return [
     'array' => 'The :attribute field must be an array.',
     'boolean' => 'The :attribute field must be true or false.',
     'date' => 'The :attribute field must be a valid date.',
+    'date_format' => 'The :attribute field must match the format :format.',
     'decimal' => 'The :attribute field must have :decimal decimal places.',
     'distinct' => 'The :attribute field has a duplicate value.',
     'different' => 'The :attribute and :other must be different.',

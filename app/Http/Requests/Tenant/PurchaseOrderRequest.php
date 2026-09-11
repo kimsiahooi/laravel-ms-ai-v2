@@ -99,7 +99,12 @@ final class PurchaseOrderRequest extends TenantFormRequest
             // digits after the point, leaving nine, and MySQL in strict mode *errors* on
             // more — so without this an over-large rate is a 500 rather than a sentence.
             'exchange_rate' => ['required', 'numeric', 'decimal:0,6', 'gt:0', 'max:999999999'],
-            'expected_date' => ['nullable', 'date'],
+            // Two formats, not `date`. The shape is load-bearing rather than
+            // fastidious: expectedInstant() tells a day from a day-and-time by the
+            // space, and `date` is strtotime-based — it would wave through
+            // `2026-10-15T14:30:00+05:00`, which carries no space, and the day-only
+            // branch would then throw on it. Mirrored by optionalDateTime.
+            'expected_date' => ['nullable', 'date_format:Y-m-d,Y-m-d H:i'],
             'notes' => ['nullable', 'string', 'max:1000'],
             // `required` already refuses an empty array, so there is no `min:1` — and it
             // is the rule that says an order with nothing on it is not an order.
@@ -240,33 +245,47 @@ final class PurchaseOrderRequest extends TenantFormRequest
     }
 
     /**
-     * The picked day as the instant it starts, in UTC.
+     * The picked day — and the time on it, if one was picked — as an instant in UTC.
      *
      * **Anchored to the zone the person picking it is in**, which is the whole reason this
-     * is not a one-line format call. `<input type="date">` sends a bare `Y-m-d` with no
+     * is not a one-line format call. The form sends a bare `Y-m-d` or `Y-m-d H:i` with no
      * zone at all; reading that as UTC would store a day that begins at 08:00 local for a
      * Malaysian buyer, and reading it as the server's zone would depend on where the
-     * server happens to be. Neither reads back as the day they chose.
+     * server happens to be. Neither reads back as what they chose.
      *
      * {@see TimeZones::resolve()} is the same answer the rest of the app renders on — the
      * zone the browser reported — so the round trip closes: pick the 15th, store the
      * instant the 15th began where you are, read the 15th.
      *
-     * A reader in another zone can still see the day before. That is inherent to holding a
-     * calendar day as an instant, and it is the trade the migration names.
+     * **The `!` is load-bearing, and its absence would be invisible.** `createFromFormat`
+     * fills anything the format does not name from the clock *right now*, so `'Y-m-d H:i'`
+     * would store a 14:30 delivery as `14:30:37.482`. Worse than the stray seconds: a
+     * day-only pick would land a fraction after midnight, and `timeOfDay()` in
+     * `resources/js/lib/format.ts` — which decides whether to show a time by asking
+     * whether the instant *is* midnight — would never fire again, so every order would
+     * sprout a delivery time of `00:00`. `'!'` resets every unnamed field, which is what
+     * makes both branches one mechanism instead of a format call plus a `startOfDay()`.
+     *
+     * Read from the raw input rather than through `$this->date()`: that helper normalises
+     * through the app's own timezone, which is exactly the laundering this method exists
+     * to avoid. `date_format` has already proved the shape.
+     *
+     * A reader in another zone can still see the day before, and — now that a time can be
+     * shown — a time nobody agreed. Both are inherent to holding a calendar day as an
+     * instant, and both are named where they are rendered.
      */
     private function expectedInstant(): ?CarbonImmutable
     {
-        $picked = $this->date('expected_date');
+        $picked = trim((string) $this->input('expected_date', ''));
 
-        if ($picked === null) {
+        if ($picked === '') {
             return null;
         }
 
-        return CarbonImmutable::createFromFormat(
-            'Y-m-d',
-            $picked->format('Y-m-d'),
-            TimeZones::resolve($this),
-        )->startOfDay()->utc();
+        $zone = TimeZones::resolve($this);
+
+        return str_contains($picked, ' ')
+            ? CarbonImmutable::createFromFormat('!Y-m-d H:i', $picked, $zone)->utc()
+            : CarbonImmutable::createFromFormat('!Y-m-d', $picked, $zone)->utc();
     }
 }

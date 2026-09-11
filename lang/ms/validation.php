@@ -12,6 +12,7 @@ return [
     'array' => 'Ruangan :attribute mestilah senarai.',
     'boolean' => 'Ruangan :attribute mestilah benar atau palsu.',
     'date' => 'Ruangan :attribute mestilah tarikh yang sah.',
+    'date_format' => 'Ruangan :attribute mestilah mengikut format :format.',
     'decimal' => 'Ruangan :attribute mestilah mempunyai :decimal tempat perpuluhan.',
     'distinct' => 'Ruangan :attribute mempunyai nilai berulang.',
     'different' => ':attribute dan :other mestilah berbeza.',

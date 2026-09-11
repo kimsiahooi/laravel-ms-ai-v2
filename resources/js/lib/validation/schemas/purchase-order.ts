@@ -4,7 +4,7 @@ import {
     decimal,
     lines,
     oneOf,
-    optionalDate,
+    optionalDateTime,
     optionalDecimal,
     optionalFlag,
     optionalText,
@@ -65,7 +65,7 @@ export function purchaseOrderSchema(currencies: readonly string[]) {
                     max: EXCHANGE_RATE_MAX,
                     gt: 0,
                 }),
-                expected_date: optionalDate(
+                expected_date: optionalDateTime(
                     'validation.attributes.expected_date',
                 ),
                 notes: optionalText({

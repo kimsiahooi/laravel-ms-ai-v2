@@ -536,43 +536,56 @@ function checkDecimal(
 }
 
 /**
- * A repeating group of rows — `['nullable', 'array', 'max:N']` over `items.*.…`.
+ * An optional calendar day, with an optional time on it — the browser half of
+ * `['nullable', 'date_format:Y-m-d,Y-m-d H:i']`.
  *
- * Optional, not merely empty-able: a form with no rows renders no inputs, so the key is
- * absent from the payload rather than present and empty. That is the shape the server
- * accepts too — see BomRequest on why absent and empty mean the same thing there.
+ * Three shapes and no others: `''`, `2026-10-15`, `2026-10-15 14:30`. They are the wire
+ * contract with `PurchaseOrderRequest::expectedInstant()`, which tells them apart by the
+ * space, and with {@see formatDateTimeInput}, which composes them.
  *
- * `distinct` is checked here rather than left to the server because the failure is
- * about the list as a whole and has to be reported on one row. The issue is filed at
- * the *second* occurrence, which is the one somebody just chose, and under that row's
- * own field — so the message lands beside the picker that repeats rather than at the
- * top of a list of ten.
+ * **A calendar day, deliberately not an instant.** The day carries no zone; the server
+ * anchors it to the zone the picker was in. Parsing it here as an instant would make it a
+ * different day for a reader west of UTC.
+ *
+ * **Zero-padded, because the server is.** Laravel's `date_format` re-formats what it
+ * parsed and compares it to the input, so `2026-10-15 9:30` fails there. A browser that
+ * accepted it would pass the value to a server that refuses it, which is the one thing
+ * two-layer validation exists to prevent.
+ *
+ * **Not stricter than the server, either.** The picker offers quarter-hours, but the
+ * minute is checked as `0-59` rather than against that grid: a schema that refuses a
+ * value the server accepts makes stored data uneditable, which is the trap the
+ * `taxable` note in `schemas/purchase-order.ts` describes.
+ *
+ * The message key is `validation.date_format`, the same one the server would use, with
+ * the same `:format` — Laravel interpolates only the *first* of the two accepted formats
+ * into that sentence, so `Y-m-d` is what both sides say.
  */
-/**
- * An optional calendar date — the browser half of `['nullable', 'date']`.
- *
- * **A calendar date, deliberately not an instant.** An expected delivery is the day
- * somebody picked; it carries no time and no zone, and parsing it as one would make it a
- * different day for a reader west of UTC. So the check is on the *shape* — four digits,
- * two, two — plus a round trip through UTC to refuse the 31st of February, which matches
- * `Y-m-d` in every field the shape allows.
- *
- * Empty is a real answer, as it is in {@see optionalDecimal}: "no date agreed" is not the
- * same as any particular date, and the server decides what absence means.
- *
- * Lived in `schemas/purchase-order.ts` while purchase orders were the only date field in
- * the app, with a note saying it would move here when a second arrived. `DateField` is
- * that second caller — sales orders and both returns bring the same `expected_date`.
- */
-export function optionalDate(attribute: TranslationKey) {
+export function optionalDateTime(attribute: TranslationKey) {
     return z
         .string(message('validation.string', attribute))
         .trim()
         .refine(
-            (value) => value === '' || isCalendarDate(value),
-            message('validation.date', attribute),
+            (value) => value === '' || isCalendarDateTime(value),
+            message('validation.date_format', attribute, { format: 'Y-m-d' }),
         )
         .optional();
+}
+
+/** `HH:MM`, zero-padded, 24-hour — exactly what `H:i` round-trips through. */
+const CLOCK = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+/** Whether `value` is one of the three shapes above. */
+function isCalendarDateTime(value: string): boolean {
+    const parts = value.split(' ');
+
+    if (parts.length === 1) {
+        return isCalendarDate(parts[0]);
+    }
+
+    return (
+        parts.length === 2 && isCalendarDate(parts[0]) && CLOCK.test(parts[1])
+    );
 }
 
 /** Whether `value` is a real `Y-m-d` day rather than merely a string shaped like one. */
@@ -598,6 +611,19 @@ function isCalendarDate(value: string): boolean {
     );
 }
 
+/**
+ * A repeating group of rows — `['nullable', 'array', 'max:N']` over `items.*.…`.
+ *
+ * Optional, not merely empty-able: a form with no rows renders no inputs, so the key is
+ * absent from the payload rather than present and empty. That is the shape the server
+ * accepts too — see BomRequest on why absent and empty mean the same thing there.
+ *
+ * `distinct` is checked here rather than left to the server because the failure is
+ * about the list as a whole and has to be reported on one row. The issue is filed at
+ * the *second* occurrence, which is the one somebody just chose, and under that row's
+ * own field — so the message lands beside the picker that repeats rather than at the
+ * top of a list of ten.
+ */
 export function lines<T extends z.ZodType>({
     item,
     max,

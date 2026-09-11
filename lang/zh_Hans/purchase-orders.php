@@ -70,7 +70,7 @@ return [
         'exchange_rate_placeholder' => '例如：4.35',
         'exchange_rate_hint' => '订单议定当天，一单位订单币种折合多少本位币。',
         'expected_date' => '预计到货日期',
-        'expected_date_hint' => '货物应当到达的日期。仅用于计划，当天不会自动发生任何事。',
+        'expected_date_hint' => '货物应当到达的日期，以及已约定的时间（如有）。仅用于计划，当天不会自动发生任何事。',
         'notes' => '备注',
         'notes_placeholder' => '条款、报价单号，或任何值得记下的信息',
     ],

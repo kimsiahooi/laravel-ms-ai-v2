@@ -11,8 +11,12 @@ import type { TranslationKey } from '@/types/lang';
  * caller that already knows the answer the server used.
  *
  * Timestamps are stored, and arrive, in UTC. These functions turn one into the wall
- * clock of a given IANA zone for display. Nothing here converts in the other
- * direction: nothing in this app sends a date back.
+ * clock of a given IANA zone for display.
+ *
+ * One exception, and it is deliberate: {@see formatDateTimeInput} composes the *wire*
+ * shape a date field sends back. That shape is a contract with
+ * `PurchaseOrderRequest::expectedInstant()` and with `optionalDateTime`, so it is
+ * authored here beside the readers rather than as a template literal in a page.
  */
 
 const MONTHS = [
@@ -355,4 +359,66 @@ export function formatDateInput(iso: string, timeZone: string): string {
     }
 
     return `${parts.year}-${pad(parts.month)}-${pad(parts.day)}`;
+}
+
+/**
+ * The time of day an instant falls on in `timeZone`, or null when it falls on midnight.
+ *
+ * **Midnight means "no time was given".** A purchase order's expected delivery is stored
+ * as one instant, and one instant cannot say whether somebody picked a day or a moment.
+ * The server anchors a day-only pick to the *start* of that day, so midnight is the mark
+ * it leaves. This is the single place that rule is written down; everything that renders
+ * or seeds an expected delivery asks this function.
+ *
+ * **The rule is evaluated on the reader's clock, and that has a consequence worth stating
+ * outright.** For the person who picked the date — and everyone else in the same working
+ * zone, which is the ordinary case — it is exactly right. For a reader elsewhere it is
+ * not: a day-only order picked in Kuala Lumpur is `16:00Z`, which in Bangkok is 23:00 on
+ * the previous day, so their screen reads `14 Oct 2026, 23:00` and **asserts a delivery
+ * time nobody agreed**. The stored instant is untouched and saving from that screen
+ * changes nothing, but the sentence on it is not true.
+ *
+ * That is worse than the day-shift the column's migration already accepts, and it is the
+ * price of inferring the flag rather than storing one. A `expected_has_time` column would
+ * remove it. So would a workspace-level zone to evaluate this in, which
+ * {@see App\Support\TimeZones} does not have.
+ *
+ * **A second, smaller limitation:** in a zone whose DST jump lands on midnight — Havana,
+ * Santiago, São Paulo historically — midnight does not exist on that one day a year, and
+ * the day's first instant is 01:00. A day-only order due exactly then reads `01:00`.
+ * Malaysia and Singapore have no DST at all.
+ *
+ * Returns `null` rather than `''` so a caller has to decide what absence means, the way
+ * the rest of this file's nullable readers do.
+ */
+export function timeOfDay(iso: string, timeZone: string): string | null {
+    const parts = zoned(iso, timeZone);
+
+    if (parts === null || (parts.hour === 0 && parts.minute === 0)) {
+        return null;
+    }
+
+    return `${pad(parts.hour)}:${pad(parts.minute)}`;
+}
+
+/**
+ * An instant as the wire shape a date field sends back: `''`, `Y-m-d`, or `Y-m-d HH:MM`.
+ *
+ * The seeding inverse of `PurchaseOrderRequest::expectedInstant()`, and the *only* place
+ * those three shapes are composed — `optionalDateTime` refuses anything else and the
+ * server's `date_format:Y-m-d,Y-m-d H:i` refuses it again.
+ *
+ * Whether the time half appears is {@see timeOfDay}'s decision, including everything its
+ * docblock says about readers outside the picker's zone.
+ */
+export function formatDateTimeInput(iso: string, timeZone: string): string {
+    const day = formatDateInput(iso, timeZone);
+
+    if (day === '') {
+        return '';
+    }
+
+    const clock = timeOfDay(iso, timeZone);
+
+    return clock === null ? day : `${day} ${clock}`;
 }

@@ -55,7 +55,14 @@ final class PurchaseOrderData extends Data
         public string $tax_total,
         public string $total,
         public ?string $notes,
-        /** `Y-m-d`. A promised day, with no time of day to shift across a zone. */
+        /**
+         * ISO-8601, like every other instant this DTO sends.
+         *
+         * A promised day, and a time on it when one was agreed. The two are not
+         * distinguished by the column: `timeOfDay()` in `resources/js/lib/format.ts`
+         * reads midnight on the reader's clock as "no time given", and that docblock
+         * carries what the inference costs.
+         */
         public ?string $expected_date,
         /** Who raised it; null for an order created by a console command. */
         public ?string $created_by,

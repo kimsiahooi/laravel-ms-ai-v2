@@ -87,16 +87,23 @@ return new class extends Migration
             // A timestamp, stored in UTC like every other instant in this schema, and
             // chosen deliberately over a bare `date`.
             //
-            // The screen still asks for a day — nobody promises a delivery at 14:30 — and
-            // the day somebody picks is anchored to the start of that day **in the zone
-            // they picked it from**, then converted. So the person who set it always reads
-            // back the date they chose.
+            // The screen asks for a day, and optionally a time on it — a delivery slot
+            // is a real thing to agree. Whichever is picked is anchored **in the zone the
+            // person picking it was in**, then converted, so they always read back what
+            // they chose.
             //
-            // The trade is real and worth naming: an instant renders on the reader's
-            // clock, so a colleague far enough west can see the day before. A `date`
-            // column would avoid that by having no zone at all, at the cost of not being
-            // comparable with `received_at` and the rest of the ledger, which are
-            // instants. One workspace, one working zone, is the case this is built for.
+            // A day with no time is stored as that day's first instant, and that is also
+            // how the absence is recorded: there is no separate flag, and midnight on the
+            // reader's clock is read back as "no time was given".
+            //
+            // Two trades, both real and both inherent to holding a calendar day as an
+            // instant. A colleague far enough west sees the day before. And because the
+            // midnight test runs on *their* clock, a day-only order can show them a
+            // delivery time nobody agreed. `timeOfDay()` in resources/js/lib/format.ts is
+            // where both are written down. A `date` column would avoid them by having no
+            // zone at all, at the cost of not being comparable with `received_at` and the
+            // rest of the ledger, which are instants — and it could not hold a time.
+            // One workspace, one working zone, is the case this is built for.
             $table->timestamp('expected_date')->nullable();
             $table->foreignIdFor(User::class, 'created_by')
                 ->nullable()->constrained('users')->nullOnDelete();

@@ -6,11 +6,11 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Spinner } from '@/components/ui/spinner';
 import { useTimeZone } from '@/hooks/use-time-zone';
 import { useTranslation } from '@/hooks/use-translation';
-import { formatDateInput } from '@/lib/format';
 import { runGate } from '@/lib/validation/gate';
 import { purchaseOrderSchema } from '@/lib/validation/schemas/purchase-order';
 import {
     baseCurrency,
+    expectedDateValue,
     OrderHeaderFields,
 } from '@/pages/purchase-orders/_components/order-header-fields';
 import {
@@ -94,13 +94,7 @@ export default function PurchaseOrderForm({
             order?.supplier_id == null ? '' : String(order.supplier_id),
         currency,
         exchange_rate: order?.exchange_rate ?? '',
-        // The stored instant back onto this browser's clock, which is the inverse of how
-        // the server anchored it — so the box offers the day that was picked, not the day
-        // that instant happens to fall on in UTC.
-        expected_date:
-            order?.expected_date == null
-                ? ''
-                : formatDateInput(order.expected_date, timeZone),
+        expected_date: expectedDateValue(order, timeZone),
         notes: order?.notes ?? '',
         items: toPayloadLines(lines),
     });

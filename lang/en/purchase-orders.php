@@ -82,7 +82,7 @@ return [
         'exchange_rate_placeholder' => 'e.g. 4.35',
         'exchange_rate_hint' => 'How much of your own currency one unit of the order currency is worth, on the day the order was agreed.',
         'expected_date' => 'Expected delivery',
-        'expected_date_hint' => 'The day the goods are due. Used for planning only — nothing happens on it.',
+        'expected_date_hint' => 'The day the goods are due, and the time if one was agreed. Used for planning only — nothing happens on it.',
         'notes' => 'Notes',
         'notes_placeholder' => 'Terms, a quote reference, anything worth remembering',
     ],

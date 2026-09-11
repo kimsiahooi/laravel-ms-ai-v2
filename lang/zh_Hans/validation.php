@@ -11,6 +11,7 @@ return [
     'array' => ':attribute必须是数组。',
     'boolean' => ':attribute必须是真或假。',
     'date' => ':attribute必须是有效的日期。',
+    'date_format' => ':attribute必须符合 :format 格式。',
     'decimal' => ':attribute必须有 :decimal 位小数。',
     'distinct' => ':attribute有重复的值。',
     'different' => ':attribute和:other必须不同。',

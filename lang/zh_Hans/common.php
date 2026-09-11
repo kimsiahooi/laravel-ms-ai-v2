@@ -18,7 +18,10 @@ return [
     'field' => [
         'clear_date' => '清除日期',
         'on_hand' => '当前库存：:quantity',
+        'hour' => '小时',
         'none' => '未设置',
+        'minute' => '分钟',
+        'no_time' => '不指定时间',
         'pick_a_date' => '选择日期',
         'optional' => '（选填）',
     ],

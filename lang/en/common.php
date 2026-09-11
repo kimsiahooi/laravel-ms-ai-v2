@@ -23,7 +23,10 @@ return [
     'field' => [
         'clear_date' => 'Clear date',
         'on_hand' => 'On hand now: :quantity',
+        'hour' => 'Hour',
         'none' => 'Not set',
+        'minute' => 'Minute',
+        'no_time' => 'No time',
         'pick_a_date' => 'Pick a date',
         'optional' => '(optional)',
     ],

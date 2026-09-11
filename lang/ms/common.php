@@ -18,7 +18,10 @@ return [
     'field' => [
         'clear_date' => 'Kosongkan tarikh',
         'on_hand' => 'Ada sekarang: :quantity',
+        'hour' => 'Jam',
         'none' => 'Tidak ditetapkan',
+        'minute' => 'Minit',
+        'no_time' => 'Tiada masa',
         'pick_a_date' => 'Pilih tarikh',
         'optional' => '(pilihan)',
     ],

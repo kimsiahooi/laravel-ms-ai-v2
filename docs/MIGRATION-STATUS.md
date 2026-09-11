@@ -3810,6 +3810,113 @@ the Clear button.
 - Clicking the field's **label** focuses the trigger but does not open the popover — a
   `<label for>` pointing at a button cannot. This is shadcn's own documented pattern.
 
+## Phase 5 · Expected delivery gained an optional time ✅
+
+The field asked for a day and threw the time away — one `->startOfDay()` call. It now takes
+a time when one was agreed, and still takes a bare day when one was not.
+
+**No schema change.** The column has been a UTC `timestamp` since it stopped being a `date`
+(see "`expected_date` is an instant, not a bare day" above). The time was being discarded,
+not unsupported.
+
+### The design, and the one thing it costs
+
+A stored **local midnight means "no time given"** and renders date-only. That is an
+*inference*, not a stored fact, and the price is named here rather than left to be found:
+
+- **A reader outside the picker's zone is shown a time nobody agreed.** A day-only order
+  picked in Kuala Lumpur is `16:00Z`; in Bangkok that is 23:00 the previous day, so their
+  screen reads `14 Oct 2026, 23:00`. Verified against the shipped function across six zones.
+  The stored instant is untouched and saving from that screen changes nothing — but the
+  sentence on it is false. This is **worse than the day-shift the column already accepted**,
+  and it is the cost of inferring the flag rather than storing one. An `expected_has_time`
+  column would remove it; it was declined in favour of no migration.
+- **A genuine 00:00 delivery cannot be expressed.** Inherent to the sentinel.
+- **A zone whose DST jump lands on midnight** — Havana, Santiago, São Paulo — has no
+  midnight on that one day a year, so a day-only order due exactly then reads `01:00`.
+  Verified directly. Malaysia and Singapore have no DST.
+
+For a **timed** order the cross-zone story improves: 14:30 in KL is 06:30 UTC, the same day,
+where midnight in KL was the day before.
+
+`timeOfDay()` in `resources/js/lib/format.ts` is the single place the rule lives, and its
+docblock carries all three costs.
+
+### `!` in the format, not `startOfMinute()`
+
+`createFromFormat` fills anything the format does not name **from the clock right now**, so
+`'Y-m-d H:i'` would have stored a 14:30 delivery as `14:30:37.482`. The stray seconds are the
+small half. The large half: a day-only pick would land a fraction *after* midnight, the
+midnight test would never fire again, and **every order in the app would sprout a delivery
+time of `00:00`** — with nothing on any screen to explain why. `'!'` resets every unnamed
+field, which also makes the day-only branch's separate `startOfDay()` redundant. Both
+branches are now one mechanism.
+
+### `date_format` instead of `date`, and why it is load-bearing
+
+`expectedInstant()` tells a day from a day-and-time **by the space**. `date` is
+`strtotime`-based and would wave through `2026-10-15T14:30:00+05:00`, which carries no space
+— the day-only branch would then throw on it. `date_format:Y-m-d,Y-m-d H:i` is what makes the
+sniff total. Laravel loops the formats, and its round-trip equality check also rejects
+unpadded `9:30`, so the zod mirror is padded-only to match. Verified: both layers accept the
+same three shapes and refuse `9:30`, `2026-02-31`, `next friday`, `25:00` and the
+zone-bearing ISO.
+
+`validation.date_format` had **no message in any locale** and was added to all three —
+without it Laravel silently falls back to English, which is exactly the failure
+`check:i18n` check 5 exists to catch.
+
+### The time control
+
+`components/form/time-select.tsx`, composed from the `ui/select.tsx` primitives rather than
+from `SelectField` — that component types its option `label` as `TranslationKey` and resolves
+it through `t()` unconditionally, so `"14"` is not a value it can render, and it submits its
+own named hidden input, which would have put two stray fields on the wire.
+
+**It sits beside the trigger, not inside the popover.** Inside, picking a day would have had
+to stop closing the calendar, which gives one control two behaviours depending on a prop and
+needs a Done button that commits nothing. It would also nest a Radix Select inside a Radix
+Popover — nested inside a Dialog here already, never inside a Popover. Beside it, the
+calendar keeps the behaviour people have learned and **a time is visible without opening
+anything**, which is what makes a cross-zone-seeded one discoverable.
+
+### Also
+
+- `optionalDate` became `optionalDateTime`; its only caller was this field.
+- The two `formatDateInput` seeding sites collapsed into one exported `expectedDateValue()`
+  — the same expression in two files is the same expression until somebody edits one.
+  `form.tsx` dropped from 242 to 236 lines, back under the 250 signal.
+- **Fixed a defect shipped in `35738f9`:** `lines()`'s docblock had been stranded above
+  `optionalDate`, leaving two `/** */` blocks stacked and `lines()` undocumented.
+- The migration comment said *"nobody promises a delivery at 14:30"* and the DTO docblock
+  still said `Y-m-d`. Both were false; both corrected.
+
+### Found by driving it
+
+**At 375 the date spilled out of its own button.** The trigger had `min-w-0 flex-1`, so
+sharing a row with two selects shrank it to 80px around 112px of text — `15 Oct 2026` ran
+past the border rather than wrapping or truncating. It now has a floor and the time group
+wraps to its own line instead. Invisible at 1440, which is where it was built.
+
+### Verified
+
+Built assets (`build:ssr`, both bundles) with SSR live, console clean on fresh loads.
+`14:30` in KL stored `2026-10-15T06:30:00Z` with **seconds zero** — the proof `'!'` works.
+Reopen → save unchanged → byte-identical. Clearing the time returned the row to local
+midnight, exactly where it started. Both pre-existing date-only orders still read as bare
+dates with no backfill. 375 / 1440, dark, and all three locales.
+
+#### Open, carried forward
+
+- **`ui/calendar.tsx:198` renders `data-day={day.date.toLocaleDateString()}`** — an unpinned
+  ICU call on every day cell, in vendored read-only code. It has never bitten because
+  `PopoverContent` is portal-rendered only when open, so the calendar never reaches SSR
+  output. It would bite the moment a calendar is rendered inline.
+- **`TimeZones::FALLBACK` is `UTC`.** A workspace-level zone setting would fix the
+  cookies-blocked case *and* let the midnight rule be evaluated somewhere stable rather than
+  on each reader's clock — which would retire the first limitation above. Worth its own
+  slice; not attempted here.
+
 ## Phases 3–8 — Modules ⬜
 
 | Phase | Modules | Status |
