@@ -62,7 +62,7 @@ be the page the database returned.
 
 | Need | Use instead |
 |---|---|
-| Relative/absolute date formatting | native `Intl.RelativeTimeFormat` / `DateTimeFormat` in `lib/format.ts` — pin the locale for SSR |
+| Relative/absolute date *formatting* | native `Intl.RelativeTimeFormat` / `DateTimeFormat` in `lib/format.ts` — pin the locale for SSR. Still true; *picking* a date is a separate question, answered below |
 | Class merging | `clsx` + `tailwind-merge` (`cn`) |
 | Client form state | Inertia `<Form>` + the zod gate — **not** react-hook-form |
 | Status enums with labels | native PHP `enum` |
@@ -99,6 +99,32 @@ and they carry the keyboard path too.
 **Worth re-opening for the Phase 5 line-items editor**, where reordering order lines is a
 bigger job than seven rows in a popover. If `@dnd-kit/react` has reached 1.0 by then it
 becomes the obvious pick.
+
+
+**Date picker — added `react-day-picker` (2026-09-08).**
+
+The only date entry in the app was `<input type="date">`, and it was the one control that
+could not be made to look like the rest of the app: the popup belongs to the browser,
+cannot be styled, and renders `mm/dd/yyyy` or `dd/mm/yyyy` by the reader's OS while every
+other date on the page reads `15 Oct 2026`.
+
+`bun x shadcn@latest add calendar` pulls `react-day-picker` (which depends on `date-fns`).
+Weighed against hand-rolling a month grid on the `Popover` and `Button` primitives already
+vendored — about 200 lines, no bundle cost, and total control over locale. The package won
+on the part that is genuinely hard to get right and easy to get subtly wrong: the roving
+focus, `role="grid"` semantics, `PageUp`/`PageDown`/`Home`/`End`, and the announcements a
+screen reader needs. That is precisely the "non-trivial thing a stable package does" this
+policy exists to catch.
+
+Note it does **not** displace `lib/format.ts`. The calendar's month names, weekday names
+and day numbers are all overridden through DayPicker's `formatters` so they come from this
+app's own static table — date-fns's locale data would have been a second source of those
+words. And `today` is a server prop rather than `new Date()`, because reading the clock in
+render is a commit-blocking error here. See `components/form/date-field.tsx`.
+
+**One caveat for whoever runs `shadcn add` next:** the registry emitted
+`import { cn } from "cn"` in `calendar.tsx`, which resolves to nothing — all 26 sibling
+`ui/` files use `@/lib/utils`. Check that import on any newly added component.
 
 ## Likely upcoming decisions
 

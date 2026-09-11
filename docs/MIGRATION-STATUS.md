@@ -3738,6 +3738,78 @@ one. `12.5` → `12.50`; `8.7555` keeps all four.
   decision about where MySQL should put the nulls.
 - The prefill is still one number per material. No supplier-price history.
 
+## Phase 5 · The date field became a shadcn calendar ✅
+
+`<input type="date">` was the only date entry in the app, and it was the one control that
+did not look like the rest of it: the popup is the browser's, cannot be styled, and shows
+`mm/dd/yyyy` or `dd/mm/yyyy` by the reader's OS while every other date on the page reads
+`15 Oct 2026`. Replaced with a shadcn Calendar in a Popover, behind a reusable
+`components/form/date-field.tsx`.
+
+**Added `react-day-picker` + `date-fns`** (proposed and approved — see
+`docs/PACKAGE-POLICY.md`). `bun x shadcn@latest add calendar`, declining the `button.tsx`
+overwrite it offers.
+
+### Three SSR hazards, all closed
+
+The calendar is the first thing in this app that wanted to read the clock and the locale
+during render — the two things `scripts/ui-guard.sh` and `lib/format.ts` exist to prevent.
+
+1. **Today.** A calendar marks the current day, and `new Date()` in render is a
+   commit-blocking error here for a good reason: the server and the browser can land
+   either side of midnight. `today` is now a **shared Inertia prop**, `Y-m-d`, resolved in
+   the viewer's own zone beside `timezone`, and passed to DayPicker's `today`.
+2. **Month and weekday names.** react-day-picker formats them through date-fns, whose
+   locale data is static and so would not have drifted — but it is a *second* source of
+   those words beside the table `lib/format.ts` already owns. Both are overridden through
+   `formatters`, so one table spells every date in the app.
+3. **Day numbers.** `formatDay` overridden too, so no locale can render digits the server
+   did not.
+
+### The `Date`/timezone trap this had to avoid
+
+A calendar day is not an instant, and `Date` is an instant. Two lines would each have
+silently shifted the day by one for every reader east of UTC:
+
+- `new Date('2026-10-15')` parses the bare form as **UTC** midnight — 8am on the 15th in
+  Kuala Lumpur is fine, but the *evening of the 14th* is what a western reader gets. Built
+  from `new Date(y, m - 1, d)` instead, which is local by definition.
+- `toISOString().slice(0, 10)` converts back to UTC first and returns the previous day.
+  Read off `getFullYear()/getMonth()/getDate()` instead.
+
+The round trip has to be symmetric or picking a date would store a different one.
+
+### Also
+
+- `optionalDate` moved from `schemas/purchase-order.ts` to `primitives.ts`, exactly as its
+  docstring said it would when a second caller arrived.
+- `TextField`'s `type` union lost `'date'` — it has no callers left, and the file's own
+  rule is that only what the app uses lives there.
+- **One hand-edit to a vendored file, and it was unavoidable:** the registry emitted
+  `import { cn } from "cn"` in `calendar.tsx`, which resolves to nothing. All 26 sibling
+  `ui/` files use `@/lib/utils`. `ui-guard.sh` permits it — the rule blocks *modified*
+  files and this arrived as an addition — but it is a hand-edit to vendored code and is
+  recorded here rather than left to be discovered.
+
+### Verified
+
+Built assets, SSR live, console clean on a fresh load of both the create and the edit
+screen. Stored `2026-10-14T16:00Z` seeds the picker as **15** Oct (not 14), and saving
+unchanged left the instant byte-identical. Clear returns the field to empty. Calendar fits
+375px with no page overflow; dark mode is all tokens. All three locales carry the label and
+the Clear button.
+
+#### Open, carried forward
+
+- **Month and weekday names render in English in every locale.** That is not new — every
+  `DateCell` in the app already does, because `lib/format.ts` owns a static English table
+  rather than asking ICU. The calendar now makes it more visible (a Chinese reader sees a
+  grid headed `Sun…Sat` above `Oct 2026`). Translating them is a `lang/` change plus a
+  formatter swap, and it is a decision about the whole app's date rendering rather than
+  about this field.
+- Clicking the field's **label** focuses the trigger but does not open the popover — a
+  `<label for>` pointing at a button cannot. This is shadcn's own documented pattern.
+
 ## Phases 3–8 — Modules ⬜
 
 | Phase | Modules | Status |

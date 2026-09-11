@@ -1,4 +1,5 @@
 import { ComboboxField } from '@/components/form/combobox-field';
+import { DateField } from '@/components/form/date-field';
 import { SelectField, type SelectOption } from '@/components/form/select-field';
 import { TextField } from '@/components/form/text-field';
 import { useTimeZone } from '@/hooks/use-time-zone';
@@ -110,15 +111,14 @@ export function OrderHeaderFields({
                     />
                 )}
 
-                <TextField
+                <DateField
                     name="expected_date"
-                    type="date"
                     label="purchase-orders.field.expected_date"
                     hint="purchase-orders.field.expected_date_hint"
-                    // The stored instant back onto this browser's clock. A date input
-                    // takes `Y-m-d` and renders EMPTY for anything else without a
-                    // word of complaint, so handing it the ISO string looked like an
-                    // order with no expected date rather than like a bug.
+                    // The stored instant back onto this browser's clock, as `Y-m-d`.
+                    // Still needed with a calendar rather than a date input: the column
+                    // holds an instant, and reading it on any other clock would offer
+                    // the day before to everyone west of whoever picked it.
                     defaultValue={
                         order?.expected_date == null
                             ? ''

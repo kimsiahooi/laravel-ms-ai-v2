@@ -4,12 +4,12 @@ import {
     decimal,
     lines,
     oneOf,
+    optionalDate,
     optionalDecimal,
     optionalFlag,
     optionalText,
     text,
 } from '@/lib/validation/primitives';
-import type { TranslationKey } from '@/types/lang';
 
 /**
  * Mirrors App\Http\Requests\Tenant\PurchaseOrderRequest — the order header and every
@@ -152,50 +152,3 @@ const EXCHANGE_RATE_MAX = 999_999_999;
 
 /** `max:N` on the lines. One order, not a data import. */
 const MAX_LINES = 200;
-
-/**
- * An optional calendar date — `['nullable', 'date']`.
- *
- * Here rather than in `primitives.ts` because this is the app's first date field and a
- * primitive with one caller is a guess at what the second one will need. It moves there
- * when sales orders bring a second — the rule of three the components follow.
- *
- * **A calendar date, deliberately not an instant.** An expected delivery is the day
- * somebody typed; it carries no time and no zone, and parsing it as one would make it a
- * different day for a reader west of UTC. So the check is on the *shape* — four digits,
- * two, two — plus a round trip through UTC to refuse the 31st of February, which matches
- * `Y-m-d` in every field the shape allows.
- */
-function optionalDate(attribute: TranslationKey) {
-    return z
-        .string(encodeMessage({ key: 'validation.string', attribute }))
-        .trim()
-        .refine(
-            (value) => value === '' || isCalendarDate(value),
-            encodeMessage({ key: 'validation.date', attribute }),
-        )
-        .optional();
-}
-
-/** Whether `value` is a real `Y-m-d` day rather than merely a string shaped like one. */
-function isCalendarDate(value: string): boolean {
-    const parts = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
-
-    if (parts === null) {
-        return false;
-    }
-
-    const date = new Date(`${value}T00:00:00Z`);
-
-    if (Number.isNaN(date.getTime())) {
-        return false;
-    }
-
-    // A month that rolled over — `2026-02-31` becomes the 3rd of March — comes back as
-    // a different day than it went in as, which is the whole test.
-    return (
-        date.getUTCFullYear() === Number(parts[1]) &&
-        date.getUTCMonth() + 1 === Number(parts[2]) &&
-        date.getUTCDate() === Number(parts[3])
-    );
-}

@@ -30,6 +30,15 @@ const MONTHS = [
     'Dec',
 ];
 
+/**
+ * Weekday abbreviations, Sunday first — the order `Date.getDay()` returns.
+ *
+ * Here for exactly the reason {@see MONTHS} is: a calendar has to head its columns with
+ * day names, and asking `Intl` for them hands that text to ICU, whose data differs
+ * between the SSR runtime and the browser. These are ours and cannot drift.
+ */
+const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
 /** A UTC instant broken into the wall-clock fields of some zone. */
 type Zoned = {
     /** 1-12, not the 0-11 the Date API uses. */
@@ -289,6 +298,42 @@ export function formatMoney(
     const body = padded === '' ? group(whole) : `${group(whole)}.${padded}`;
 
     return `${currency} ${negative ? '-' : ''}${body}`;
+}
+
+/**
+ * `2026-10-15` → `15 Oct 2026`. A calendar day, with no zone anywhere near it.
+ *
+ * The counterpart to {@see formatDate}, and deliberately not the same function. That one
+ * takes an *instant* and needs a zone to say which day it fell on; this takes a day that
+ * is already a day. Routing it through a `Date` would invent a time, convert it, and hand
+ * back the day before for anyone west of the picker — the exact bug `formatDateInput`
+ * exists to undo.
+ *
+ * Pure string work: nothing is parsed into a number except to index the month table, and
+ * a value that is not `Y-m-d` comes back as it went in rather than as `Invalid Date`.
+ */
+export function formatDateValue(value: string): string {
+    const parts = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+
+    if (parts === null) {
+        return value;
+    }
+
+    const month = MONTHS[Number(parts[2]) - 1];
+
+    return month === undefined
+        ? value
+        : `${Number(parts[3])} ${month} ${parts[1]}`;
+}
+
+/** A weekday abbreviation for a `Date`, from the table above rather than from ICU. */
+export function weekdayName(date: Date): string {
+    return WEEKDAYS[date.getDay()] ?? '';
+}
+
+/** `2026-10` → `Oct 2026`, for a calendar's caption. Same table, same reason. */
+export function formatMonthCaption(date: Date): string {
+    return `${MONTHS[date.getMonth()] ?? ''} ${date.getFullYear()}`;
 }
 
 /**

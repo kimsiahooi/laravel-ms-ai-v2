@@ -21,8 +21,10 @@ return [
     // Marks a field the form will accept empty. Sits beside the label rather than
     // inside it, so the label stays the thing a screen reader announces.
     'field' => [
+        'clear_date' => 'Clear date',
         'on_hand' => 'On hand now: :quantity',
         'none' => 'Not set',
+        'pick_a_date' => 'Pick a date',
         'optional' => '(optional)',
     ],
 

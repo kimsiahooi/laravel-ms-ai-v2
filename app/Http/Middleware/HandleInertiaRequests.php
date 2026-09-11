@@ -9,6 +9,7 @@ use App\Support\Locales;
 use App\Support\TableColumns;
 use App\Support\TenantRoles;
 use App\Support\TimeZones;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -76,6 +77,17 @@ class HandleInertiaRequests extends Middleware
             // directly above: the client must render the string the server already
             // rendered. Timestamps stay UTC everywhere else — this is display only.
             'timezone' => TimeZones::resolve($request),
+            // What day it is where the reader is, as `Y-m-d`.
+            //
+            // A prop rather than a `new Date()` in the browser, for the reason the two
+            // above give and one more that is specific to it: a calendar marks today,
+            // and reading the clock during render is the one thing `scripts/ui-guard.sh`
+            // refuses outright — the server and the browser can land either side of
+            // midnight and the mismatch is a React #418 nothing here would catch.
+            //
+            // Resolved in the viewer's own zone, so "today" is their today rather than
+            // UTC's. See resources/js/components/form/date-field.tsx.
+            'today' => fn (): string => CarbonImmutable::now(TimeZones::resolve($request))->format('Y-m-d'),
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
             // Which columns this person looks at, per list — see App\Support\TableColumns.
             // Resolved through the same guard expression as `auth.user` above and for the

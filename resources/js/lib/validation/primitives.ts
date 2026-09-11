@@ -548,6 +548,56 @@ function checkDecimal(
  * own field — so the message lands beside the picker that repeats rather than at the
  * top of a list of ten.
  */
+/**
+ * An optional calendar date — the browser half of `['nullable', 'date']`.
+ *
+ * **A calendar date, deliberately not an instant.** An expected delivery is the day
+ * somebody picked; it carries no time and no zone, and parsing it as one would make it a
+ * different day for a reader west of UTC. So the check is on the *shape* — four digits,
+ * two, two — plus a round trip through UTC to refuse the 31st of February, which matches
+ * `Y-m-d` in every field the shape allows.
+ *
+ * Empty is a real answer, as it is in {@see optionalDecimal}: "no date agreed" is not the
+ * same as any particular date, and the server decides what absence means.
+ *
+ * Lived in `schemas/purchase-order.ts` while purchase orders were the only date field in
+ * the app, with a note saying it would move here when a second arrived. `DateField` is
+ * that second caller — sales orders and both returns bring the same `expected_date`.
+ */
+export function optionalDate(attribute: TranslationKey) {
+    return z
+        .string(message('validation.string', attribute))
+        .trim()
+        .refine(
+            (value) => value === '' || isCalendarDate(value),
+            message('validation.date', attribute),
+        )
+        .optional();
+}
+
+/** Whether `value` is a real `Y-m-d` day rather than merely a string shaped like one. */
+function isCalendarDate(value: string): boolean {
+    const parts = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+
+    if (parts === null) {
+        return false;
+    }
+
+    const date = new Date(`${value}T00:00:00Z`);
+
+    if (Number.isNaN(date.getTime())) {
+        return false;
+    }
+
+    // A month that rolled over — `2026-02-31` becomes the 3rd of March — comes back as
+    // a different day than it went in as, which is the whole test.
+    return (
+        date.getUTCFullYear() === Number(parts[1]) &&
+        date.getUTCMonth() + 1 === Number(parts[2]) &&
+        date.getUTCDate() === Number(parts[3])
+    );
+}
+
 export function lines<T extends z.ZodType>({
     item,
     max,

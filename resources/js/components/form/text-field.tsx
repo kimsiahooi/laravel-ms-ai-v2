@@ -43,7 +43,9 @@ type Props = {
      * would be added to do. Its rendered VALUE is always `Y-m-d`, never a localised
      * one, so it is safe under SSR where a formatted date would not be.
      */
-    type?: 'text' | 'email' | 'tel' | 'date';
+    // No 'date': a calendar day is picked from {@see DateField}, which renders a
+    // shadcn calendar instead of handing the popup to the browser.
+    type?: 'text' | 'email' | 'tel';
     /**
      * The on-screen keyboard for a field that holds digits.
      *

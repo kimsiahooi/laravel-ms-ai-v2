@@ -24,6 +24,12 @@ declare module '@inertiajs/core' {
              */
             timezone: string;
             /**
+             * What day it is where the reader is, `Y-m-d`, resolved server-side in
+             * `timezone`. A calendar has to mark today without calling the clock during
+             * render — see `components/form/date-field.tsx`.
+             */
+            today: string;
+            /**
              * Which columns this person looks at, per list — only the lists they have
              * actually changed. A prop rather than anything the browser reads for itself:
              * the table seeds its state from this during render, so both sides have to be

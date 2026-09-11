@@ -16,8 +16,10 @@ return [
     // Marks a field the form will accept empty. Sits beside the label rather than
     // inside it, so the label stays the thing a screen reader announces.
     'field' => [
+        'clear_date' => '清除日期',
         'on_hand' => '当前库存：:quantity',
         'none' => '未设置',
+        'pick_a_date' => '选择日期',
         'optional' => '（选填）',
     ],
 
