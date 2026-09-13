@@ -470,11 +470,14 @@ final class SalesOrderController
      */
     private static function availability(Collection $lines, Warehouse $warehouse, StockService $stock): array
     {
-        $required = OrderAvailability::required($lines);
+        $required = OrderAvailability::demandsFrom(
+            $lines,
+            static fn (SalesOrderItem $line): ?Product => $line->product,
+        );
 
         return OrderAvailability::rows(
             $required,
-            $stock->onHandFor($warehouse, OrderAvailability::products($required)),
+            $stock->onHandFor($warehouse, OrderAvailability::items($required)),
         );
     }
 

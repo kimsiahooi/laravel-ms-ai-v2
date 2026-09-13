@@ -93,12 +93,18 @@ final class FulfillSalesOrder
             // product was archived after the order was taken still resolves.
             $lines = $locked->items()->with('product')->get();
 
-            $required = OrderAvailability::required($lines);
+            // The closure is the only thing about this that is a sales order's business —
+            // which relation holds the item. Everything else, including skipping a line whose
+            // product was hard-deleted, belongs to every document that issues stock.
+            $required = OrderAvailability::demandsFrom(
+                $lines,
+                static fn (SalesOrderItem $line): ?Product => $line->product,
+            );
 
             // Every lock first, then the whole check, then the writes. The levels come back
             // from the locking read rather than a plain one afterwards — see `lockLevels()`
             // on why REPEATABLE READ makes that distinction load-bearing.
-            $levels = $this->stock->lockLevels($warehouse, OrderAvailability::products($required));
+            $levels = $this->stock->lockLevels($warehouse, OrderAvailability::items($required));
 
             $shortfalls = OrderAvailability::shortfalls(OrderAvailability::rows($required, $levels));
 

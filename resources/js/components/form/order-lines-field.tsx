@@ -1,11 +1,10 @@
 import { Plus } from 'lucide-react';
 import { COLUMNS, OrderLineRow } from '@/components/form/order-line-row';
+import { OrderTotalsSummary } from '@/components/form/order-totals-summary';
 import type { StockPickerEntry } from '@/components/form/stock-picker-field';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/hooks/use-translation';
-import { formatMoney } from '@/lib/format';
 import type { DiscountType } from '@/lib/money';
-import { orderTotals } from '@/lib/money';
 import { cn } from '@/lib/utils';
 import type { TranslationKey } from '@/types/lang';
 
@@ -105,15 +104,6 @@ export function OrderLinesField({
 }) {
     const { t } = useTranslation();
     const headings = headingsFor(priceLabel);
-    const totals = orderTotals(lines, taxRate);
-
-    // Every row is handed the rate; only the tax line's wording has a `:rate` in it.
-    const summary: [TranslationKey, string][] = [
-        ['orders.totals.subtotal', totals.subtotal],
-        ['orders.totals.discount', totals.discountTotal],
-        ['orders.totals.tax', totals.taxTotal],
-        ['orders.totals.total', totals.total],
-    ];
 
     const add = () =>
         onChange([
@@ -197,30 +187,11 @@ export function OrderLinesField({
                     {t('orders.lines.add')}
                 </Button>
 
-                <div className="w-full sm:w-72">
-                    <dl className="space-y-1 text-sm">
-                        {summary.map(([label, value], index) => (
-                            <div
-                                key={label}
-                                className={cn(
-                                    'flex justify-between gap-4',
-                                    index === summary.length - 1 &&
-                                        'border-t pt-2 font-medium',
-                                )}
-                            >
-                                <dt className="text-muted-foreground">
-                                    {t(label, { rate: taxRate })}
-                                </dt>
-                                <dd className="tabular-nums">
-                                    {formatMoney(value, currency)}
-                                </dd>
-                            </div>
-                        ))}
-                    </dl>
-                    <p className="mt-2 text-muted-foreground text-xs">
-                        {t('orders.totals.estimate')}
-                    </p>
-                </div>
+                <OrderTotalsSummary
+                    lines={lines}
+                    taxRate={taxRate}
+                    currency={currency}
+                />
             </div>
         </div>
     );

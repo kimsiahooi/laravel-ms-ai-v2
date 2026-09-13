@@ -126,6 +126,37 @@ export type OrderTotals = {
 };
 
 /**
+ * Compare two decimal strings: negative, zero or positive, the way `bccomp` answers.
+ *
+ * **Null when either is not a number yet**, which is the case a validation schema actually
+ * hits: somebody has typed `1.` and the ceiling check must not fire, because "must be a
+ * number" is a different message that another rule is already responsible for. A caller
+ * writes `const over = compareDecimal(typed, limit); if (over !== null && over > 0)`.
+ *
+ * **Here rather than a `<` in a schema, and not via `parseFloat`.** `decimal(15,4)` at its
+ * maximum is fifteen significant digits, which is the edge of what a double holds exactly —
+ * the whole reason this file scales to `BigInt`. A comparison done in floats would disagree
+ * with `App\Support\Money::compare()` on precisely the quantities somebody checks by hand,
+ * and it would disagree silently.
+ *
+ * Truncation beyond the working scale matches `parse()`, and therefore matches bcmath.
+ */
+export function compareDecimal(a: string, b: string): number | null {
+    const left = parse(a);
+    const right = parse(b);
+
+    if (left === null || right === null) {
+        return null;
+    }
+
+    if (left === right) {
+        return 0;
+    }
+
+    return left < right ? -1 : 1;
+}
+
+/**
  * What one line comes to.
  *
  * A line whose quantity or price is missing contributes nothing rather than guessing at
