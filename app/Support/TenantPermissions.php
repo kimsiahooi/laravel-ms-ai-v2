@@ -112,6 +112,12 @@ final class TenantPermissions
         'purchase-returns.cancel' => 'purchase-returns.update',
         'sales-orders.fulfill' => 'sales-orders.update',
         'sales-orders.cancel' => 'sales-orders.update',
+        // The two sales-order form pages, for exactly the reason the purchase-order pair
+        // above spells out: routeMap() auto-maps only index/store/show/update/destroy, so
+        // without these the blank order form and the seeded edit form — both of which
+        // render the whole customer and product catalog — are open to any signed-in user.
+        'sales-orders.create' => 'sales-orders.create',
+        'sales-orders.edit' => 'sales-orders.update',
         // Downloading the e-invoice reads the order's data — gate it on view.
         'sales-orders.e-invoice' => 'sales-orders.view',
         'sales-returns.complete' => 'sales-returns.update',

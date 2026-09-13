@@ -5,6 +5,7 @@ import { DataTable } from '@/components/data/data-table';
 import { DateCell } from '@/components/data/date-cell';
 import { FilterPanel } from '@/components/data/filter-panel';
 import { SelectFilter } from '@/components/data/select-filter';
+import { SingleComboboxFilter } from '@/components/data/single-combobox-filter';
 import { columnsFor } from '@/components/data/table';
 import { EmptyState } from '@/components/feedback/empty-state';
 import { Button } from '@/components/ui/button';
@@ -17,7 +18,6 @@ import {
     TotalCell,
 } from '@/pages/purchase-orders/_components/order-cells';
 import { OrderStatusBadge } from '@/pages/purchase-orders/_components/order-status-badge';
-import { SupplierFilter } from '@/pages/purchase-orders/_components/supplier-filter';
 import { index } from '@/routes/purchase-orders';
 import { index as suppliersIndex } from '@/routes/suppliers';
 import type { Paginated, ResourceFilters } from '@/types';
@@ -135,7 +135,7 @@ export default function PurchaseOrdersIndex({
                             label="purchase-orders.filter.status"
                             allLabel="purchase-orders.filter.all_statuses"
                         />
-                        <SupplierFilter
+                        <SingleComboboxFilter
                             value={filter.values.supplier ?? ''}
                             onChange={(supplier) =>
                                 filter.set('supplier', supplier)

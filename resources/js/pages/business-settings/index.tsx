@@ -5,30 +5,23 @@ import { TextField } from '@/components/form/text-field';
 import Heading from '@/components/heading';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import { CURRENCY_NAMES } from '@/config/currencies';
 import { usePermissions } from '@/hooks/use-permissions';
 import { useTranslation } from '@/hooks/use-translation';
 import { CurrencyChoices } from '@/pages/business-settings/_components/currency-choices';
 import { DocumentNumberFields } from '@/pages/business-settings/_components/document-number-fields';
 import { TimezoneField } from '@/pages/business-settings/_components/timezone-field';
 import { index } from '@/routes/settings';
-import type { TranslationKey } from '@/types/lang';
 
 /**
  * The names of the currencies this app knows, keyed by ISO code.
  *
  * The catalog itself arrives as a page prop, so the browser can never offer a code the
- * request would refuse — but the *words* stay here, because a `SelectOption` label is a
- * `TranslationKey` and the compiler proves each one exists. A code with no entry is
- * left out of the pickers rather than rendered as its own key: adding a currency means
- * naming it in `lang/`, and this is what says so.
+ * request would refuse — but the *words* come from {@see CURRENCY_NAMES} in
+ * `config/currencies.ts`, because a `SelectOption` label is a `TranslationKey` and the
+ * compiler proves each one exists. A code with no entry is left out of the pickers rather
+ * than rendered as its own key: adding a currency means naming it in `lang/`.
  */
-const CURRENCY_NAMES: Record<string, TranslationKey> = {
-    MYR: 'business-settings.currency.myr',
-    SGD: 'business-settings.currency.sgd',
-    USD: 'business-settings.currency.usd',
-    EUR: 'business-settings.currency.eur',
-    CNY: 'business-settings.currency.cny',
-};
 
 /**
  * The workspace's money settings, on one page.

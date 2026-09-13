@@ -7,6 +7,7 @@ import {
     LayoutGrid,
     MapPin,
     Package,
+    Receipt,
     Settings2,
     ShoppingCart,
     Tags,
@@ -20,6 +21,7 @@ import { index as locations } from '@/routes/locations';
 import { index as products } from '@/routes/products';
 import { index as purchaseOrders } from '@/routes/purchase-orders';
 import { index as rawMaterials } from '@/routes/raw-materials';
+import { index as salesOrders } from '@/routes/sales-orders';
 import { index as businessSettings } from '@/routes/settings';
 import { index as stockMovements } from '@/routes/stock-movements';
 import { index as stockTakes } from '@/routes/stock-takes';
@@ -133,10 +135,9 @@ export function tenantNavGroups(
             ],
         },
         {
-            // "Orders", plural and labelled from its first member, because the other
-            // three — purchase returns, sales orders, sales returns — are the rest of
-            // this phase rather than a someday. Purchases sit above sales when they
-            // arrive: a workspace buys before it has anything to sell.
+            // "Orders", plural because the returns are still to come. Purchases sit
+            // above sales deliberately: a workspace buys before it has anything to sell,
+            // and that is the order the two screens are learned in.
             label: 'tenant.nav.orders',
             items: [
                 {
@@ -144,6 +145,12 @@ export function tenantNavGroups(
                     href: purchaseOrders(),
                     icon: ShoppingCart,
                     permission: 'purchase-orders.view',
+                },
+                {
+                    title: 'sales-orders.title',
+                    href: salesOrders(),
+                    icon: Receipt,
+                    permission: 'sales-orders.view',
                 },
             ],
         },

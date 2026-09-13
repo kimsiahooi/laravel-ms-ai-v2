@@ -147,7 +147,6 @@ return [
 
     'error' => [
         'not_pending' => 'Pesanan ini sudah diterima atau dibatalkan.',
-        'insufficient' => 'Hanya :available ada, dan ini akan memindahkan :requested.',
         'received_locked' => 'Pesanan yang telah diterima tidak boleh diubah atau dipadam.',
         'insufficient' => 'Hanya :available ada, dan penerimaan ini akan memindahkan :requested.',
     ],

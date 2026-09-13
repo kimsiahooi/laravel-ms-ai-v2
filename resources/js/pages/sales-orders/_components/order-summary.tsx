@@ -6,42 +6,47 @@ import { useTranslation } from '@/hooks/use-translation';
 import { formatDateTime } from '@/lib/format';
 import type { TranslationKey } from '@/types/lang';
 
-type Order = App.Data.PurchaseOrderData;
+type Order = App.Data.SalesOrderData;
 
 /**
- * Everything about the order that is not a line: who it is with, what it is priced in,
- * when it is wanted, and — once it has arrived — who took it in and where.
+ * Everything about the order that is not a line: who it is for, what it is priced in, when
+ * it was promised, and — once it has shipped — who sent it and from where.
  *
- * **The receiving half appears only once there is one.** An empty "Received by —" on
- * every pending order is a row that says nothing on the screens where it is shown most,
- * and its absence is itself the answer to "has this arrived".
+ * **The shipping half appears only once there is one.** An empty "Shipped by —" on every
+ * pending order is a row that says nothing on the screens where it is shown most, and its
+ * absence is itself the answer to "has this gone out".
  *
- * The exchange rate is shown only when it is not 1, for the same reason the form hides
- * the box: an order in the workspace's own money has a rate that carries no information,
- * and printing "1.000000" invites the question of what it is doing there.
+ * The exchange rate is shown only when it is not 1, for the same reason the form hides the
+ * box: an order in the workspace's own money has a rate that carries no information, and
+ * printing "1.000000" invites the question of what it is doing there.
+ *
+ * **Two kinds of date, treated oppositely, and the difference is the point.** `fulfilled_at`
+ * is an instant — a moment that happened — so it is converted to the workspace clock.
+ * `expected_date` is a day somebody agreed, so nothing converts it at all; see
+ * {@see ExpectedDate}.
  */
 export function OrderSummary({ order }: { order: Order }) {
     const { t } = useTranslation();
     const timeZone = useTimeZone();
     const names = useDateNames();
 
-    // A parse for a *display* decision, never for arithmetic — which is why it is here
-    // and not in `lib/money.ts`. `1`, `1.0` and `1.000000` are one rate written three
-    // ways, and comparing the strings would show the box for two of them.
+    // A parse for a *display* decision, never for arithmetic — which is why it is here and
+    // not in `lib/money.ts`. `1`, `1.0` and `1.000000` are one rate written three ways, and
+    // comparing the strings would show the box for two of them.
     const converted = Number(order.exchange_rate) !== 1;
 
     return (
         <dl className="grid max-w-3xl gap-x-8 gap-y-2 text-sm sm:grid-cols-2">
-            <Row label="purchase-orders.summary.supplier">
-                {/* Null once the supplier has been force-deleted. i18n-allow */}
-                {order.supplier ?? '—'}
+            <Row label="sales-orders.summary.customer">
+                {/* Null once the customer has been force-deleted. i18n-allow */}
+                {order.customer ?? '—'}
             </Row>
-            <Row label="purchase-orders.summary.currency">
+            <Row label="sales-orders.summary.currency">
                 <span className="tabular-nums">
                     {order.currency}
                     {converted && (
                         <span className="ml-2 text-muted-foreground">
-                            {t('purchase-orders.summary.rate', {
+                            {t('sales-orders.summary.rate', {
                                 rate: order.exchange_rate,
                             })}
                         </span>
@@ -49,7 +54,7 @@ export function OrderSummary({ order }: { order: Order }) {
                 </span>
             </Row>
 
-            <Row label="purchase-orders.summary.expected">
+            <Row label="sales-orders.summary.expected">
                 {order.expected_date === null ? (
                     // i18n-allow
                     '—'
@@ -57,29 +62,33 @@ export function OrderSummary({ order }: { order: Order }) {
                     <ExpectedDate date={order.expected_date} />
                 )}
             </Row>
-            <Row label="purchase-orders.summary.raised_by">
+            <Row label="sales-orders.summary.raised_by">
                 {/* Null once the person has been removed. i18n-allow */}
                 {order.created_by ?? '—'}
             </Row>
 
-            {order.received_at !== null && (
+            {order.fulfilled_at !== null && (
                 <>
-                    <Row label="purchase-orders.summary.received_by">
+                    <Row label="sales-orders.summary.fulfilled_by">
                         {/* i18n-allow */}
-                        {order.received_by ?? '—'}
+                        {order.fulfilled_by ?? '—'}
                     </Row>
-                    <Row label="purchase-orders.summary.received_at">
+                    <Row label="sales-orders.summary.fulfilled_at">
                         <time
-                            dateTime={order.received_at}
+                            dateTime={order.fulfilled_at}
                             className="tabular-nums"
                         >
-                            {formatDateTime(order.received_at, timeZone, names)}
+                            {formatDateTime(
+                                order.fulfilled_at,
+                                timeZone,
+                                names,
+                            )}
                         </time>
                     </Row>
-                    <Row label="purchase-orders.summary.received_into">
+                    <Row label="sales-orders.summary.fulfilled_from">
                         {/* Null once the warehouse has been removed; the ledger rows it
                             wrote are still there. i18n-allow */}
-                        {order.received_warehouse ?? '—'}
+                        {order.fulfilled_warehouse ?? '—'}
                     </Row>
                 </>
             )}
@@ -87,9 +96,9 @@ export function OrderSummary({ order }: { order: Order }) {
             {order.notes !== null && (
                 <div className="sm:col-span-2">
                     <dt className="text-muted-foreground text-xs">
-                        {t('purchase-orders.summary.notes')}
+                        {t('sales-orders.summary.notes')}
                     </dt>
-                    {/* The buyer's own words, so their line breaks are theirs to keep. */}
+                    {/* The seller's own words, so their line breaks are theirs to keep. */}
                     <dd className="whitespace-pre-line">{order.notes}</dd>
                 </div>
             )}

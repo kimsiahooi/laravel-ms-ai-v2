@@ -1,0 +1,279 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Http\Requests\Tenant;
+
+use App\Actions\OpenSalesOrder;
+use App\Enums\DiscountType;
+use App\Http\Controllers\Concerns\ReadsQueryValues;
+use App\Models\BusinessSetting;
+use App\Models\Product;
+use App\Support\Money;
+use App\Support\OrderTotals;
+use App\Support\StockItem;
+use Carbon\CarbonImmutable;
+use Closure;
+use Illuminate\Validation\Rule;
+
+/**
+ * Taking a sales order, or rewriting a pending one. The same fields either way — an edit
+ * replaces what was agreed, so it carries the whole agreement.
+ *
+ * Mirrored in the browser by resources/js/lib/validation/schemas/sales-order.ts, which
+ * exports `salesOrderSchema(currencies)` because this one's currency rule is built from the
+ * workspace's own list rather than a constant. `bun run check:validation` builds it with the
+ * arguments in that script's FACTORY_ARGS and fails if the two stop covering the same fields.
+ *
+ * **Nothing here checks stock, and that is deliberate.** A sales order is a commitment to
+ * sell, routinely taken before the goods exist — a backorder is an ordinary thing for a
+ * business to record. The order carries no warehouse until it is fulfilled, so there is no
+ * level to check a line against; availability is a fact about a warehouse at an instant,
+ * which only {@see FulfillSalesOrder} can establish and only under a lock. Refusing a line
+ * here would make a backorder impossible to write down.
+ *
+ * **No total is a field here, and none ever will be.** {@see OrderTotals} computes the four
+ * order figures and every line's own from the lines below, and {@see OpenSalesOrder} stores
+ * what it decided. A total that arrived in a request would be a number the client chose for a
+ * document the business is going to invoice against.
+ *
+ * **`number` is not a field either.** v1 had one — optional, typed into a box, unique only by
+ * a rule that read the table before writing it — and its own generator went unused. The
+ * number is allocated under a row lock when the order is created and is not something an edit
+ * may touch.
+ *
+ * `max:200` on the lines is a ceiling on the request, not a business rule.
+ */
+final class SalesOrderRequest extends TenantFormRequest
+{
+    /**
+     * An order taken in the base currency converts at one, and is not asked.
+     *
+     * The form renders no rate box for a base-currency order, because there is nothing to
+     * decide — so the field arrives empty and would fail the `required` rule that exists to
+     * catch the case that *does* matter. Filling it in here rather than relaxing the rule
+     * keeps both halves: a blank rate on a foreign-currency order is still refused, which is
+     * precisely the hole v1 documented and left open.
+     *
+     * The rate is **overwritten**, not defaulted. A base-currency order at 4.42 is not a
+     * preference somebody expressed, it is a figure that would misstate the order's own value
+     * in its own books; no screen can send one, and a payload that does is not describing
+     * anything real.
+     *
+     * `input()` rather than `string()`, which fatals on `currency[]=x`: an array reaches
+     * `Str::of()` and raises a TypeError, so a hand-edited payload would be a 500 before a
+     * single rule had run. The same hazard {@see ReadsQueryValues} guards on the query string.
+     */
+    protected function prepareForValidation(): void
+    {
+        $currency = $this->input('currency');
+
+        if (is_string($currency) && $currency === BusinessSetting::current()->base_currency) {
+            $this->merge(['exchange_rate' => '1']);
+        }
+    }
+
+    /**
+     * @return array<string, array<int, mixed>>
+     */
+    public function rules(): array
+    {
+        // Resolved before the array rather than inline in it, for the reason
+        // StockMovementRequest gives: `check:i18n` reads this file as text to find the rules
+        // in use, and a quoted string inside the rules literal is indistinguishable to it
+        // from a rule name.
+        $currencies = BusinessSetting::current()->allowedCurrencies();
+
+        return [
+            'customer_id' => ['required', ...$this->foreignKey('customers')],
+            // The workspace's own list, which always includes the base currency — see
+            // BusinessSetting::allowedCurrencies(). Not a global ISO list: an order in a
+            // currency the books cannot express is a figure nobody can roll up.
+            'currency' => ['required', 'string', Rule::in($currencies)],
+            // Base-currency units per one unit of the order currency. **Required**, where v1
+            // left it nullable and documented the hole it left: a direct POST that omitted it
+            // on a foreign-currency order was stored at rate 1, silently valuing the order
+            // wrong. It is required here and filled in for the one case where the answer is
+            // not a question — see prepareForValidation().
+            //
+            // `max` is the column's real ceiling: decimal(15,6) spends six of its fifteen
+            // digits after the point, leaving nine, and MySQL in strict mode *errors* on more
+            // — so without this an over-large rate is a 500 rather than a sentence.
+            'exchange_rate' => ['required', 'numeric', 'decimal:0,6', 'gt:0', 'max:999999999'],
+            // Two formats, not `date`. The shape is load-bearing rather than fastidious:
+            // expectedInstant() tells a day from a day-and-time by the space, and `date` is
+            // strtotime-based — it would wave through `2026-10-15T14:30:00+05:00`, which
+            // carries no space, and the day-only branch would then throw on it. Mirrored by
+            // optionalDateTime.
+            'expected_date' => ['nullable', 'date_format:Y-m-d,Y-m-d H:i'],
+            'notes' => ['nullable', 'string', 'max:1000'],
+            // `required` already refuses an empty array, so there is no `min:1` — and it is
+            // the rule that says an order with nothing on it is not an order.
+            'items' => ['required', 'array', 'max:200'],
+            // One field naming one product, not a type and an id — see StockItem. No
+            // `distinct`: unlike a bill of materials, the same product may legitimately
+            // appear twice at two prices, which the migration says more about.
+            'items.*.item' => ['required', 'string', $this->productExists()],
+            'items.*.quantity' => ['required', ...$this->decimalRules()],
+            // `gte:0`, not `gt:0`: a free line is real — a sample, a replacement, a goodwill
+            // item shipped at no charge — and refusing it would force somebody to invent a
+            // price.
+            'items.*.unit_price' => ['required', ...$this->decimalRules('gte:0')],
+            'items.*.discount_type' => ['required', Rule::enum(DiscountType::class)],
+            // Nullable, because a blank discount box is not a missing answer — it is no
+            // discount, and {@see self::lines()} reads it as zero. Requiring it would make
+            // clearing the box an error on a line nobody meant to discount.
+            'items.*.discount_value' => ['nullable', ...$this->decimalRules('gte:0')],
+            'items.*.taxable' => ['required', 'boolean'],
+        ];
+    }
+
+    /**
+     * The order's own fields — everything that is not a line — in the types the columns want.
+     *
+     * Not `header()`, which is what this wants to be called: `Illuminate\Http\Request` already
+     * has one, and an override taking no arguments would break every caller asking this
+     * request for an HTTP header.
+     *
+     * The conversion belongs here rather than in the Action, for the reason
+     * {@see BomRequest::lines()} gives: a form submits strings, and the class that declared
+     * the rules is the one that knows which is which.
+     *
+     * `exchange_rate` stays a **string**. It multiplies every figure on the order when it is
+     * rolled up into the base currency, and a rate that has been through a float is a rate
+     * that may no longer be what was quoted.
+     *
+     * The currency is passed through rather than upper-cased: the `in` rule has already
+     * pinned it to one of the workspace's own codes, which are stored upper-case.
+     *
+     * An empty notes box becomes null rather than an empty string — "nothing was written
+     * down" is an absence, and a column full of empty strings is a column nothing can ask a
+     * useful question of.
+     *
+     * @return array{customer_id: int, currency: string, exchange_rate: string, expected_date: CarbonImmutable|null, notes: string|null}
+     */
+    public function orderHeader(): array
+    {
+        $notes = $this->input('notes');
+
+        return [
+            'customer_id' => $this->integer('customer_id'),
+            'currency' => (string) $this->string('currency'),
+            'exchange_rate' => (string) $this->string('exchange_rate'),
+            'expected_date' => $this->expectedInstant(),
+            'notes' => is_string($notes) && $notes !== '' ? $notes : null,
+        ];
+    }
+
+    /**
+     * The validated lines, resolved and typed.
+     *
+     * Each line's product is decoded back into a row rather than trusted, which is the same
+     * re-resolution the stock screens do and is what turns a picker value into the foreign key
+     * the column stores. It costs one primary-key lookup per line, bounded by the `max:200`
+     * above; the alternative is splitting the encoded value here, and the shape of that string
+     * lives in {@see StockItem} and nowhere else.
+     *
+     * A line whose product no longer resolves is dropped rather than raised. The rule above
+     * has just proved every one of them, so this is the analyser being told the shape rather
+     * than a case that can occur — and if the catalogue changed underneath in the milliseconds
+     * between, a silently shorter order is a far better outcome than a 500 or a line pointing
+     * at nothing.
+     *
+     * Quantities and prices stay **strings**, for the reason {@see BomRequest::lines()} gives
+     * and {@see Money} gives again: the value that passed `decimal:0,4` is already exact, and
+     * handing it to Eloquent unchanged is what keeps it so.
+     *
+     * @return list<array{product_id: int, quantity: string, unit_price: string, discount_type: DiscountType, discount_value: string, taxable: bool}>
+     */
+    public function lines(): array
+    {
+        $lines = [];
+
+        foreach ($this->array('items') as $line) {
+            // `array()` is untyped by nature; the rules have already refused anything that is
+            // not a row of scalars under an integer key.
+            if (! is_array($line)) {
+                continue;
+            }
+
+            $product = StockItem::decode((string) $line['item']);
+
+            if (! $product instanceof Product) {
+                continue;
+            }
+
+            $discount = $line['discount_value'] ?? null;
+
+            $lines[] = [
+                'product_id' => $product->id,
+                'quantity' => (string) $line['quantity'],
+                'unit_price' => (string) $line['unit_price'],
+                // Safe to `from` rather than `tryFrom`: Rule::enum has just refused anything
+                // this could not resolve.
+                'discount_type' => DiscountType::from((string) $line['discount_type']),
+                // A blank box is no discount. Checked with `is_numeric` rather than a `??`,
+                // because the box can arrive empty as well as absent and both mean the same.
+                'discount_value' => is_numeric($discount) ? (string) $discount : '0',
+                // The checkbox posts `'1'` or `'0'`; a JSON payload sends a real boolean.
+                // `filter_var` reads both, where a cast would make the string `'0'` true.
+                'taxable' => filter_var($line['taxable'], FILTER_VALIDATE_BOOL),
+            ];
+        }
+
+        return $lines;
+    }
+
+    /**
+     * A picker value naming one live product.
+     *
+     * Not {@see TenantFormRequest::itemExists()}, which accepts a raw material too. A sales
+     * order sells what the workspace makes; letting a raw material through here would put
+     * "sell your own inputs" one crafted payload away, and the column it would be written to
+     * only points at `products` anyway.
+     */
+    private function productExists(): Closure
+    {
+        return static function (string $attribute, mixed $value, Closure $fail): void {
+            if (! is_string($value) || ! StockItem::decode($value) instanceof Product) {
+                $fail('validation.exists')->translate();
+            }
+        };
+    }
+
+    /**
+     * The picked day, and the time on it if one was picked, exactly as chosen.
+     *
+     * **No timezone is involved, and that is the point.** A promised delivery is a date the
+     * business wrote down, not a moment on a clock: "the 15th" means the 15th, and it should
+     * still mean the 15th tomorrow, next year, and after somebody changes the workspace's
+     * timezone in settings. The only way that holds is for nothing to convert it — so the form
+     * sends `Y-m-d` or `Y-m-d H:i`, and that is what is stored.
+     *
+     * This is the rule the settings screen promises: the workspace timezone is a display
+     * reference and never decides what goes into a column.
+     *
+     * **The `!` is load-bearing, and its absence would be invisible.** `createFromFormat`
+     * fills anything the format does not name from the clock *right now*, so `'Y-m-d H:i'`
+     * would store a 14:30 delivery as `14:30:37.482`. Worse than the stray seconds: a day-only
+     * pick would land a fraction after midnight, and the "midnight means no time was given"
+     * test would never fire again — so every order would sprout a delivery time of `00:00`.
+     * `'!'` resets every unnamed field.
+     *
+     * Read from the raw input rather than through `$this->date()`: that helper normalises
+     * through the app's timezone, which is a conversion this must not do. `date_format` has
+     * already proved the shape is one of the two.
+     */
+    private function expectedInstant(): ?CarbonImmutable
+    {
+        $picked = trim((string) $this->input('expected_date', ''));
+
+        if ($picked === '') {
+            return null;
+        }
+
+        return str_contains($picked, ' ')
+            ? CarbonImmutable::createFromFormat('!Y-m-d H:i', $picked)
+            : CarbonImmutable::createFromFormat('!Y-m-d', $picked);
+    }
+}

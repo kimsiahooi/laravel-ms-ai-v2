@@ -173,12 +173,11 @@ class PurchaseOrder extends Model
      * including a `(float)` on the way to the browser — reintroduces exactly the drift
      * the fixed-point columns exist to prevent.
      *
-     * `expected_date` is cast like `received_at` but is NOT an instant: it holds the
-     * delivery date as chosen, read and written as a wall clock with no zone. See the
-     * column comment and PurchaseOrderRequest::expectedInstant().
-     * The screen still asks for a day; the day is anchored to its start in the zone the
-     * person picking it was in — see {@see PurchaseOrderRequest}
-     * — so they read back the date they chose.
+     * `expected_date` is cast like `received_at` but is **not** an instant: it holds the
+     * delivery date exactly as chosen, read and written as a wall clock with no zone
+     * anywhere near it. The cast is here only so it arrives as a `Carbon` to be formatted
+     * from; nothing converts it. See the column comment and
+     * {@see PurchaseOrderRequest::expectedInstant()}.
      *
      * @return array<string, string>
      */

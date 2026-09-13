@@ -1,6 +1,6 @@
+import { ExpectedDate } from '@/components/data/expected-date';
 import { InlineLink } from '@/components/inline-link';
 import { formatMoney } from '@/lib/format';
-import { ExpectedDate } from '@/pages/purchase-orders/_components/expected-date';
 import { show } from '@/routes/purchase-orders';
 
 type Order = App.Data.PurchaseOrderData;

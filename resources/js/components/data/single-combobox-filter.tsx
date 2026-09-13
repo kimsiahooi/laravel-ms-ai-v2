@@ -23,11 +23,12 @@ import type { TranslationKey } from '@/types/lang';
 const ALL = '__all__';
 
 /**
- * A searchable filter that narrows to exactly **one** supplier.
+ * A searchable filter that narrows to exactly **one** row of the workspace's own data —
+ * a supplier, a customer, whatever the screen passes in.
  *
  * **Why not {@see ComboboxFilter}, which looks like this and is in `components/`.** That
  * one is a multi-select: ticking a second material widens the result, and its value is a
- * comma-separated list. The orders list filters by a single supplier — the controller
+ * comma-separated list. An orders list filters by a single counterparty — the controller
  * reads one id and echoes one back — so a multi-select here would let somebody tick two,
  * send `3,7`, and watch the second tick quietly disappear on the round trip. A control
  * that offers a choice the server cannot honour is worse than one that offers less.
@@ -37,16 +38,20 @@ const ALL = '__all__';
  * select, while a supplier is the workspace's own data, there can be hundreds, and
  * scrolling to one without a search box is not a control anyone would choose.
  *
- * It lives here rather than in `components/data/` because it has one consumer. Sales
- * orders will want the same thing for a customer, and purchase returns for a supplier
- * again — that is the third, and the rule of three says it moves then rather than now.
+ * **Promoted out of `purchase-orders/_components/` when sales orders wanted the same
+ * control for a customer.** Its old docblock predicted that would be only the second
+ * consumer and said to copy — but 170 lines of Radix `Command`/`Popover` wiring is
+ * non-trivial by `docs/ARCHITECTURE.md`'s own rule 3, which allows promotion on the second
+ * consumer for exactly that reason. Every string was already a prop, so nothing about it
+ * had to change to serve both. Purchase returns and sales returns will be the third and
+ * fourth.
  *
  * Controlled, and it submits nothing: a filter's value lives in the URL, so the value
  * arrives as a prop and every change goes back through {@see FilterApi}. Clearing sends
  * `''`, which drops the key from the URL — "any supplier" is the absence of a filter
  * rather than a value meaning everything.
  */
-export function SupplierFilter({
+export function SingleComboboxFilter({
     value,
     onChange,
     options,

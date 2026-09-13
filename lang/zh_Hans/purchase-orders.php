@@ -147,7 +147,6 @@ return [
 
     'error' => [
         'not_pending' => '该订单已收货或已取消。',
-        'insufficient' => '只有 :available 可用，而这次要动 :requested。',
         'received_locked' => '已收货的订单不能修改或删除。',
         'insufficient' => '仅有 :available，而这次收货要入 :requested。',
     ],

@@ -127,6 +127,41 @@ bom_product_count: number,
 created_at: string,
 creator: string | null,
 };
+export type SalesOrderData = {
+id: number,
+number: string,
+customer: string | null,
+customer_id: number | null,
+status: App.Enums.SalesOrderStatus,
+currency: string,
+exchange_rate: string,
+tax_rate: string,
+subtotal: string,
+discount_total: string,
+tax_total: string,
+total: string,
+notes: string | null,
+expected_date: string | null,
+created_by: string | null,
+fulfilled_by: string | null,
+fulfilled_at: string | null,
+fulfilled_warehouse: string | null,
+line_count: number,
+created_at: string,
+};
+export type SalesOrderItemData = {
+id: number,
+item: string,
+name: string | null,
+sku: string | null,
+unit: App.Enums.Unit | null,
+quantity: string,
+unit_price: string,
+discount_type: App.Enums.DiscountType,
+discount_value: string,
+taxable: boolean,
+line_total: string,
+};
 export type StockItemOptionData = {
 value: string,
 name: string,
@@ -244,10 +279,11 @@ export type DocumentType = 'purchase_order' | 'purchase_return' | 'sales_order' 
 export type MovementSource = 'purchase_order' | 'stock_take' | 'stock_transfer';
 export type NumberReset = 'yearly' | 'never';
 export type PurchaseOrderStatus = 'pending' | 'received' | 'cancelled';
+export type SalesOrderStatus = 'pending' | 'fulfilled' | 'cancelled';
 export type StockItemType = 'product' | 'raw_material';
 export type StockMovementReason = 'adjustment' | 'stock_take' | 'transfer_in' | 'transfer_out' | 'purchase_receipt' | 'purchase_return' | 'sales_fulfillment' | 'sales_return' | 'production_consume' | 'production_output';
 export type StockTakeStatus = 'draft' | 'posted' | 'cancelled';
-export type TableKey = 'admin-tenants' | 'admin-tenants-trashed' | 'categories' | 'customers' | 'locations' | 'products' | 'purchase-orders' | 'raw-materials' | 'stock-movements' | 'stock-takes' | 'stock-transfers' | 'suppliers' | 'warehouse-items' | 'warehouses';
+export type TableKey = 'admin-tenants' | 'admin-tenants-trashed' | 'categories' | 'customers' | 'locations' | 'products' | 'purchase-orders' | 'raw-materials' | 'sales-orders' | 'stock-movements' | 'stock-takes' | 'stock-transfers' | 'suppliers' | 'warehouse-items' | 'warehouses';
 export type Unit = 'g' | 'kg' | 't' | 'ml' | 'l' | 'mm' | 'cm' | 'm' | 'pcs' | 'box' | 'roll' | 'sheet' | 'pair' | 'set';
 }
 }

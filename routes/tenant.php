@@ -14,6 +14,7 @@ use App\Http\Controllers\Tenant\MediaController;
 use App\Http\Controllers\Tenant\ProductController;
 use App\Http\Controllers\Tenant\PurchaseOrderController;
 use App\Http\Controllers\Tenant\RawMaterialController;
+use App\Http\Controllers\Tenant\SalesOrderController;
 use App\Http\Controllers\Tenant\StockLookupController;
 use App\Http\Controllers\Tenant\StockMovementController;
 use App\Http\Controllers\Tenant\StockTakeController;
@@ -243,6 +244,31 @@ Route::middleware(['web', InitializeTenancyByPath::class, SetTenantUrlDefault::c
                 Route::post('{purchaseOrder}/receive', [PurchaseOrderController::class, 'receive'])->name('receive');
                 Route::post('{purchaseOrder}/cancel', [PurchaseOrderController::class, 'cancel'])->name('cancel');
                 Route::delete('{purchaseOrder}', [PurchaseOrderController::class, 'destroy'])->name('destroy');
+            });
+
+            // Sales orders — the mirror of the block above, and the same rules apply to
+            // every line of it: `create` before `{salesOrder}` or /create 404s looking for
+            // an order of that number; `{salesOrder}` rather than `{sales_order}` because
+            // that is the name the model binding resolves from; and every name mapped in
+            // TenantPermissions, `create` and `edit` by explicit override because
+            // AuthorizeTenantRoute treats an unmapped route as open to anyone signed in.
+            //
+            // There is no `fulfil` route yet. Issuing stock is the one step here that can
+            // fail because the goods are not there, and it ships as its own slice.
+            Route::prefix('sales-orders')->name('sales-orders.')->group(function (): void {
+                Route::get('/', [SalesOrderController::class, 'index'])->name('index');
+                Route::get('create', [SalesOrderController::class, 'create'])->name('create');
+                Route::post('/', [SalesOrderController::class, 'store'])->name('store');
+                Route::get('{salesOrder}', [SalesOrderController::class, 'show'])->name('show');
+                Route::get('{salesOrder}/edit', [SalesOrderController::class, 'edit'])->name('edit');
+
+                // PATCH, though the whole order arrives: the lines are replaced wholesale
+                // but the document is not — its number, its status and its fulfilment
+                // columns are untouchable from here.
+                Route::patch('{salesOrder}', [SalesOrderController::class, 'update'])->name('update');
+
+                Route::post('{salesOrder}/cancel', [SalesOrderController::class, 'cancel'])->name('cancel');
+                Route::delete('{salesOrder}', [SalesOrderController::class, 'destroy'])->name('destroy');
             });
 
             // A read-only lookup the movement dialog makes while somebody is choosing,

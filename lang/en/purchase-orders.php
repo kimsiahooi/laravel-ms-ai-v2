@@ -161,9 +161,6 @@ return [
 
     'error' => [
         'not_pending' => 'This order has already been received or cancelled.',
-        // Unreachable for a receipt, which only ever adds — but StockService declares
-        // the failure and the screen has to be able to say it.
-        'insufficient' => 'Only :available available, and this would move :requested.',
         'received_locked' => 'A received order cannot be changed or deleted.',
         // Unreachable while a receipt only ever adds stock — see the controller — but
         // the service declares the refusal, so the words exist for the day it can.

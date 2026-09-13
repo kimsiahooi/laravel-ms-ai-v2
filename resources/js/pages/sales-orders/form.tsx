@@ -7,13 +7,13 @@ import { Spinner } from '@/components/ui/spinner';
 import { baseCurrency } from '@/config/currencies';
 import { useTranslation } from '@/hooks/use-translation';
 import { runGate } from '@/lib/validation/gate';
-import { purchaseOrderSchema } from '@/lib/validation/schemas/purchase-order';
-import { OrderHeaderFields } from '@/pages/purchase-orders/_components/order-header-fields';
+import { salesOrderSchema } from '@/lib/validation/schemas/sales-order';
+import { OrderHeaderFields } from '@/pages/sales-orders/_components/order-header-fields';
 import {
     OrderLinesCard,
     seedLines,
     toPayloadLines,
-} from '@/pages/purchase-orders/_components/order-lines-card';
+} from '@/pages/sales-orders/_components/order-lines-card';
 import {
     create,
     edit,
@@ -21,57 +21,58 @@ import {
     show,
     store,
     update,
-} from '@/routes/purchase-orders';
+} from '@/routes/sales-orders';
 
-type Order = App.Data.PurchaseOrderData;
+type Order = App.Data.SalesOrderData;
 
 type Props = {
-    /** The order being edited, or null while raising a new one. */
+    /** The order being edited, or null while taking a new one. */
     order: Order | null;
     /** Its lines, in the order they were entered. Empty for a new order. */
-    items: App.Data.PurchaseOrderItemData[];
-    suppliers: App.Data.OptionData[];
-    materials: App.Data.StockItemOptionData[];
+    items: App.Data.SalesOrderItemData[];
+    customers: App.Data.OptionData[];
+    products: App.Data.StockItemOptionData[];
     currencies: string[];
     /** A percentage: `'6'`, not `'0.06'`. The lines quote it back in their tax row. */
     taxRate: string;
 };
 
 /**
- * Raising an order, and amending one that has not arrived yet.
+ * Taking an order, and amending one that has not shipped yet.
  *
- * **A page, where every form before this was a dialog.** An order is a document: a
- * header, then as many lines as the delivery has, each with its own price and discount.
- * A dialog would have to scroll to reach its own submit button by the third line, and it
- * would put the running total somewhere nobody can see while typing into the row above
- * it. `ResourceFormDialog` is still right for a category and wrong for this.
+ * **A page, not a dialog.** An order is a document: a header, then as many lines as the
+ * customer asked for, each with its own price and discount. A dialog would have to scroll to
+ * reach its own submit button by the third line, and it would put the running total
+ * somewhere nobody can see while typing into the row above it.
  *
  * **Create and edit are one screen, told apart by `order` being null.** They validate
- * identically and post to the same controller, so the only real differences are a URL
- * and four strings — and keeping them together is what stops one growing a field the
- * other forgets.
+ * identically and post to the same controller, so the only real differences are a URL and
+ * four strings — and keeping them together is what stops one growing a field the other
+ * forgets.
  *
- * **What the page holds, and what it does not.** The header fields are uncontrolled, the
- * way every form in this app is: the DOM keeps what was typed and hands it over on
- * submit. Two things are exceptions and both earn it — the lines, because the totals
- * redraw as somebody types and a running figure cannot be read back out of the DOM; and
- * the currency, because whether there is an exchange-rate field at all depends on it.
+ * **What the page holds, and what it does not.** The header fields are uncontrolled, the way
+ * every form in this app is: the DOM keeps what was typed and hands it over on submit. Two
+ * things are exceptions and both earn it — the lines, because the totals redraw as somebody
+ * types and a running figure cannot be read back out of the DOM; and the currency, because
+ * whether there is an exchange-rate field at all depends on it.
  *
- * `useForm` is the envelope rather than the state: the error bag, the in-flight flag,
- * and `transform`, which is where the payload is assembled. The same shape `CountInput`
- * uses, and for the same reason — what gets sent is built here rather than scraped off
- * the form, so the wire is something this file states outright. It has to be: the shared
- * line editor names its money column `unit_price` and a purchase order records a
- * `unit_cost`.
+ * `useForm` is the envelope rather than the state: the error bag, the in-flight flag, and
+ * `transform`, which is where the payload is assembled. What gets sent is built here rather
+ * than scraped off the form, so the wire is something this file states outright.
  *
- * **No total is ever sent.** The lines are the whole of it; `App\Support\OrderTotals`
- * computes the figures again under the same rules `lib/money.ts` previews them with.
+ * **Nothing here checks stock, and nothing should.** A sales order is a commitment, routinely
+ * taken before the goods exist; the order names no warehouse until it ships. Whether there is
+ * enough to send is a question about one warehouse at one instant, and it belongs to
+ * fulfilment, under a lock.
+ *
+ * **No total is ever sent.** The lines are the whole of it; `App\Support\OrderTotals` computes
+ * the figures again under the same rules `lib/money.ts` previews them with.
  */
-export default function PurchaseOrderForm({
+export default function SalesOrderForm({
     order,
     items,
-    suppliers,
-    materials,
+    customers,
+    products,
     currencies,
     taxRate,
 }: Props) {
@@ -85,12 +86,12 @@ export default function PurchaseOrderForm({
     // Seeded from the order so the first render is honest; from there the DOM holds the
     // header and `transform` below assembles what is actually sent.
     const form = useForm({
-        supplier_id:
-            order?.supplier_id == null ? '' : String(order.supplier_id),
+        customer_id:
+            order?.customer_id == null ? '' : String(order.customer_id),
         currency,
         exchange_rate: order?.exchange_rate ?? '',
-        // Stored verbatim, so the seed is the stored value. Nothing converts a
-        // promised delivery date — see ExpectedDate.
+        // Stored verbatim, so the seed is the stored value. Nothing converts a promised
+        // delivery date — see ExpectedDate.
         expected_date: order?.expected_date ?? '',
         notes: order?.notes ?? '',
         items: toPayloadLines(lines),
@@ -100,7 +101,7 @@ export default function PurchaseOrderForm({
     // per-field typing cannot express. The bag is that shape at runtime.
     const errors = form.errors as Record<string, string>;
 
-    const schema = useMemo(() => purchaseOrderSchema(currencies), [currencies]);
+    const schema = useMemo(() => salesOrderSchema(currencies), [currencies]);
 
     const foreign = currency !== '' && currency !== baseCurrency(currencies);
 
@@ -115,11 +116,11 @@ export default function PurchaseOrderForm({
         };
 
         const payload = {
-            supplier_id: read('supplier_id'),
+            customer_id: read('customer_id'),
             currency: read('currency'),
-            // A base-currency order has no rate box to read: one unit of the order's
-            // money IS one unit of the workspace's, and the form stopped asking rather
-            // than pose a question with a single legal answer. See OrderHeaderFields.
+            // A base-currency order has no rate box to read: one unit of the order's money
+            // IS one unit of the workspace's, and the form stopped asking rather than pose
+            // a question with a single legal answer. See OrderHeaderFields.
             exchange_rate: foreign ? read('exchange_rate') : '1',
             expected_date: read('expected_date'),
             notes: read('notes'),
@@ -130,38 +131,38 @@ export default function PurchaseOrderForm({
 
         const options = {
             preserveScroll: true,
-            // Checked before it is sent, so a quantity the column would silently round
-            // is refused here rather than stored as a different number.
+            // Checked before it is sent, so a quantity the column would silently round is
+            // refused here rather than stored as a different number.
             onBefore: () => runGate(schema, payload, form, t),
         };
 
         if (order === null) {
             form.post(store().url, options);
         } else {
-            // PATCH, not PUT: the document's number, status and receipt columns are
+            // PATCH, not PUT: the document's number, status and fulfilment columns are
             // untouchable from this form however complete it looks. See routes/tenant.php.
-            form.patch(update({ purchaseOrder: order.id }).url, options);
+            form.patch(update({ salesOrder: order.id }).url, options);
         }
     };
 
     const title =
         order === null
-            ? t('purchase-orders.create.title')
-            : t('purchase-orders.edit.title', { number: order.number });
+            ? t('sales-orders.create.title')
+            : t('sales-orders.edit.title', { number: order.number });
 
     setLayoutProps({
         breadcrumbs: [
-            { title: t('purchase-orders.title'), href: index() },
+            { title: t('sales-orders.title'), href: index() },
             ...(order === null
-                ? [{ title: t('purchase-orders.create.crumb'), href: create() }]
+                ? [{ title: t('sales-orders.create.crumb'), href: create() }]
                 : [
                       {
                           title: order.number,
-                          href: show({ purchaseOrder: order.id }),
+                          href: show({ salesOrder: order.id }),
                       },
                       {
-                          title: t('purchase-orders.edit.crumb'),
-                          href: edit({ purchaseOrder: order.id }),
+                          title: t('sales-orders.edit.crumb'),
+                          href: edit({ salesOrder: order.id }),
                       },
                   ]),
         ],
@@ -176,7 +177,7 @@ export default function PurchaseOrderForm({
                     {title}
                 </h1>
                 <p className="text-muted-foreground text-sm">
-                    {t('purchase-orders.create.subtitle')}
+                    {t('sales-orders.create.subtitle')}
                 </p>
             </div>
 
@@ -188,7 +189,7 @@ export default function PurchaseOrderForm({
                     <CardContent>
                         <OrderHeaderFields
                             order={order}
-                            suppliers={suppliers}
+                            customers={customers}
                             currencies={currencies}
                             currency={currency}
                             onCurrencyChange={setCurrency}
@@ -200,7 +201,7 @@ export default function PurchaseOrderForm({
                 <OrderLinesCard
                     lines={lines}
                     onChange={setLines}
-                    materials={materials}
+                    products={products}
                     errors={errors}
                     currency={currency}
                     taxRate={taxRate}
@@ -212,7 +213,7 @@ export default function PurchaseOrderForm({
                             href={
                                 order === null
                                     ? index()
-                                    : show({ purchaseOrder: order.id })
+                                    : show({ salesOrder: order.id })
                             }
                         >
                             {t('common.actions.cancel')}
@@ -222,8 +223,8 @@ export default function PurchaseOrderForm({
                         {form.processing && <Spinner />}
                         {t(
                             form.processing
-                                ? 'purchase-orders.create.submitting'
-                                : 'purchase-orders.create.submit',
+                                ? 'sales-orders.create.submitting'
+                                : 'sales-orders.create.submit',
                         )}
                     </Button>
                 </div>
