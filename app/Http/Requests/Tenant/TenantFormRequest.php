@@ -8,6 +8,7 @@ use App\Support\ActiveExists;
 use App\Support\StockItem;
 use Closure;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 /**
  * Base for every per-tenant form request.
@@ -66,6 +67,28 @@ abstract class TenantFormRequest extends FormRequest
     protected function foreignKey(string $table): array
     {
         return ['integer', ActiveExists::of($table)];
+    }
+
+    /**
+     * The rules a role id needs: a scalar, and a role that exists on this app's guard.
+     *
+     * **A helper rather than the rule inline, and that is not only tidiness.**
+     * `bun run check:i18n` reads rule arrays as strings and strips `Class::method(…)`
+     * before doing so — which is why {@see ActiveExists} works — but it cannot see through
+     * a chained builder. Written out, `Rule::exists('roles', 'id')->where('guard_name', 'web')`
+     * has the gate reporting `guard_name` and `web` as rules with no translated message.
+     * Behind a method call it is stripped like every other helper, and the gate keeps
+     * meaning what it says.
+     *
+     * `foreignKey()` cannot be used: it adds `whereNull('deleted_at')` and `roles` has no
+     * such column. `integer` beside `exists` is doing the same work it does there — see
+     * that method on why `role_id[]=1` otherwise validates and then applies to row 1.
+     *
+     * @return array<int, mixed>
+     */
+    protected function roleKey(): array
+    {
+        return ['integer', Rule::exists('roles', 'id')->where('guard_name', 'web')];
     }
 
     /**

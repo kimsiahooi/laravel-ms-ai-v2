@@ -17,6 +17,7 @@ return [
         'catalog' => 'Catalog',
         'dashboard' => 'Dashboard',
         'orders' => 'Orders',
+        'workspace' => 'Workspace',
         'stock' => 'Stock',
         'settings' => 'Account settings',
         'sign_out' => 'Sign out',

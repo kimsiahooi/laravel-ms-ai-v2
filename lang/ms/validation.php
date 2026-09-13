@@ -36,7 +36,16 @@ return [
     ],
     'mimes' => 'Ruangan :attribute mestilah fail berjenis: :values.',
     'min' => [
+        'array' => 'Medan :attribute mesti mempunyai sekurang-kurangnya :min item.',
         'string' => 'Ruangan :attribute mestilah sekurang-kurangnya :min aksara.',
+    ],
+    'confirmed' => 'Pengesahan medan :attribute tidak sepadan.',
+    'password' => [
+        'letters' => 'Medan :attribute mesti mengandungi sekurang-kurangnya satu huruf.',
+        'mixed' => 'Medan :attribute mesti mengandungi sekurang-kurangnya satu huruf besar dan satu huruf kecil.',
+        'numbers' => 'Medan :attribute mesti mengandungi sekurang-kurangnya satu nombor.',
+        'symbols' => 'Medan :attribute mesti mengandungi sekurang-kurangnya satu simbol.',
+        'uncompromised' => ':attribute yang diberikan pernah muncul dalam kebocoran data. Sila pilih :attribute yang lain.',
     ],
     'numeric' => 'Ruangan :attribute mestilah nombor.',
     'regex' => 'Format ruangan :attribute tidak sah.',
@@ -45,6 +54,8 @@ return [
     'unique' => ':attribute tersebut telah digunakan.',
 
     'attributes' => [
+        'password' => 'kata laluan',
+        'role_id' => 'peranan',
         'address' => 'alamat',
         'admin_email' => 'e-mel pentadbir',
         'admin_name' => 'nama pentadbir',

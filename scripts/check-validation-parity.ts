@@ -60,7 +60,10 @@ const FACTORY_ARGS: Record<string, unknown[]> = {
     StockTakeRequest: [[1]],
     StockTakeCountRequest: [[1]],
     StockTakeLineRequest: [['product:1']],
-    UserRequest: [false],
+    // The role ids the picker offers, and whether this is an edit — see userSchema. The
+    // entry predates the schema by months and read `[false]`, which would have called
+    // `userSchema(false)` and thrown inside the gate rather than reporting anything.
+    UserRequest: [[1], false],
     PurchaseOrderRequest: [['MYR']],
     SalesOrderRequest: [['MYR']],
 };

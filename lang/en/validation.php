@@ -50,7 +50,22 @@ return [
     ],
     'mimes' => 'The :attribute field must be a file of type: :values.',
     'min' => [
+        // check:i18n counts `min` as covered because min.string exists, so this one's
+        // absence was a false green — see docs. Laravel falls back to English without it.
+        'array' => 'The :attribute field must have at least :min items.',
         'string' => 'The :attribute field must be at least :min characters.',
+    ],
+    'confirmed' => 'The :attribute field confirmation does not match.',
+    // Password::defaults() emits these, and none of them existed until a web form could
+    // reach the rule. Two things made that invisible: check:i18n strips `Class::method()`
+    // before reading rules, so the gate never sees them, and AppServiceProvider returns
+    // null outside production — so the English would only ever have leaked on the live site.
+    'password' => [
+        'letters' => 'The :attribute field must contain at least one letter.',
+        'mixed' => 'The :attribute field must contain at least one uppercase and one lowercase letter.',
+        'numbers' => 'The :attribute field must contain at least one number.',
+        'symbols' => 'The :attribute field must contain at least one symbol.',
+        'uncompromised' => 'The given :attribute has appeared in a data leak. Please choose a different :attribute.',
     ],
     'numeric' => 'The :attribute field must be a number.',
     'regex' => 'The :attribute field format is invalid.',
@@ -64,6 +79,8 @@ return [
      * the same keys, so a field is named identically on both sides of the wire.
      */
     'attributes' => [
+        'password' => 'password',
+        'role_id' => 'role',
         'address' => 'address',
         'admin_email' => 'administrator email',
         'admin_name' => 'administrator name',

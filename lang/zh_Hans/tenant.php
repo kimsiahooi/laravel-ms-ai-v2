@@ -17,6 +17,7 @@ return [
         'catalog' => '目录',
         'dashboard' => '仪表板',
         'orders' => '订单',
+        'workspace' => '工作区',
         'stock' => '库存',
         'settings' => '账户设置',
         'sign_out' => '退出登录',

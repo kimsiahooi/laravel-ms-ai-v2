@@ -20,9 +20,11 @@ use App\Http\Controllers\Tenant\StockMovementController;
 use App\Http\Controllers\Tenant\StockTakeController;
 use App\Http\Controllers\Tenant\StockTransferController;
 use App\Http\Controllers\Tenant\SupplierController;
+use App\Http\Controllers\Tenant\UserController;
 use App\Http\Controllers\Tenant\WarehouseController;
 use App\Http\Controllers\Tenant\WarehouseReorderLevelController;
 use App\Http\Middleware\AuthorizeTenantRoute;
+use App\Http\Middleware\RequirePasswordChange;
 use App\Http\Middleware\SetTenantUrlDefault;
 use Illuminate\Auth\Middleware\RequirePassword;
 use Illuminate\Support\Facades\Route;
@@ -73,7 +75,11 @@ Route::middleware(['web', InitializeTenancyByPath::class, SetTenantUrlDefault::c
         // AuthorizeTenantRoute maps each route name to the permission it needs
         // (App\Support\TenantPermissions) and 403s a user who lacks it. Routes with
         // no mapped permission stay open to any signed-in user.
-        Route::middleware(['auth:web', AuthorizeTenantRoute::class])->group(function (): void {
+        // RequirePasswordChange sits *inside* the auth group and *after* the permission
+        // gate, so a person still holding the password their administrator typed is held
+        // on the security page rather than handed a 403 for something they would have been
+        // allowed to do. Its own exemption list is what stops it trapping them there.
+        Route::middleware(['auth:web', AuthorizeTenantRoute::class, RequirePasswordChange::class])->group(function (): void {
             Route::get('dashboard', fn () => Inertia::render('dashboard'))->name('dashboard');
 
             // Which columns this user looks at, per list. Deliberately unmapped in
@@ -272,6 +278,24 @@ Route::middleware(['web', InitializeTenancyByPath::class, SetTenantUrlDefault::c
                 Route::post('{salesOrder}/fulfill', [SalesOrderController::class, 'fulfill'])->name('fulfill');
                 Route::post('{salesOrder}/cancel', [SalesOrderController::class, 'cancel'])->name('cancel');
                 Route::delete('{salesOrder}', [SalesOrderController::class, 'destroy'])->name('destroy');
+            });
+
+            // Who may sign in, and what each of them can reach.
+            //
+            // No `create` or `edit` GET routes: this is a dialog over the list, three
+            // fields. Every name here is mapped — index/store/update/destroy by
+            // TenantPermissions' auto-mapping and `restore` by an override that was
+            // written long before this controller was.
+            //
+            // `restore` takes `withTrashed()`, because the row it addresses is precisely
+            // the one the default binding refuses to find.
+            Route::prefix('users')->name('users.')->group(function (): void {
+                Route::get('/', [UserController::class, 'index'])->name('index');
+                Route::post('/', [UserController::class, 'store'])->name('store');
+                Route::patch('{user}', [UserController::class, 'update'])->name('update');
+                Route::delete('{user}', [UserController::class, 'destroy'])->name('destroy');
+                Route::patch('{user}/restore', [UserController::class, 'restore'])
+                    ->withTrashed()->name('restore');
             });
 
             // A read-only lookup the movement dialog makes while somebody is choosing,

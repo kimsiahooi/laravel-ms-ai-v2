@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Settings;
 
 use App\Http\Controllers\Controller;
+use App\Http\Middleware\RequirePasswordChange;
 use App\Http\Requests\Settings\PasswordUpdateRequest;
 use App\Http\Requests\Settings\TwoFactorAuthenticationRequest;
 use App\Models\User;
@@ -63,12 +64,20 @@ class SecurityController extends Controller
 
     /**
      * Update the user's password.
+     *
+     * **This is also the one place `must_change_password` is cleared**, and it is the only
+     * place it should be: the flag says somebody else chose this person's password, and the
+     * act that stops being true is exactly the act performed here. Clearing it anywhere else —
+     * on sign-in, on a profile save — would let the obligation lapse without the password ever
+     * changing. `forceFill` because the column is deliberately not fillable; see the migration
+     * and {@see RequirePasswordChange}.
      */
     public function update(PasswordUpdateRequest $request): RedirectResponse
     {
-        $request->user()->update([
+        $request->user()->forceFill([
             'password' => $request->password,
-        ]);
+            'must_change_password' => false,
+        ])->save();
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Password updated.')]);
 

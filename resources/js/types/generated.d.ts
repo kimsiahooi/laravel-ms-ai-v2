@@ -261,6 +261,18 @@ slug: string,
 name: string,
 created_at: string,
 };
+export type UserData = {
+id: number,
+name: string,
+email: string,
+role: string | null,
+role_id: number | null,
+must_change_password: boolean,
+deleted_at: string | null,
+is_self: boolean,
+is_last_administrator: boolean,
+created_at: string,
+};
 export type WarehouseData = {
 id: number,
 location_id: number,
@@ -302,7 +314,7 @@ export type SalesOrderStatus = 'pending' | 'fulfilled' | 'cancelled';
 export type StockItemType = 'product' | 'raw_material';
 export type StockMovementReason = 'adjustment' | 'stock_take' | 'transfer_in' | 'transfer_out' | 'purchase_receipt' | 'purchase_return' | 'sales_fulfillment' | 'sales_return' | 'production_consume' | 'production_output';
 export type StockTakeStatus = 'draft' | 'posted' | 'cancelled';
-export type TableKey = 'admin-tenants' | 'admin-tenants-trashed' | 'categories' | 'customers' | 'locations' | 'products' | 'purchase-orders' | 'raw-materials' | 'sales-orders' | 'stock-movements' | 'stock-takes' | 'stock-transfers' | 'suppliers' | 'warehouse-items' | 'warehouses';
+export type TableKey = 'admin-tenants' | 'admin-tenants-trashed' | 'categories' | 'customers' | 'locations' | 'products' | 'purchase-orders' | 'raw-materials' | 'sales-orders' | 'stock-movements' | 'stock-takes' | 'stock-transfers' | 'suppliers' | 'users' | 'warehouse-items' | 'warehouses';
 export type Unit = 'g' | 'kg' | 't' | 'ml' | 'l' | 'mm' | 'cm' | 'm' | 'pcs' | 'box' | 'roll' | 'sheet' | 'pair' | 'set';
 }
 }

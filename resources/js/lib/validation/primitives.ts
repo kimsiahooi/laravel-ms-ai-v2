@@ -729,3 +729,98 @@ export function different({
         });
     };
 }
+
+/**
+ * A password, as the browser can check one.
+ *
+ * **This deliberately does not mirror the server's rule, and that is not a gap.**
+ * `Password::defaults()` is set in `AppServiceProvider` to six checks in production —
+ * length, mixed case, letters, numbers, symbols, and `uncompromised()` — and to nothing
+ * at all outside it. One of those checks needs a network call to Have I Been Pwned, and
+ * the whole set changes by environment. A mirror that tried to match it would be wrong
+ * in development, wrong about the leak check everywhere, and would drift the first time
+ * the policy moved.
+ *
+ * So this is a floor: something true in every environment, which catches the empty box
+ * and the four-character attempt before a round trip. The server stays the authority and
+ * says so — anything it refuses lands under the field as the server's own sentence.
+ *
+ * `min` defaults to 8, which is `Password::min(8)`'s default and therefore the weakest
+ * the server could ever be.
+ */
+export function password({
+    attribute,
+    min = 8,
+}: {
+    attribute: TranslationKey;
+    min?: number;
+}) {
+    // No `.trim()`, unlike every other string here: leading and trailing spaces are part
+    // of a password, and silently removing them would let somebody set one the sign-in
+    // form then refuses.
+    return z
+        .string(message('validation.string', attribute))
+        .min(1, message('validation.required', attribute))
+        .min(min, message('validation.min.string', attribute, { min }));
+}
+
+/**
+ * The same, where leaving it blank means "don't change it".
+ *
+ * An edit form's password box submits `''` when untouched, which Laravel's `nullable`
+ * accepts — so the floor applies only once somebody has typed something.
+ */
+export function optionalPassword({
+    attribute,
+    min = 8,
+}: {
+    attribute: TranslationKey;
+    min?: number;
+}) {
+    return z.union([
+        z.literal(''),
+        z
+            .string(message('validation.string', attribute))
+            .min(min, message('validation.min.string', attribute, { min })),
+    ]);
+}
+
+/**
+ * `confirmed` — a field that must match its `_confirmation` twin.
+ *
+ * A check on the object rather than on a field, for the reason {@see different} gives:
+ * zod cannot see a sibling from inside one. Returns the callback for `.superRefine()`.
+ *
+ * The issue lands on the **confirmation** field rather than on the field itself, which is
+ * where Laravel puts it too and where the reader can act on it — the original is right and
+ * the copy is the one that was mistyped.
+ *
+ * Nothing is compared while the original is empty: `required` has already said that, and
+ * two empty boxes are not a mismatch.
+ */
+export function confirmed({
+    field,
+    attribute,
+}: {
+    /** The field carrying the rule. Its twin is `{field}_confirmation`. */
+    field: string;
+    attribute: TranslationKey;
+}) {
+    return (value: Record<string, unknown>, ctx: z.RefinementCtx): void => {
+        const picked = value[field];
+
+        if (picked === undefined || picked === null || picked === '') {
+            return;
+        }
+
+        if (picked === value[`${field}_confirmation`]) {
+            return;
+        }
+
+        ctx.addIssue({
+            code: 'custom',
+            path: [`${field}_confirmation`],
+            message: encodeMessage({ key: 'validation.confirmed', attribute }),
+        });
+    };
+}

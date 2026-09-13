@@ -12,6 +12,7 @@ import {
     ShoppingCart,
     Tags,
     Truck,
+    Users as UsersIcon,
     Warehouse,
 } from 'lucide-react';
 import { dashboard } from '@/routes';
@@ -27,6 +28,7 @@ import { index as stockMovements } from '@/routes/stock-movements';
 import { index as stockTakes } from '@/routes/stock-takes';
 import { index as stockTransfers } from '@/routes/stock-transfers';
 import { index as suppliers } from '@/routes/suppliers';
+import { index as users } from '@/routes/users';
 import { index as warehouses } from '@/routes/warehouses';
 import type { TenantNavGroup } from '@/types/navigation';
 
@@ -155,15 +157,23 @@ export function tenantNavGroups(
             ],
         },
         {
-            // Unlabelled, like the dashboard's group above it. A heading is the
-            // shell's word for a RUN of modules, and this is one entry — "Workspace"
-            // over a single line would be furniture. It gets a heading when the second
-            // workspace-wide screen arrives.
+            // The heading this group's own comment promised: it sat unlabelled while
+            // business settings was its only entry, because "Workspace" over a single
+            // line is furniture, and Users is the second workspace-wide screen that
+            // was being waited for.
             //
-            // Filed here rather than in the account-settings sidebar because these
-            // settings belong to the business: everyone in the workspace sees the same
-            // ones, and only a role holding `settings.view` sees them at all.
+            // Filed here rather than in the account-settings sidebar because both
+            // belong to the business rather than to the reader: everyone sees the same
+            // ones, and only a role holding the permission sees them at all. Account
+            // settings — profile, password, appearance — are the other sidebar.
+            label: 'tenant.nav.workspace',
             items: [
+                {
+                    title: 'users.title',
+                    href: users(),
+                    icon: UsersIcon,
+                    permission: 'users.view',
+                },
                 {
                     title: 'business-settings.title',
                     href: businessSettings(),

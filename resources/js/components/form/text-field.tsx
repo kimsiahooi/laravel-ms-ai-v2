@@ -45,7 +45,7 @@ type Props = {
      */
     // No 'date': a calendar day is picked from {@see DateField}, which renders a
     // shadcn calendar instead of handing the popup to the browser.
-    type?: 'text' | 'email' | 'tel';
+    type?: 'text' | 'email' | 'tel' | 'password';
     /**
      * The on-screen keyboard for a field that holds digits.
      *

@@ -35,7 +35,16 @@ return [
     ],
     'mimes' => ':attribute必须是以下类型的文件：:values。',
     'min' => [
+        'array' => ':attribute 至少需要 :min 项。',
         'string' => ':attribute至少需要 :min 个字符。',
+    ],
+    'confirmed' => ':attribute 两次输入不一致。',
+    'password' => [
+        'letters' => ':attribute 必须至少包含一个字母。',
+        'mixed' => ':attribute 必须至少包含一个大写字母和一个小写字母。',
+        'numbers' => ':attribute 必须至少包含一个数字。',
+        'symbols' => ':attribute 必须至少包含一个符号。',
+        'uncompromised' => '该 :attribute 曾出现在数据泄露中，请换一个。',
     ],
     'numeric' => ':attribute必须是数字。',
     'regex' => ':attribute格式不正确。',
@@ -44,6 +53,8 @@ return [
     'unique' => ':attribute已被使用。',
 
     'attributes' => [
+        'password' => '密码',
+        'role_id' => '角色',
         'address' => '地址',
         'admin_email' => '管理员邮箱',
         'admin_name' => '管理员姓名',

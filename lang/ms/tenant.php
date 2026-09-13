@@ -17,6 +17,7 @@ return [
         'catalog' => 'Katalog',
         'dashboard' => 'Papan pemuka',
         'orders' => 'Pesanan',
+        'workspace' => 'Ruang kerja',
         'stock' => 'Stok',
         'settings' => 'Tetapan akaun',
         'sign_out' => 'Log keluar',
