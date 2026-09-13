@@ -63,6 +63,14 @@ export type OptionData = {
 id: number,
 name: string,
 };
+export type PermissionGroupData = {
+screen: App.Enums.PermissionScreen,
+permissions: App.Data.PermissionOptionData[],
+};
+export type PermissionOptionData = {
+name: string,
+action: App.Enums.PermissionAction,
+};
 export type ProductData = {
 id: number,
 name: string,
@@ -287,6 +295,8 @@ export type DiscountType = 'none' | 'percent' | 'amount';
 export type DocumentType = 'purchase_order' | 'purchase_return' | 'sales_order' | 'sales_return';
 export type MovementSource = 'purchase_order' | 'sales_order' | 'stock_take' | 'stock_transfer';
 export type NumberReset = 'yearly' | 'never';
+export type PermissionAction = 'view' | 'create' | 'update' | 'delete';
+export type PermissionScreen = 'categories' | 'suppliers' | 'customers' | 'raw-materials' | 'products' | 'locations' | 'warehouses' | 'stock-movements' | 'stock-transfers' | 'stock-takes' | 'purchase-orders' | 'purchase-returns' | 'sales-orders' | 'sales-returns' | 'reports' | 'activity' | 'users' | 'roles' | 'settings';
 export type PurchaseOrderStatus = 'pending' | 'received' | 'cancelled';
 export type SalesOrderStatus = 'pending' | 'fulfilled' | 'cancelled';
 export type StockItemType = 'product' | 'raw_material';

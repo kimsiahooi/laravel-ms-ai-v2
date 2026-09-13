@@ -167,7 +167,11 @@ return [
     'features' => [
         // Registration is intentionally DISABLED: this is a B2B multi-tenant app
         // with no public signup. A super-admin provisions a tenant and its first
-        // user at /admin; that admin then invites the rest from the Users screen.
+        // user at /admin; that admin then adds the rest from the Users screen,
+        // setting each a temporary password the person is forced to change on
+        // first sign-in. Deliberately not an emailed invitation, even though the
+        // reset-password machinery below would carry one: a workspace has to be
+        // able to onboard somebody on a box where SMTP is not configured yet.
         // Features::registration(),
         Features::resetPasswords(),
         Features::emailVerification(),

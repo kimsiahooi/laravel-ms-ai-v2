@@ -14,6 +14,7 @@ use App\Models\User;
 use App\Models\Warehouse;
 use App\Services\StockService;
 use DomainException;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -24,6 +25,12 @@ use Illuminate\Support\Facades\DB;
  * which Laravel turns into a savepoint, so a refusal on the last line takes the lines
  * before it with it. A half-received order is worse than an unreceived one: the document
  * would say the goods arrived and the warehouse would hold some of them.
+ *
+ * **Every level row is locked up front, in one canonical order.** Not because a receipt can
+ * run short — it cannot, it only adds — but because taking the locks one line at a time, in
+ * line order, is what makes two concurrent receipts that overlap on two materials deadlock.
+ * {@see StockService::lockLevels()} sorts them, which costs nothing here and removes the
+ * failure mode entirely.
  *
  * **The order is re-read under `FOR UPDATE` inside the transaction, and that is the whole
  * reason this is not four lines in a controller.** v1 checked the status on the model the
@@ -74,6 +81,15 @@ final class ReceivePurchaseOrder
             // whose material was archived after the order was raised still resolves.
             $lines = $locked->items()->with('rawMaterial')->get();
 
+            // Every level row locked up front, in one canonical order — see
+            // {@see StockService::lockLevels()}. Without it this method takes one lock per
+            // line **in line order**, so two receipts that overlap on two materials in
+            // different line orders each hold the row the other needs. The sales side was
+            // built this way from the start; this is the purchase side catching up, and the
+            // levels it returns are deliberately unused — a receipt only ever adds, so there
+            // is nothing to check. The locks are the whole point.
+            $this->stock->lockLevels($warehouse, self::materials($lines));
+
             foreach ($lines as $line) {
                 $this->receiveLine($locked, $line, $warehouse, $user);
             }
@@ -89,6 +105,24 @@ final class ReceivePurchaseOrder
 
             return $locked;
         });
+    }
+
+    /**
+     * The materials whose level rows this receipt will touch.
+     *
+     * A hard-deleted material is dropped for the same reason {@see receiveLine()} skips it:
+     * `raw_material_id` is then null and there is no row to lock or to hold a level against.
+     *
+     * @param  Collection<int, PurchaseOrderItem>  $lines
+     * @return list<RawMaterial>
+     */
+    private static function materials(Collection $lines): array
+    {
+        $materials = $lines
+            ->map(static fn (PurchaseOrderItem $line): ?RawMaterial => $line->rawMaterial)
+            ->filter(static fn (?RawMaterial $material): bool => $material instanceof RawMaterial);
+
+        return array_values($materials->all());
     }
 
     /**

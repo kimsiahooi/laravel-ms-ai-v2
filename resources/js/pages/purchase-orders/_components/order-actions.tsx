@@ -1,4 +1,4 @@
-import { router } from '@inertiajs/react';
+import { router, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 import { ConfirmDialog } from '@/components/feedback/confirm-dialog';
 import { StockPickerField } from '@/components/form/stock-picker-field';
@@ -46,7 +46,7 @@ export function OrderActions({
     /** Where a delivery may be booked in. Empty in a workspace with no warehouse yet. */
     warehouses: App.Data.WarehouseOptionData[];
 }) {
-    const { t } = useTranslation();
+    const { t, tChoice } = useTranslation();
     const { can } = usePermissions();
     const [warehouseId, setWarehouseId] = useState('');
     const [confirming, setConfirming] = useState<Ending | null>(null);
@@ -56,6 +56,19 @@ export function OrderActions({
     // it is `warehouse_id` — a warehouse archived in another tab since this page
     // rendered, or the short-stock message the receive Action declares.
     const [refused, setRefused] = useState<string | undefined>(undefined);
+
+    // A message the server wrote in the language of the request that produced it. When
+    // somebody switches language it is suddenly the wrong language, and it would sit there
+    // until the next request — so it is dropped the moment the locale moves. State that
+    // tracks a prop, adjusted during render, exactly as `count-input.tsx` does: it runs only
+    // when the locale actually changed, so it cannot interrupt anything.
+    const { locale } = usePage().props;
+    const [seenLocale, setSeenLocale] = useState(locale);
+
+    if (seenLocale !== locale) {
+        setSeenLocale(locale);
+        setRefused(undefined);
+    }
 
     const send = (
         ending: Ending,
@@ -156,10 +169,17 @@ export function OrderActions({
                 title={t('purchase-orders.dialog.receive.title')}
                 // The warehouse is named again here because it is the one thing that
                 // cannot be corrected afterwards — the stock is in that building.
-                description={t('purchase-orders.dialog.receive.description', {
-                    warehouse: chosen?.name ?? '',
-                    lines: order.line_count,
-                })}
+                // `tChoice`, not `t`: "All 1 lines" is what a single-line order reads as
+                // otherwise, and a `count === 1 ? a : b` at this call site would be wrong in
+                // two of the three languages we ship.
+                description={tChoice(
+                    'purchase-orders.dialog.receive.description',
+                    order.line_count,
+                    {
+                        warehouse: chosen?.name ?? '',
+                        count: order.line_count,
+                    },
+                )}
                 confirmLabel={t('purchase-orders.dialog.receive.submit')}
                 busyLabel={t('purchase-orders.dialog.receive.submitting')}
                 processing={busy === 'receive'}

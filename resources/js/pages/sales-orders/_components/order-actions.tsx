@@ -1,15 +1,12 @@
-import { router } from '@inertiajs/react';
+import { router, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 import { ConfirmDialog } from '@/components/feedback/confirm-dialog';
-import { StockPickerField } from '@/components/form/stock-picker-field';
-import { InlineLink } from '@/components/inline-link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { usePermissions } from '@/hooks/use-permissions';
 import { useTranslation } from '@/hooks/use-translation';
-import { AvailabilityPanel } from '@/pages/sales-orders/_components/availability-panel';
+import { FulfilFields } from '@/pages/sales-orders/_components/fulfil-fields';
 import { cancel, fulfill } from '@/routes/sales-orders';
-import { index as warehousesIndex } from '@/routes/warehouses';
 
 type Order = App.Data.SalesOrderData;
 
@@ -88,6 +85,19 @@ export function OrderActions({
     // fulfil Action declares.
     const [refused, setRefused] = useState<string | undefined>(undefined);
 
+    // A message the server wrote in the language of the request that produced it. When
+    // somebody switches language it is suddenly the wrong language, and it would sit there
+    // until the next request — so it is dropped the moment the locale moves. State that
+    // tracks a prop, adjusted during render, exactly as `count-input.tsx` does: it runs only
+    // when the locale actually changed, so it cannot interrupt anything.
+    const { locale } = usePage().props;
+    const [seenLocale, setSeenLocale] = useState(locale);
+
+    if (seenLocale !== locale) {
+        setSeenLocale(locale);
+        setRefused(undefined);
+    }
+
     const chooseWarehouse = (chosenId: string) => {
         setWarehouseId(chosenId);
         setRefused(undefined);
@@ -140,49 +150,13 @@ export function OrderActions({
     return (
         <Card>
             <CardContent className="space-y-4">
-                <div className="space-y-1">
-                    <h2 className="font-medium">
-                        {t('sales-orders.fulfil.heading')}
-                    </h2>
-                    <p className="max-w-2xl text-muted-foreground text-sm">
-                        {t('sales-orders.fulfil.description')}
-                    </p>
-                </div>
-
-                {warehouses.length === 0 ? (
-                    // Nowhere to ship from. Saying so beats a picker with no options and a
-                    // button that refuses to explain itself.
-                    <p className="text-sm">
-                        {t('sales-orders.fulfil.no_warehouses')}{' '}
-                        <InlineLink href={warehousesIndex()}>
-                            {t('sales-orders.fulfil.no_warehouses_action')}
-                        </InlineLink>
-                    </p>
-                ) : (
-                    <div className="max-w-sm">
-                        {/* Two lines per row, so two sites with a "Main store" stay tellable
-                            apart — the reason this picker exists rather than ComboboxField. */}
-                        <StockPickerField
-                            name="warehouse_id"
-                            label="sales-orders.fulfil.warehouse"
-                            entries={warehouses.map((warehouse) => ({
-                                value: String(warehouse.id),
-                                primary: warehouse.name,
-                                secondary: warehouse.site,
-                            }))}
-                            defaultValue={chosenWarehouse}
-                            onChange={chooseWarehouse}
-                            error={refused}
-                            placeholder="sales-orders.fulfil.warehouse_placeholder"
-                            searchPlaceholder="sales-orders.fulfil.warehouse_search"
-                            emptyMessage="sales-orders.fulfil.warehouse_empty"
-                        />
-                    </div>
-                )}
-
-                {availability !== null && (
-                    <AvailabilityPanel rows={availability} />
-                )}
+                <FulfilFields
+                    warehouses={warehouses}
+                    chosenWarehouse={chosenWarehouse}
+                    availability={availability}
+                    refused={refused}
+                    onChange={chooseWarehouse}
+                />
 
                 <div className="flex flex-col gap-3 border-t pt-4 sm:flex-row sm:justify-end">
                     <Button

@@ -77,6 +77,7 @@ return [
 
     'line' => [
         'item' => 'Item',
+        'item_placeholder' => 'Pilih bahan',
         'quantity' => 'Kuantiti',
         'unit_cost' => 'Kos seunit',
         'discount' => 'Diskaun',
@@ -109,7 +110,7 @@ return [
     'dialog' => [
         'receive' => [
             'title' => 'Terima pesanan ini?',
-            'description' => 'Kesemua :lines baris akan ditambah ke :warehouse dan pesanan ditutup. Stok bergerak sebaik sahaja anda mengesahkan, dan ini tidak boleh dibatalkan.',
+            'description' => '{1}Satu baris akan ditambah ke :warehouse dan pesanan ditutup. Stok bergerak sebaik sahaja anda mengesahkan, dan ini tidak boleh dibatalkan.|[2,*]Kesemua :count baris akan ditambah ke :warehouse dan pesanan ditutup. Stok bergerak sebaik sahaja anda mengesahkan, dan ini tidak boleh dibatalkan.',
             'submit' => 'Terima pesanan',
             'submitting' => 'Menerima…',
         ],

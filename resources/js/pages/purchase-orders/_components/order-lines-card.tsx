@@ -128,6 +128,7 @@ export function OrderLinesCard({
                     currency={currency}
                     taxRate={taxRate}
                     itemLabel="orders.line.item"
+                    itemPlaceholder="purchase-orders.line.item_placeholder"
                     // A purchase order records a cost, not a price. Naming the
                     // field rather than renaming its errors afterwards keeps the
                     // input's `name`, the server's field and the key that

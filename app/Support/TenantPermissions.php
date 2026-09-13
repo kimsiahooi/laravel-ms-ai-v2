@@ -4,78 +4,40 @@ declare(strict_types=1);
 
 namespace App\Support;
 
+use App\Data\PermissionGroupData;
+use App\Data\PermissionOptionData;
+use App\Enums\PermissionAction;
+use App\Enums\PermissionScreen;
 use App\Http\Controllers\Tenant\MediaController;
 use App\Http\Middleware\AuthorizeTenantRoute;
 
 /**
- * The tenant permission catalog — one place that defines every CRUD permission a
- * role can grant, the plain-language label people see (never the raw
- * "{screen}.{action}" name), and the route → permission map the
- * {@see AuthorizeTenantRoute} middleware enforces.
+ * The tenant permission catalog — the permission names to seed, the matrix the role editor
+ * renders, and the route → permission map {@see AuthorizeTenantRoute} enforces.
  *
- * Adding a screen or action here (and re-running the seeders) flows everywhere:
- * the seeded permission, the role-editor matrix, and route gating.
+ * **What a screen is, and what may be done to it, now lives on {@see PermissionScreen}.** This
+ * class is the three things built out of that: names, matrix, map. Moving the catalog onto the
+ * enum is what lets the browser receive a typed value and compose its own translation key, so
+ * a screen added without its three translations fails `tsc` — the only mechanism available,
+ * because `check:i18n` reads `resources/js` and cannot see a label that arrives from PHP as a
+ * prop.
  *
- * The catalog is COMPLETE ahead of the screens it names. Most of these modules are
- * still to be migrated, and a permission with no route yet is inert — nothing can
- * request it. Seeding the full set once is what stops every later module from
- * needing a re-seed across every existing tenant.
+ * Adding a screen or an action flows everywhere from one place: the seeded permission, the
+ * role editor, and route gating.
  */
 final class TenantPermissions
 {
     /**
-     * Each manageable screen → its plain label + the CRUD actions that apply.
-     * Append-only screens omit update/delete; read-only screens are view-only.
+     * Lifecycle and custom routes that are not plain resource CRUD → the permission that
+     * governs them. Lifecycle actions map to the resource's edit permission, or its create
+     * permission for screens that have no edit.
      *
-     * @var array<string, array{label: string, actions: list<string>}>
-     */
-    private const SCREENS = [
-        'categories' => ['label' => 'Categories', 'actions' => ['view', 'create', 'update', 'delete']],
-        'suppliers' => ['label' => 'Suppliers', 'actions' => ['view', 'create', 'update', 'delete']],
-        'customers' => ['label' => 'Customers', 'actions' => ['view', 'create', 'update', 'delete']],
-        'raw-materials' => ['label' => 'Raw materials', 'actions' => ['view', 'create', 'update', 'delete']],
-        'products' => ['label' => 'Products', 'actions' => ['view', 'create', 'update', 'delete']],
-        'locations' => ['label' => 'Locations', 'actions' => ['view', 'create', 'update', 'delete']],
-        'warehouses' => ['label' => 'Warehouses', 'actions' => ['view', 'create', 'update', 'delete']],
-        'stock-movements' => ['label' => 'Stock movements', 'actions' => ['view', 'create']],
-        'stock-transfers' => ['label' => 'Stock transfers', 'actions' => ['view', 'create']],
-        'stock-takes' => ['label' => 'Stock takes', 'actions' => ['view', 'create', 'delete']],
-        'purchase-orders' => ['label' => 'Purchase orders', 'actions' => ['view', 'create', 'update', 'delete']],
-        'purchase-returns' => ['label' => 'Purchase returns', 'actions' => ['view', 'create', 'update', 'delete']],
-        'sales-orders' => ['label' => 'Sales orders', 'actions' => ['view', 'create', 'update', 'delete']],
-        'sales-returns' => ['label' => 'Sales returns', 'actions' => ['view', 'create', 'update', 'delete']],
-        'production-orders' => ['label' => 'Production orders', 'actions' => ['view', 'create', 'delete']],
-        'reports' => ['label' => 'Reports', 'actions' => ['view']],
-        'activity' => ['label' => 'Activity', 'actions' => ['view']],
-        'users' => ['label' => 'Users', 'actions' => ['view', 'create', 'update', 'delete']],
-        'roles' => ['label' => 'Roles', 'actions' => ['view', 'create', 'update', 'delete']],
-        'settings' => ['label' => 'Business settings', 'actions' => ['view', 'update']],
-    ];
-
-    /** @var array<string, string> */
-    private const ACTION_VERB = [
-        'view' => 'View',
-        'create' => 'Create',
-        'update' => 'Edit',
-        'delete' => 'Delete',
-    ];
-
-    /** @var array<string, string> action → the resource route suffix it guards */
-    private const ACTION_ROUTE = [
-        'view' => 'index',
-        'create' => 'store',
-        'update' => 'update',
-        'delete' => 'destroy',
-    ];
-
-    /**
-     * Lifecycle / custom routes that aren't plain resource CRUD → the permission
-     * that governs them. Lifecycle actions map to the resource's edit permission,
-     * or its create permission for screens that have no edit (stock takes,
-     * production orders).
+     * A list of permissions rather than one means **any of them will do**, for a route several
+     * screens share — see `stock.on-hand`.
      *
-     * A list of permissions rather than one means **any of them will do**, for a route
-     * several screens share — see `stock.on-hand`.
+     * **Form pages are no longer listed here.** `{screen}.create` and `{screen}.edit` are
+     * auto-mapped by {@see routeMap()}, which is the structural fix for a trap that had already
+     * cost two security fixes; an override per page only worked when somebody remembered.
      *
      * @var array<string, string|list<string>>
      */
@@ -92,40 +54,21 @@ final class TenantPermissions
         'stock-takes.cancel' => 'stock-takes.create',
         // Filling a count sheet in — one saved number, one item found on the shelf. Both
         // map to `stock-takes.create` because that is the permission to *take* a count,
-        // and the screen has no separate notion of editing one. It already exists and is
-        // already seeded, so no tenant needs re-seeding for these two.
+        // and the screen has no separate notion of editing one.
         'stock-takes.count' => 'stock-takes.create',
         'stock-takes.lines' => 'stock-takes.create',
         'purchase-orders.receive' => 'purchase-orders.update',
         'purchase-orders.cancel' => 'purchase-orders.update',
-        // The two form pages, and this pair is a **security fix rather than a nicety**.
-        // routeMap() below auto-maps only index/store/show/update/destroy, so a GET page
-        // named `purchase-orders.create` appears in no map at all — and
-        // {@see AuthorizeTenantRoute} treats an unmapped route as open to any signed-in
-        // user. The blank order form and the seeded edit form both render the whole
-        // supplier and material catalog, so unmapped means anybody with a login reads
-        // them. Both point at permissions that already exist and are already seeded, so
-        // no tenant needs re-seeding.
-        'purchase-orders.create' => 'purchase-orders.create',
-        'purchase-orders.edit' => 'purchase-orders.update',
         'purchase-returns.complete' => 'purchase-returns.update',
         'purchase-returns.cancel' => 'purchase-returns.update',
         'sales-orders.fulfill' => 'sales-orders.update',
         'sales-orders.cancel' => 'sales-orders.update',
-        // The two sales-order form pages, for exactly the reason the purchase-order pair
-        // above spells out: routeMap() auto-maps only index/store/show/update/destroy, so
-        // without these the blank order form and the seeded edit form — both of which
-        // render the whole customer and product catalog — are open to any signed-in user.
-        'sales-orders.create' => 'sales-orders.create',
-        'sales-orders.edit' => 'sales-orders.update',
         // Downloading the e-invoice reads the order's data — gate it on view.
         'sales-orders.e-invoice' => 'sales-orders.view',
         'sales-returns.complete' => 'sales-returns.update',
         'sales-returns.cancel' => 'sales-returns.update',
-        'production-orders.complete' => 'production-orders.create',
-        'production-orders.cancel' => 'production-orders.create',
+        // Reactivating somebody is an edit to who may sign in, not a separate power.
         'users.restore' => 'users.update',
-        'settings.edit' => 'settings.view',
     ];
 
     /**
@@ -136,9 +79,10 @@ final class TenantPermissions
     public static function names(): array
     {
         $names = [];
-        foreach (self::SCREENS as $screen => $meta) {
-            foreach ($meta['actions'] as $action) {
-                $names[] = "{$screen}.{$action}";
+
+        foreach (PermissionScreen::cases() as $screen) {
+            foreach ($screen->actions() as $action) {
+                $names[] = self::name($screen, $action);
             }
         }
 
@@ -146,51 +90,82 @@ final class TenantPermissions
     }
 
     /**
-     * The catalog grouped by screen for the role-editor matrix, with plain labels.
+     * The catalog grouped by screen, for the role editor.
      *
-     * @return list<array{key: string, label: string, permissions: list<array{name: string, action: string, label: string}>}>
+     * **No words cross the wire.** Each group carries its screen as an enum case and each
+     * option its action, and the browser composes `permissions.screen.{value}` and
+     * `permissions.action.{value}` — the same shape the ledger's source cell and the units
+     * column already use. This method used to build two English strings per checkbox, one of
+     * them by concatenation; see {@see PermissionOptionData} for why that was wrong in three
+     * separate ways.
+     *
+     * @return list<PermissionGroupData>
      */
     public static function matrix(): array
     {
-        $groups = [];
-        foreach (self::SCREENS as $screen => $meta) {
-            $permissions = [];
-            foreach ($meta['actions'] as $action) {
-                $permissions[] = [
-                    'name' => "{$screen}.{$action}",
-                    'action' => $action,
-                    'label' => self::ACTION_VERB[$action].' '.lcfirst($meta['label']),
-                ];
-            }
-            $groups[] = ['key' => $screen, 'label' => $meta['label'], 'permissions' => $permissions];
-        }
-
-        return $groups;
+        return array_map(
+            static fn (PermissionScreen $screen): PermissionGroupData => new PermissionGroupData(
+                screen: $screen,
+                permissions: array_map(
+                    static fn (PermissionAction $action): PermissionOptionData => new PermissionOptionData(
+                        name: self::name($screen, $action),
+                        action: $action,
+                    ),
+                    $screen->actions(),
+                ),
+            ),
+            PermissionScreen::cases(),
+        );
     }
 
     /**
-     * Route name → the permission it requires. Unmapped routes (dashboard, personal
-     * settings, logout) are open to any signed-in tenant user. `export` is handled
-     * dynamically by the middleware.
+     * Route name → the permission it requires.
      *
-     * `media` is unmapped but not open: one route serves the files of every kind of
-     * record, so the permission depends on the row rather than the route, and
-     * {@see MediaController} reads it off the owner.
+     * Unmapped routes (dashboard, personal settings, logout) are open to any signed-in tenant
+     * user, which is deliberate and is also the sharpest edge in this codebase: a route this
+     * map cannot find is a route nothing guards. It has cost two security fixes — the purchase
+     * and sales order form pages, both of which render an entire catalog and both of which
+     * were readable by anybody with a login.
+     *
+     * **So the form pages are auto-mapped now, conditionally.** `{screen}.create` needs the
+     * create permission and `{screen}.edit` the update permission — but only where the screen
+     * declares that action. The condition is load-bearing rather than tidy: emitting
+     * `settings.create` unconditionally would name a permission that is in no role at all, so
+     * any future route by that name would 403 every user including an Administrator.
+     *
+     * `media` is unmapped but not open: one route serves the files of every kind of record, so
+     * the permission depends on the row rather than the route, and {@see MediaController} reads
+     * it off the owner.
      *
      * @return array<string, string|list<string>>
      */
     public static function routeMap(): array
     {
         $map = [];
-        foreach (self::SCREENS as $screen => $meta) {
-            foreach ($meta['actions'] as $action) {
-                $map["{$screen}.".self::ACTION_ROUTE[$action]] = "{$screen}.{$action}";
+
+        foreach (PermissionScreen::cases() as $screen) {
+            foreach ($screen->actions() as $action) {
+                $map[$screen->value.'.'.$action->routeSuffix()] = self::name($screen, $action);
             }
-            // Every screen has a view permission; a show route (where one exists)
-            // shares it.
-            $map["{$screen}.show"] = "{$screen}.view";
+
+            // Every screen has a view permission; a show route (where one exists) shares it.
+            $map[$screen->value.'.show'] = self::name($screen, PermissionAction::View);
+
+            if ($screen->allows(PermissionAction::Create)) {
+                $map[$screen->value.'.create'] = self::name($screen, PermissionAction::Create);
+            }
+
+            if ($screen->allows(PermissionAction::Update)) {
+                $map[$screen->value.'.edit'] = self::name($screen, PermissionAction::Update);
+            }
         }
 
         return [...$map, ...self::ROUTE_OVERRIDES];
+    }
+
+    /** `categories.view` — the one place the two halves are joined. */
+    private static function name(PermissionScreen $screen, PermissionAction $action): string
+    {
+        return $screen->value.'.'.$action->value;
     }
 }

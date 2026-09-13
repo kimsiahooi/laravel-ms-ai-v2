@@ -51,6 +51,7 @@ export function OrderLineRow({
     errors,
     currency,
     itemLabel,
+    itemPlaceholder,
     priceField,
     priceLabel,
     pricePlaceholder,
@@ -63,6 +64,16 @@ export function OrderLineRow({
     errors: Record<string, string>;
     currency: string;
     itemLabel: TranslationKey;
+    /**
+     * What the picker says before anything is chosen.
+     *
+     * A prop for the same reason `itemLabel` is one: the shared editor serves both sides of
+     * the trade, and each offers exactly one kind of thing. The shared default said "Choose a
+     * product or material", which is wrong on a sales order (products only) and wrong on a
+     * purchase order (materials only) — it described the union of two screens rather than
+     * either of them.
+     */
+    itemPlaceholder: TranslationKey;
     /**
      * What the money column is called on the wire — `unit_cost` when buying,
      * `unit_price` when selling.
@@ -117,7 +128,7 @@ export function OrderLineRow({
                 defaultValue={line.item}
                 onChange={(item) => set({ item })}
                 error={error('item')}
-                placeholder="orders.line.item_placeholder"
+                placeholder={itemPlaceholder}
                 searchPlaceholder="orders.line.item_search"
                 emptyMessage="orders.line.item_empty"
             />

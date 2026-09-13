@@ -77,6 +77,7 @@ return [
 
     'line' => [
         'item' => '项目',
+        'item_placeholder' => '选择产品',
         'quantity' => '数量',
         'unit_price' => '单价',
         'discount' => '折扣',

@@ -91,6 +91,8 @@ return [
     // of the trade is money coming in.
     'line' => [
         'item' => 'Item',
+        // A sales order sells finished products and nothing else — see the purchase side.
+        'item_placeholder' => 'Choose a product',
         'quantity' => 'Quantity',
         'unit_price' => 'Unit price',
         'discount' => 'Discount',

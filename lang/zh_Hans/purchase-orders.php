@@ -77,6 +77,7 @@ return [
 
     'line' => [
         'item' => '物料',
+        'item_placeholder' => '选择原材料',
         'quantity' => '数量',
         'unit_cost' => '单位成本',
         'discount' => '折扣',
@@ -109,7 +110,7 @@ return [
     'dialog' => [
         'receive' => [
             'title' => '要为该订单收货吗？',
-            'description' => '全部 :lines 行都会入到 :warehouse，订单随之关闭。确认后库存立即变动，此操作无法撤销。',
+            'description' => '{1}该行将入到 :warehouse，订单随之关闭。确认后库存立即变动，此操作无法撤销。|[2,*]全部 :count 行都会入到 :warehouse，订单随之关闭。确认后库存立即变动，此操作无法撤销。',
             'submit' => '确认收货',
             'submitting' => '正在收货…',
         ],

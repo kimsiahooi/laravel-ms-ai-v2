@@ -76,6 +76,7 @@ export function OrderLinesField({
     currency,
     taxRate,
     itemLabel,
+    itemPlaceholder = 'orders.line.item_placeholder',
     priceField = 'unit_price',
     priceLabel = 'orders.line.unit_price',
     pricePlaceholder = 'orders.line.unit_price_placeholder',
@@ -90,6 +91,12 @@ export function OrderLinesField({
     taxRate: string;
     /** `orders.line.item`, unless a module has its own word for what it sells. */
     itemLabel: TranslationKey;
+    /**
+     * What the picker says before anything is chosen. Defaults to the wording that covers
+     * both catalogues; a module that offers only one of them passes its own — see
+     * {@link OrderLineRow}.
+     */
+    itemPlaceholder?: TranslationKey;
     /** The money column's wire name — see {@link OrderLineRow}. Selling by default. */
     priceField?: string;
     /** What that column is called. Defaults to the selling wording. */
@@ -176,6 +183,7 @@ export function OrderLinesField({
                             errors={errors}
                             currency={currency}
                             itemLabel={itemLabel}
+                            itemPlaceholder={itemPlaceholder}
                             onChange={(next) => replace(line.key, next)}
                             onRemove={() => remove(line.key)}
                         />

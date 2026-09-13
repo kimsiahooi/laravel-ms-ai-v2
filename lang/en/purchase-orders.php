@@ -91,6 +91,9 @@ return [
     // side of the trade is money going out.
     'line' => [
         'item' => 'Item',
+        // The picker's own wording. The shared default says "a product or material"; a
+        // purchase order buys materials and nothing else.
+        'item_placeholder' => 'Choose a material',
         'quantity' => 'Quantity',
         'unit_cost' => 'Unit cost',
         'discount' => 'Discount',
@@ -123,7 +126,8 @@ return [
     'dialog' => [
         'receive' => [
             'title' => 'Receive this order?',
-            'description' => 'All :lines lines are added to :warehouse and the order is closed. Stock moves as soon as you confirm, and this cannot be undone.',
+            // Plural, because "All 1 lines" is what a single-line order reads as otherwise.
+            'description' => '{1}One line is added to :warehouse and the order is closed. Stock moves as soon as you confirm, and this cannot be undone.|[2,*]All :count lines are added to :warehouse and the order is closed. Stock moves as soon as you confirm, and this cannot be undone.',
             'submit' => 'Receive order',
             'submitting' => 'Receiving…',
         ],

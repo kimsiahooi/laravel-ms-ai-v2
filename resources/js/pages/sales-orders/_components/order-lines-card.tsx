@@ -133,6 +133,7 @@ export function OrderLinesCard({
                     currency={currency}
                     taxRate={taxRate}
                     itemLabel="orders.line.item"
+                    itemPlaceholder="sales-orders.line.item_placeholder"
                 />
 
                 {/* An order with no lines sells nothing. The message belongs under the

@@ -77,6 +77,7 @@ return [
 
     'line' => [
         'item' => 'Item',
+        'item_placeholder' => 'Pilih produk',
         'quantity' => 'Kuantiti',
         'unit_price' => 'Harga seunit',
         'discount' => 'Diskaun',
