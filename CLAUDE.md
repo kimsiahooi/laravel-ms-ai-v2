@@ -155,5 +155,7 @@ installs it). Run them by hand too:
    · `bun run check:generated-types` (any `app/Data` class touched — then
    `bun run types:generate` and commit the result)
 4. `bun run build` before a release
-5. Drive the change in a browser — light **and** dark, 375 / 768 / 1024. At the end of
-   a phase, sweep **every** migrated module, not only the one that changed.
+5. Drive the change in a browser — light **and** dark. Features at one ordinary desktop
+   viewport (**1440 × 900, set explicitly**); responsive as its own pass at **375 / 768 /
+   1024**. At the end of a phase, sweep **every** migrated module, not only the one that
+   changed.

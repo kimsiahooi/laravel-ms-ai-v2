@@ -101,9 +101,26 @@ php artisan inertia:start-ssr &
 
 Per screen: create → edit → delete with the toast and list update; empty form and bad value
 (errors under the fields, from the zod gate *and* from Laravel); empty state; "no results"
-after a search; light **and** dark; 375 / 768 / 1024 with no horizontal body scroll; all
-three locales. **Read the browser console every time** — a React #418 warning is a hydration
-mismatch.
+after a search; light **and** dark; all three locales. **Read the browser console every
+time** — a React #418 warning is a hydration mismatch.
+
+### Viewport: one for features, three for responsive
+
+Two different jobs, and running them together triples the cost of the one that does not need
+it.
+
+- **Feature and behaviour QC runs at one ordinary desktop viewport, 1440 × 900.** Whether a
+  form saves, whether a total is right, whether a guard refuses — none of that changes with
+  width, and driving three widths to find out is three times the work for one answer. **Set it
+  explicitly at the start of a session** rather than inheriting whatever the last run left
+  behind; the MCP default is not 1440, and a size nobody chose is a size nobody can reproduce.
+- **Responsive is its own pass, at 375 / 768 / 1024**, checking layout rather than behaviour:
+  no horizontal body scroll, nothing truncated into meaninglessness, tables scrolling inside
+  their own container rather than taking the page with them.
+
+**1024 is the one to run if only one is run.** It is the `lg` boundary where the sidebar flips
+from a drawer to pinned, so the shell changes shape there — and a break at exactly that point
+is invisible at both 768 and 1440.
 
 ### The sweep covers every feature, not just the new one
 
@@ -229,7 +246,8 @@ app. Per change:
 - Submit the form empty and with a bad value. Errors must render **under the fields** —
   from the zod gate before the request leaves, and identically from Laravel when bypassed.
 - Empty state, "no results" after a search, loading state, error path.
-- Light **and** dark, at 375 / 768 / 1024, with no horizontal body scroll.
+- Light **and** dark. Behaviour at 1440 × 900; layout at 375 / 768 / 1024 with no
+  horizontal body scroll — see "Viewport: one for features, three for responsive" above.
 - Reload with SSR on and watch the console. A React #418 warning is a hydration mismatch.
 
 For stock-touching changes: post a movement, a transfer, and a stock take, then confirm
