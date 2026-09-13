@@ -5,6 +5,9 @@
 /public/hot
 /public/storage
 /storage/*.key
+# Debugbar's captured requests — one JSON file per request, holding query text, bindings
+# and session contents. A dev artefact that carries real data, so it never gets committed.
+/storage/debugbar
 # Conversion scratch space. Created on demand and emptied straight after, so it is
 # ignored outright rather than committed with a .gitignore the way storage/assets is.
 /storage/media-library-temp

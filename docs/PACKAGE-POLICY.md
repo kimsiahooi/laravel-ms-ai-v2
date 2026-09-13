@@ -66,6 +66,36 @@ Name the package, why it beats hand-rolling, roughly what it removes, and any ri
 2FA) · `laravel/wayfinder` (typed routes) · `@tanstack/react-table` · `zod` · `cmdk` ·
 `sonner` · `recharts` · `radix-ui`.
 
+**Dev-only:** `fruitcake/laravel-debugbar`.
+
+**`fruitcake/laravel-debugbar` — v4.4.3, added 2026-09-13.** The first package installed
+under the standing permission rather than proposed. It cleared the bar on evidence rather
+than reputation: `composer show -a` gives `illuminate/routing ^11|^12|^13.0` and `php ^8.2`,
+checked against this project's Laravel 13.26.1 / PHP 8.5.8. That check is the point of the
+context7 step — Laravel 13 is new enough that plenty of popular packages have not caught up,
+and "debugbar obviously supports Laravel" is exactly the kind of thing that is true right up
+until it isn't.
+
+Note the package name moved: the docs and the namespace are now `fruitcake/...`
+(`Fruitcake\LaravelDebugbar\`), while `barryvdh/laravel-debugbar` still resolves to the same
+repo and commit. Install the `fruitcake` name.
+
+Nothing to configure. Auto-discovery registers the provider, `enabled` follows `APP_DEBUG`,
+and no config file is published, so there is none to keep in sync. `--dev` keeps it out of
+production entirely, which matters more than usual here: it exposes queries, bindings and
+session contents.
+
+**Two things were confirmed by driving it, not assumed**, both specific to this app being
+Inertia + SSR:
+
+- It injects its markup as **siblings of `#app`** under `<body>`, never inside the React
+  root. `data-server-rendered="true"` survives, and a fresh load of a tenant list showed no
+  React #418 — the risk worth checking before trusting any package that rewrites responses.
+- It tracks Inertia's XHR visits live through its Ajax tab, so client-side navigation still
+  reports its queries instead of freezing on the last full page load.
+
+`storage/debugbar` is gitignored — it holds one JSON file per request.
+
 **`@tanstack/react-table` — v9, decided 2026-08-22.** Worth recording because the evidence
 argued the other way and the call was the user's. v1 pays for this dependency and registers
 only `getCoreRowModel`: across all 20 of its list pages it uses no sorting, filtering,
