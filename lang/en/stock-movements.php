@@ -124,6 +124,7 @@ return [
         'stock_take' => 'Stock take #:id',
         'stock_transfer' => 'Transfer #:id',
         'purchase_order' => 'Purchase order #:id',
+        'purchase_return' => 'Purchase return #:id',
         'sales_order' => 'Sales order #:id',
     ],
 ];

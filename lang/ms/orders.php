@@ -36,6 +36,16 @@ return [
         'empty' => 'Belum ada baris. Tambah satu untuk menyatakan apa yang dipesan.',
     ],
 
+    'availability' => [
+        'heading' => 'Apa yang ada di gudang ini',
+        'hint' => 'Panduan sahaja, bukan tempahan — angka ini berubah apabila rakan sekerja merekod kerja mereka sendiri, jadi jawapan yang muktamad ialah yang anda dapat semasa mengesahkan.',
+        'item' => 'Item',
+        'required' => 'Diperlukan',
+        'on_hand' => 'Ada',
+        'short' => 'Tidak cukup',
+        'empty' => 'Tiada apa-apa dalam dokumen ini merujuk kepada item yang masih wujud, jadi tiada apa akan dikeluarkan.',
+    ],
+
     'totals' => [
         'subtotal' => 'Jumlah kecil',
         'discount' => 'Diskaun',

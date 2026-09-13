@@ -107,16 +107,6 @@ return [
         'no_warehouses_action' => '设置仓库',
     ],
 
-    'availability' => [
-        'heading' => '该仓库的库存',
-        'hint' => '仅供参考，并非预留——同事记录各自的操作时这些数字会变动，最终以确认发货时的结果为准。',
-        'item' => '产品',
-        'required' => '需要',
-        'on_hand' => '可用',
-        'short' => '不足',
-        'empty' => '该订单没有任何一行指向仍然存在的产品，因此不会扣减任何库存。',
-    ],
-
     'dialog' => [
         'fulfil' => [
             'title' => '确认为此订单发货？',

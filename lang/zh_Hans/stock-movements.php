@@ -123,6 +123,7 @@ return [
         'stock_take' => '盘点单 #:id',
         'stock_transfer' => '调拨单 #:id',
         'purchase_order' => '采购订单 #:id',
+        'purchase_return' => '采购退货单 #:id',
         'sales_order' => '销售订单 #:id',
     ],
 ];

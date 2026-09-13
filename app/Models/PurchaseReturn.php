@@ -57,6 +57,8 @@ use Illuminate\Support\Carbon;
  * @property-read PurchaseOrder $purchaseOrder
  * @property-read Collection<int, PurchaseReturnItem> $items
  * @property-read User|null $creator
+ * @property-read User|null $completer
+ * @property-read Warehouse|null $completedWarehouse
  */
 class PurchaseReturn extends Model
 {
@@ -119,6 +121,33 @@ class PurchaseReturn extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    /**
+     * Who sent the goods back, which is routinely not who raised the return.
+     *
+     * Null on anything still pending, and null again once that person has been force-deleted —
+     * the column is `nullOnDelete`, because a document is not worth less for having outlived
+     * the colleague who completed it.
+     *
+     * @return BelongsTo<User, $this>
+     */
+    public function completer(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'completed_by');
+    }
+
+    /**
+     * Where the goods actually left from.
+     *
+     * Chosen at completion rather than when the return is raised, and defaulted to wherever the
+     * delivery landed without being pinned to it — stock transfers are real. Null while pending.
+     *
+     * @return BelongsTo<Warehouse, $this>
+     */
+    public function completedWarehouse(): BelongsTo
+    {
+        return $this->belongsTo(Warehouse::class, 'completed_warehouse_id');
     }
 
     /**

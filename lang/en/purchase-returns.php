@@ -40,6 +40,8 @@ return [
     'action' => [
         'new' => 'New purchase return',
         'edit' => 'Edit return',
+        'complete' => 'Complete return',
+        'cancel' => 'Cancel return',
     ],
 
     'filter' => [
@@ -104,6 +106,19 @@ return [
         'total' => 'Line credit',
     ],
 
+    // The card that actually sends the goods. Its own block rather than keys under
+    // `action`, because it is a heading, a sentence and a picker, not a button.
+    'complete' => [
+        'heading' => 'Sending the goods back',
+        'description' => 'Completing the return takes every line out of one warehouse and closes it. Choose where the goods are actually leaving from.',
+        'warehouse' => 'Send from',
+        'warehouse_placeholder' => 'Choose a warehouse',
+        'warehouse_search' => 'Search warehouses…',
+        'warehouse_empty' => 'No warehouses match.',
+        'no_warehouses' => 'There is nowhere to send this from yet.',
+        'no_warehouses_action' => 'Set up a warehouse',
+    ],
+
     'summary' => [
         'order' => 'Purchase order',
         'supplier' => 'Supplier',
@@ -111,10 +126,26 @@ return [
         'rate' => 'at :rate',
         'reason' => 'Reason',
         'raised_by' => 'Raised by',
+        'completed_by' => 'Completed by',
+        'completed_at' => 'Completed',
+        'warehouse' => 'Sent from',
         'notes' => 'Notes',
     ],
 
     'dialog' => [
+        'complete' => [
+            'title' => 'Complete this return?',
+            // Plural, because "All 1 lines" is what a single-line return reads as otherwise.
+            'description' => '{1}One line is taken out of :warehouse and the return is closed. Stock moves as soon as you confirm, and this cannot be undone.|[2,*]All :count lines are taken out of :warehouse and the return is closed. Stock moves as soon as you confirm, and this cannot be undone.',
+            'submit' => 'Complete return',
+            'submitting' => 'Completing…',
+        ],
+        'cancel' => [
+            'title' => 'Cancel this return?',
+            'description' => 'The return is closed and no stock is moved. The quantities on it become returnable again. You cannot reopen a cancelled return.',
+            'submit' => 'Cancel return',
+            'submitting' => 'Cancelling…',
+        ],
         'delete' => [
             'title' => 'Delete :number?',
             'description' => 'The return is removed and the quantities on it become returnable again. Nothing has moved yet, so nothing is reversed.',
@@ -146,6 +177,8 @@ return [
         'created' => 'Purchase return raised.',
         'updated' => 'Purchase return updated.',
         'deleted' => 'Purchase return deleted.',
+        'completed' => 'Purchase return completed. The stock has moved.',
+        'cancelled' => 'Purchase return cancelled.',
     ],
 
     'error' => [
@@ -153,6 +186,15 @@ return [
         'completed_locked' => 'A completed return cannot be changed or deleted.',
         'no_order' => 'That purchase order cannot be returned against — it may have been deleted, or it was never received.',
         'nothing_returnable' => 'Everything on that order has already been returned.',
+        // Plural by count rather than by joining names, because a list separator and the word
+        // order around it differ across the three locales. The panel lists them in rows.
+        'short' => '{1}Not enough stock: this warehouse holds :available of :item and the return needs :required.|[2,*]:count items do not have enough stock in this warehouse. The panel below shows which.',
+        // The lost race, which the lock makes unreachable — see the controller. Nothing was
+        // written, so trying again is the whole of the advice.
+        'short_raced' => 'Somebody moved this stock while the return was completing. Nothing was taken out — check the figures and try again.',
+        // The other refusal completion can give, and the one no warehouse can fix: another
+        // return got there first. Editing this one down is the way out.
+        'over_return_now' => '{1}Another return has been completed since this one was raised. Only :remaining of :item can still go back, and this return is sending :requested. Edit it and try again.|[2,*]Another return has been completed since this one was raised, and :count of these lines no longer fit the delivery. Edit the return and try again.',
     ],
 
     'validation' => [

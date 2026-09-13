@@ -1,6 +1,9 @@
 import type { ReactNode } from 'react';
 import { InlineLink } from '@/components/inline-link';
+import { useDateNames } from '@/hooks/use-date-names';
+import { useTimeZone } from '@/hooks/use-time-zone';
 import { useTranslation } from '@/hooks/use-translation';
+import { formatDateTime } from '@/lib/format';
 import { show as showOrder } from '@/routes/purchase-orders';
 import type { TranslationKey } from '@/types/lang';
 
@@ -16,12 +19,15 @@ type Return = App.Data.PurchaseReturnData;
  * The exchange rate shows only when it is not 1, for the reason the order's own summary gives:
  * a document in the workspace's own money has a rate that carries no information.
  *
- * The completion half is not here yet — a return in this slice has never been completed, and a
- * row of empty dashes on every document would say nothing on the screens it appears on most.
- * It arrives with the transition that fills it in.
+ * **The completion half appears only once there is one**, the shape the order's own summary
+ * uses for its receipt: three rows of dashes on every pending return would say nothing on the
+ * screens it appears on most. Where the goods left from is part of it, because that is the one
+ * fact about a completed return that the lines themselves cannot tell you.
  */
 export function ReturnSummary({ row }: { row: Return }) {
     const { t } = useTranslation();
+    const timeZone = useTimeZone();
+    const names = useDateNames();
 
     // `Number`, not a string comparison: the column reads back `1.000000` and a form may have
     // sent `1`, so comparing the strings would show the rate for one of them.
@@ -61,6 +67,28 @@ export function ReturnSummary({ row }: { row: Return }) {
                 {/* Null once the person has been removed. i18n-allow */}
                 {row.created_by ?? '—'}
             </Row>
+
+            {row.completed_at !== null && (
+                <>
+                    <Row label="purchase-returns.summary.completed_by">
+                        {/* i18n-allow */}
+                        {row.completed_by ?? '—'}
+                    </Row>
+                    <Row label="purchase-returns.summary.completed_at">
+                        <time
+                            dateTime={row.completed_at}
+                            className="tabular-nums"
+                        >
+                            {formatDateTime(row.completed_at, timeZone, names)}
+                        </time>
+                    </Row>
+                    <Row label="purchase-returns.summary.warehouse">
+                        {/* Null once the warehouse has been removed; the ledger rows it
+                            wrote are still there. i18n-allow */}
+                        {row.completed_warehouse ?? '—'}
+                    </Row>
+                </>
+            )}
 
             {row.notes !== null && (
                 <div className="sm:col-span-2">

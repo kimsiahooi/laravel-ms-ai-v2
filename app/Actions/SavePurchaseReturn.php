@@ -16,6 +16,7 @@ use App\Models\User;
 use App\Support\DocumentNumberGenerator;
 use App\Support\OrderTotals;
 use App\Support\ReturnedQuantities;
+use DomainException;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -35,17 +36,24 @@ use Illuminate\Support\Facades\DB;
  * the lines are deleted and rewritten, so a failure between the two would leave a priced return
  * with nothing on it; and the totals are derived from the lines.
  *
- * **No lock, and that is a decision rather than an omission.** Two people can raise two pending
- * returns that together exceed a line — the FormRequest's ceiling reads without one, so both
- * pass. Nothing has moved: a pending return is a claim, an editor can correct it, and the
- * completion Action re-reads the ceiling under `lockForUpdate` at the step that is irreversible.
- * Serialising document *creation* for a race with no consequence would be the wrong trade, and
- * it is the same call {@see SalesOrderController} makes about
+ * **No lock on the ceiling, and that is a decision rather than an omission.** Two people can
+ * raise two pending returns that together exceed a line — the FormRequest's ceiling reads without
+ * one, so both pass. Nothing has moved: a pending return is a claim, an editor can correct it,
+ * and {@see CompletePurchaseReturn} re-reads the ceiling under the parent order's lock at the
+ * step that is irreversible. Serialising document *creation* for a race with no consequence would
+ * be the wrong trade, and it is the same call {@see SalesOrderController} makes about
  * over-committing stock when an order is taken.
  *
- * Whether the return is still pending is the caller's question — the controller refuses an edit
- * against a completed one with a sentence a person can read. What is enforceable about the
- * quantities lives in {@see ReturnedQuantities}.
+ * **There is a lock on the document being rewritten, though, and completion is what made it
+ * necessary.** While every return was pending, the controller's status check could not lose a
+ * race; now it can. An edit that passes that check on a stale tab and then blocks behind a
+ * completion would rewrite the lines of a return whose goods have already left — and
+ * {@see revise()}'s `forceFill(...)->save()` is a no-op when nothing is dirty, so the header row
+ * might never be locked at all before `$return->items()->delete()` runs. So the revise path
+ * re-reads the return under `lockForUpdate` and refuses anything but a pending one, which is the
+ * same guard {@see DeletePurchaseReturn} takes for the same reason.
+ *
+ * What is enforceable about the quantities lives in {@see ReturnedQuantities}.
  */
 final class SavePurchaseReturn
 {
@@ -55,16 +63,22 @@ final class SavePurchaseReturn
      * @param  array{purchase_order_id: int, reason: ReturnReason, notes: string|null}  $fields
      * @param  list<array{purchase_order_item_id: int, quantity: string}>  $lines
      * @param  PurchaseReturn|null  $return  the return being rewritten, or null to raise one
+     *
+     * @throws DomainException when the return stopped being pending between the controller's
+     *                         check and this lock — see the class note.
      */
     public function handle(array $fields, array $lines, ?User $user = null, ?PurchaseReturn $return = null): PurchaseReturn
     {
         return DB::transaction(function () use ($fields, $lines, $user, $return): PurchaseReturn {
+            // Before anything is read off it, and before a single line is deleted.
+            $locked = $return === null ? null : self::lockPending($return);
+
             // On an edit the parent comes off the return itself, never off the payload — the
             // request pins the field for the same reason, and between them re-parenting is not
             // a thing that can be expressed.
-            $order = $return === null
+            $order = $locked === null
                 ? PurchaseOrder::query()->findOrFail($fields['purchase_order_id'])
-                : $return->purchaseOrder;
+                : $locked->purchaseOrder;
 
             $priced = self::price($lines, $order);
 
@@ -74,14 +88,38 @@ final class SavePurchaseReturn
                 $order->currency,
             );
 
-            $saved = $return === null
+            $saved = $locked === null
                 ? $this->open($order, $fields, $totals, $user)
-                : $this->revise($return, $order, $fields, $totals);
+                : $this->revise($locked, $order, $fields, $totals);
 
             $this->writeLines($saved, $priced);
 
             return $saved;
         });
+    }
+
+    /**
+     * The return as it stands right now, held for the rest of the transaction.
+     *
+     * Re-read rather than trusted: what the caller holds is the instance the route bound, whose
+     * status was true when the page was rendered. This is the only reading of it that cannot be
+     * overtaken.
+     *
+     * `null` is a real answer — the model soft deletes — and it gets the same refusal as a
+     * completed one, because from the editor's side both mean "this is no longer yours to
+     * change".
+     *
+     * @throws DomainException
+     */
+    private static function lockPending(PurchaseReturn $return): PurchaseReturn
+    {
+        $locked = PurchaseReturn::query()->whereKey($return->getKey())->lockForUpdate()->first();
+
+        if ($locked === null || $locked->status !== ReturnStatus::Pending) {
+            throw new DomainException('Purchase return is no longer pending.');
+        }
+
+        return $locked;
     }
 
     /**

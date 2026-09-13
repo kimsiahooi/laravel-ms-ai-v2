@@ -124,15 +124,6 @@ return [
 
     // The panel under the warehouse picker. One row per product, not per line: an order may
     // carry the same product twice, and what can be shipped depends on the two added together.
-    'availability' => [
-        'heading' => 'What this warehouse holds',
-        'hint' => 'A guide, not a reservation — these figures move as colleagues record their own work, so the answer that counts is the one you get on confirming.',
-        'item' => 'Product',
-        'required' => 'Needed',
-        'on_hand' => 'Available',
-        'short' => 'Short',
-        'empty' => 'Nothing on this order points at a product that still exists, so nothing will be taken out.',
-    ],
 
     'dialog' => [
         'fulfil' => [

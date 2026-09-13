@@ -140,6 +140,9 @@ tax_total: string,
 total: string,
 notes: string | null,
 created_by: string | null,
+completed_by: string | null,
+completed_at: string | null,
+completed_warehouse: string | null,
 line_count: number,
 created_at: string,
 };
@@ -360,7 +363,7 @@ export type Country = 'MY' | 'SG';
 export type Dimension = 'mass' | 'volume' | 'length' | 'count';
 export type DiscountType = 'none' | 'percent' | 'amount';
 export type DocumentType = 'purchase_order' | 'purchase_return' | 'sales_order' | 'sales_return';
-export type MovementSource = 'purchase_order' | 'sales_order' | 'stock_take' | 'stock_transfer';
+export type MovementSource = 'purchase_order' | 'sales_order' | 'purchase_return' | 'stock_take' | 'stock_transfer';
 export type NumberReset = 'yearly' | 'never';
 export type PermissionAction = 'view' | 'create' | 'update' | 'delete';
 export type PermissionScreen = 'categories' | 'suppliers' | 'customers' | 'raw-materials' | 'products' | 'locations' | 'warehouses' | 'stock-movements' | 'stock-transfers' | 'stock-takes' | 'purchase-orders' | 'purchase-returns' | 'sales-orders' | 'sales-returns' | 'reports' | 'activity' | 'users' | 'roles' | 'settings';

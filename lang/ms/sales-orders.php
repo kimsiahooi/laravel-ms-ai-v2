@@ -107,16 +107,6 @@ return [
         'no_warehouses_action' => 'Sediakan gudang',
     ],
 
-    'availability' => [
-        'heading' => 'Apa yang ada di gudang ini',
-        'hint' => 'Panduan sahaja, bukan tempahan — angka ini berubah apabila rakan sekerja merekod kerja mereka sendiri, jadi jawapan yang muktamad ialah yang anda dapat semasa mengesahkan.',
-        'item' => 'Produk',
-        'required' => 'Diperlukan',
-        'on_hand' => 'Ada',
-        'short' => 'Tidak cukup',
-        'empty' => 'Tiada apa-apa dalam pesanan ini merujuk kepada produk yang masih wujud, jadi tiada apa akan dikeluarkan.',
-    ],
-
     'dialog' => [
         'fulfil' => [
             'title' => 'Penuhi pesanan ini?',

@@ -2,6 +2,7 @@ import type { InertiaLinkProps } from '@inertiajs/react';
 import { InlineLink } from '@/components/inline-link';
 import { useTranslation } from '@/hooks/use-translation';
 import { show as showPurchaseOrder } from '@/routes/purchase-orders';
+import { show as showPurchaseReturn } from '@/routes/purchase-returns';
 import { show as showSalesOrder } from '@/routes/sales-orders';
 import { show as showStockTake } from '@/routes/stock-takes';
 
@@ -15,6 +16,7 @@ const LINKS: Record<
     stock_take: (id) => showStockTake({ stockTake: id }),
     stock_transfer: null,
     purchase_order: (id) => showPurchaseOrder({ purchaseOrder: id }),
+    purchase_return: (id) => showPurchaseReturn({ purchaseReturn: id }),
     sales_order: (id) => showSalesOrder({ salesOrder: id }),
 };
 
@@ -28,12 +30,15 @@ const LINKS: Record<
  * language into a column every locale reads. The row now holds `stock_take` and `12`, and
  * the sentence is built at render time out of the asking reader's bundle.
  *
- * **Only some sources have a screen.** A stock take has a count sheet and both kinds of order
- * have their document, so all three are followable — and a receipt or a despatch is exactly
- * the row somebody questions ("where did forty of these go?"), which makes the link back to
- * the order the shortest answer there is. A transfer has no detail page, so its label renders
- * as plain text rather than pointing at something that does not exist; the day transfers grow
- * one, this is the single place that changes.
+ * **Only some sources have a screen.** A stock take has a count sheet, both kinds of order have
+ * their document and so does a purchase return — and a receipt, a despatch or a return is
+ * exactly the row somebody questions ("where did forty of these go?"), which makes the link back
+ * to the document the shortest answer there is. A transfer has no detail page, so its label
+ * renders as plain text rather than pointing at something that does not exist; the day transfers
+ * grow one, this is the single place that changes.
+ *
+ * A return points at the *return*, not at the order it credits. The return is what moved the
+ * stock, and the order is one hop from there.
  *
  * `LINKS` is a `Record` over the whole enum rather than a chain of `if`s, so a new source is a
  * compile error here until somebody has said whether it can be opened.

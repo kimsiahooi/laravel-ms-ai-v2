@@ -51,6 +51,18 @@ final class PurchaseReturnData extends Data
         public ?string $notes,
         /** Who raised it. Null once that person has been force-deleted. */
         public ?string $created_by,
+        /**
+         * The completion, as three nulls until it happens.
+         *
+         * Names rather than ids, the shape {@see PurchaseOrderData} uses for its receipt
+         * columns: the screen reads them and nothing links to them, so an id would only be a
+         * second lookup on the client. All three are null again where the person or the
+         * warehouse has since been force-deleted — a document does not stop being true for
+         * having outlived them.
+         */
+        public ?string $completed_by,
+        public ?string $completed_at,
+        public ?string $completed_warehouse,
         /** From `withCount('items as line_count')` — see the note below. */
         public int $line_count,
         public string $created_at,
@@ -81,6 +93,9 @@ final class PurchaseReturnData extends Data
             total: Money::roundTo($return->total, $return->currency),
             notes: $return->notes,
             created_by: $return->creator?->name,
+            completed_by: $return->completer?->name,
+            completed_at: $return->completed_at?->toIso8601String(),
+            completed_warehouse: $return->completedWarehouse?->name,
             // Read off the aggregate alias rather than counting a loaded relation, which
             // would be a query per row on the list. A forgotten `withCount` shows zero next
             // to a document that visibly has lines — see the controller, which adds it in

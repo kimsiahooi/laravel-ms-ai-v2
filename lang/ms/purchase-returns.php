@@ -28,6 +28,8 @@ return [
     'action' => [
         'new' => 'Pemulangan belian baharu',
         'edit' => 'Edit pemulangan',
+        'complete' => 'Selesaikan pemulangan',
+        'cancel' => 'Batalkan pemulangan',
     ],
 
     'filter' => [
@@ -87,6 +89,17 @@ return [
         'total' => 'Kredit baris',
     ],
 
+    'complete' => [
+        'heading' => 'Menghantar barang kembali',
+        'description' => 'Menyelesaikan pemulangan mengeluarkan setiap baris daripada satu gudang dan menutupnya. Pilih dari mana barang itu sebenarnya keluar.',
+        'warehouse' => 'Hantar dari',
+        'warehouse_placeholder' => 'Pilih gudang',
+        'warehouse_search' => 'Cari gudang…',
+        'warehouse_empty' => 'Tiada gudang sepadan.',
+        'no_warehouses' => 'Belum ada tempat untuk menghantarnya.',
+        'no_warehouses_action' => 'Sediakan gudang',
+    ],
+
     'summary' => [
         'order' => 'Pesanan belian',
         'supplier' => 'Pembekal',
@@ -94,10 +107,25 @@ return [
         'rate' => 'pada :rate',
         'reason' => 'Sebab',
         'raised_by' => 'Dibuka oleh',
+        'completed_by' => 'Diselesaikan oleh',
+        'completed_at' => 'Selesai',
+        'warehouse' => 'Dihantar dari',
         'notes' => 'Nota',
     ],
 
     'dialog' => [
+        'complete' => [
+            'title' => 'Selesaikan pemulangan ini?',
+            'description' => '{1}Satu baris dikeluarkan dari :warehouse dan pemulangan ditutup. Stok bergerak sebaik sahaja anda mengesahkan, dan ini tidak boleh dibatalkan.|[2,*]Kesemua :count baris dikeluarkan dari :warehouse dan pemulangan ditutup. Stok bergerak sebaik sahaja anda mengesahkan, dan ini tidak boleh dibatalkan.',
+            'submit' => 'Selesaikan pemulangan',
+            'submitting' => 'Menyelesaikan…',
+        ],
+        'cancel' => [
+            'title' => 'Batalkan pemulangan ini?',
+            'description' => 'Pemulangan ditutup dan tiada stok bergerak. Kuantiti padanya boleh dipulangkan semula. Anda tidak boleh membuka semula pemulangan yang dibatalkan.',
+            'submit' => 'Batalkan pemulangan',
+            'submitting' => 'Membatalkan…',
+        ],
         'delete' => [
             'title' => 'Padam :number?',
             'description' => 'Pemulangan ini dibuang dan kuantitinya boleh dipulangkan semula. Tiada apa-apa telah bergerak lagi, jadi tiada apa-apa yang diterbalikkan.',
@@ -127,6 +155,8 @@ return [
         'created' => 'Pemulangan belian dibuka.',
         'updated' => 'Pemulangan belian dikemas kini.',
         'deleted' => 'Pemulangan belian dipadam.',
+        'completed' => 'Pemulangan belian selesai. Stok telah bergerak.',
+        'cancelled' => 'Pemulangan belian dibatalkan.',
     ],
 
     'error' => [
@@ -134,6 +164,9 @@ return [
         'completed_locked' => 'Pemulangan yang telah selesai tidak boleh diubah atau dipadam.',
         'no_order' => 'Pesanan belian itu tidak boleh dipulangkan — ia mungkin telah dipadam, atau ia tidak pernah diterima.',
         'nothing_returnable' => 'Semua yang ada pada pesanan itu telah pun dipulangkan.',
+        'short' => '{1}Stok tidak mencukupi: gudang ini ada :available :item sedangkan pemulangan memerlukan :required.|[2,*]:count item tidak mempunyai stok yang mencukupi di gudang ini. Panel di bawah menunjukkan yang mana satu.',
+        'short_raced' => 'Seseorang menggerakkan stok ini semasa pemulangan sedang diselesaikan. Tiada apa dikeluarkan — semak angkanya dan cuba lagi.',
+        'over_return_now' => '{1}Satu lagi pemulangan telah diselesaikan sejak yang ini dibuka. Hanya :remaining :item boleh dipulangkan lagi, sedangkan pemulangan ini menghantar :requested. Editnya dan cuba lagi.|[2,*]Satu lagi pemulangan telah diselesaikan sejak yang ini dibuka, dan :count baris tidak lagi muat dengan penghantaran itu. Edit pemulangan ini dan cuba lagi.',
     ],
 
     'validation' => [

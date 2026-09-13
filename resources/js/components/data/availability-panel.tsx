@@ -13,17 +13,23 @@ import { cn } from '@/lib/utils';
 type Row = App.Data.StockAvailabilityData;
 
 /**
- * What the chosen warehouse holds against what the order needs, before anybody commits.
+ * What the chosen warehouse holds against what a document is about to take out of it.
  *
- * Without it the warehouse picker is chosen blind: you pick a building, press Fulfil, and the
- * refusal is the first thing that tells you the goods were never there — after a round trip,
- * and naming one product out of twelve. The same argument {@see OnHandLine} makes about a
- * quantity box, on a document instead of a field.
+ * Without it the warehouse picker is chosen blind: you pick a building, press the button, and
+ * the refusal is the first thing that tells you the goods were never there — after a round trip,
+ * and naming one item out of twelve. The same argument {@see OnHandLine} makes about a quantity
+ * box, on a document instead of a field.
  *
- * **One row per product, not per line.** An order may carry the same product twice at two
- * prices, and what can be shipped depends on the two added together — `App\Support\OrderAvailability`
- * does that addition once, for this panel and for the Action that refuses. So a two-line order
- * for the same product shows one row saying it needs ten, which is the number that decides.
+ * **Shared, because it is the same question whichever document asks it.** A sales order issues
+ * products and a purchase return sends raw materials back; `App\Data\StockAvailabilityData`
+ * already serves both, so this reads `orders.availability.*` and says "Item" rather than naming
+ * either. It started in sales orders' `_components/` and moved here when the returns module
+ * became its second consumer — the rule of three's "second, if the logic is non-trivial".
+ *
+ * **One row per item, not per line.** A document may carry the same item twice at two prices,
+ * and what can be moved depends on the two added together — `App\Support\OrderAvailability`
+ * does that addition once, for this panel and for the Action that refuses. So a two-line document
+ * for one item shows one row saying it needs ten, which is the number that decides.
  *
  * **`short` is the server's answer, not a comparison made here.** Same reason the warehouse
  * screen computes `needs_reorder` in SQL: the row's warning and the despatch's refusal are the
@@ -32,18 +38,18 @@ type Row = App.Data.StockAvailabilityData;
  *
  * **It never disables anything, and the hint says so out loud.** The figures are read without
  * a lock, so they are stale the moment they arrive; showing three must not stop somebody
- * shipping four that a colleague's delivery has just made possible. The button above stays
- * live and the server settles it.
+ * moving four that a colleague's delivery has just made possible. The button above stays live
+ * and the server settles it.
  */
 export function AvailabilityPanel({ rows }: { rows: Row[] }) {
     const { t } = useTranslation();
 
     if (rows.length === 0) {
-        // Every line points at a product that has been hard-deleted. Nothing will be issued,
+        // Every line points at an item that has been hard-deleted. Nothing will be issued,
         // and saying so beats an empty table that looks like a failed lookup.
         return (
             <p className="text-muted-foreground text-sm">
-                {t('sales-orders.availability.empty')}
+                {t('orders.availability.empty')}
             </p>
         );
     }
@@ -52,10 +58,10 @@ export function AvailabilityPanel({ rows }: { rows: Row[] }) {
         <div className="space-y-2">
             <div className="space-y-1">
                 <h3 className="font-medium text-sm">
-                    {t('sales-orders.availability.heading')}
+                    {t('orders.availability.heading')}
                 </h3>
                 <p className="max-w-2xl text-muted-foreground text-xs">
-                    {t('sales-orders.availability.hint')}
+                    {t('orders.availability.hint')}
                 </p>
             </div>
 
@@ -66,13 +72,13 @@ export function AvailabilityPanel({ rows }: { rows: Row[] }) {
                     <TableHeader className="bg-muted/40">
                         <TableRow className="hover:bg-transparent">
                             <TableHead className="pl-4">
-                                {t('sales-orders.availability.item')}
+                                {t('orders.availability.item')}
                             </TableHead>
                             <TableHead className="text-right">
-                                {t('sales-orders.availability.required')}
+                                {t('orders.availability.required')}
                             </TableHead>
                             <TableHead className="pr-4 text-right">
-                                {t('sales-orders.availability.on_hand')}
+                                {t('orders.availability.on_hand')}
                             </TableHead>
                         </TableRow>
                     </TableHeader>
@@ -89,7 +95,7 @@ export function AvailabilityPanel({ rows }: { rows: Row[] }) {
 }
 
 /**
- * One product's line.
+ * One item's line.
  *
  * The shortfall is marked on the *available* figure rather than on the whole row, because that
  * is the number that is wrong for the job. It carries a word as well as a colour: a red number
@@ -120,7 +126,7 @@ function AvailabilityRow({ row }: { row: Row }) {
                 <span className="inline-flex items-center justify-end gap-2">
                     {row.short && (
                         <Badge variant="destructive">
-                            {t('sales-orders.availability.short')}
+                            {t('orders.availability.short')}
                         </Badge>
                     )}
                     <span

@@ -258,15 +258,17 @@ Route::middleware(['web', InitializeTenancyByPath::class, SetTenantUrlDefault::c
             // gives — a header and a grid — and `create` before `{purchaseReturn}` for
             // the same 404 reason.
             //
-            // **Every name here is auto-mapped, and none of them needed an override.**
-            // `PermissionScreen::PurchaseReturns` takes the default four actions, so
-            // routeMap() emits index/store/update/destroy/show plus create and edit. The
-            // `purchase-returns.complete` and `.cancel` entries already sitting in
-            // ROUTE_OVERRIDES name routes that do not exist yet — they arrive with the
-            // completion slice, and until then the map simply never consults them.
+            // **Every CRUD name here is auto-mapped.** `PermissionScreen::PurchaseReturns`
+            // takes the default four actions, so routeMap() emits
+            // index/store/update/destroy/show plus create and edit. The two transitions are
+            // the exception, and their `ROUTE_OVERRIDES` entries were written a slice early
+            // — `purchase-returns.complete` and `.cancel` both map to
+            // `purchase-returns.update`, and they are consulted from here on.
             //
-            // There is no `receive`-shaped transition here yet and deliberately so:
-            // nothing in this slice writes a stock movement.
+            // `complete` is this module's `receive`: the one route that writes a stock
+            // movement. `cancel` writes none, but it is not inert either — a cancelled
+            // return drops out of `ReturnStatus::consuming()`, so it hands the delivery back
+            // the quantity it was holding.
             Route::prefix('purchase-returns')->name('purchase-returns.')->group(function (): void {
                 Route::get('/', [PurchaseReturnController::class, 'index'])->name('index');
                 Route::get('create', [PurchaseReturnController::class, 'create'])->name('create');
@@ -274,6 +276,10 @@ Route::middleware(['web', InitializeTenancyByPath::class, SetTenantUrlDefault::c
                 Route::get('{purchaseReturn}', [PurchaseReturnController::class, 'show'])->name('show');
                 Route::get('{purchaseReturn}/edit', [PurchaseReturnController::class, 'edit'])->name('edit');
                 Route::patch('{purchaseReturn}', [PurchaseReturnController::class, 'update'])->name('update');
+
+                // The two transitions, both out of pending and both terminal.
+                Route::post('{purchaseReturn}/complete', [PurchaseReturnController::class, 'complete'])->name('complete');
+                Route::post('{purchaseReturn}/cancel', [PurchaseReturnController::class, 'cancel'])->name('cancel');
                 Route::delete('{purchaseReturn}', [PurchaseReturnController::class, 'destroy'])->name('destroy');
             });
 

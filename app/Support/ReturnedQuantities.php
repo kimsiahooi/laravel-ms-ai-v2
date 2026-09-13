@@ -24,9 +24,10 @@ use InvalidArgumentException;
  *
  * **Asked in two places with two different questions, and both come through here.** The form and
  * the FormRequest ask "is this a sensible document to raise", which counts pending siblings —
- * see {@see ReturnStatus::consuming()}. The completion Action will ask the narrower "can this be
- * done right now", which counts only what has actually moved. Same arithmetic, different
- * `$statuses`, and the difference is deliberate rather than an oversight.
+ * see {@see ReturnStatus::consuming()}. {@see CompletePurchaseReturn} asks the narrower "can this
+ * be done right now", which counts only what has actually moved — see
+ * {@see completedForOrderItems()}. Same arithmetic, different `$statuses`, and the difference is
+ * deliberate rather than an oversight.
  *
  * **A computed aggregate, not a denormalised column.** A `returned_quantity` on
  * `purchase_order_items` would make every path — save, complete, cancel, delete, edit down,
@@ -99,6 +100,33 @@ final class ReturnedQuantities
         }
 
         return $totals;
+    }
+
+    /**
+     * The same fold, counting only returns that have actually moved the goods.
+     *
+     * **The narrower of the two ceilings**, and the only one that may refuse an irreversible
+     * step. A pending sibling has taken nothing off a shelf, so it must not stand between this
+     * return and its completion — but it does count when somebody is *raising* a document, which
+     * is what {@see forOrderItems()}'s default answers.
+     *
+     * **No `$excluding`, deliberately.** {@see CompletePurchaseReturn} holds an exclusive lock on
+     * this return and has just proved it is still `Pending`, so it cannot be in the `Completed`
+     * set and cannot count against itself. Passing its id would be a guard against a state that
+     * cannot exist, and one more argument to get wrong.
+     *
+     * **Read without a lock, and that is the correct call rather than a missing one.** The caller
+     * holds the parent order's row, which every competing completion must also hold, so the
+     * `Completed` set cannot change underneath this read — see {@see CompletePurchaseReturn},
+     * which explains why a `FOR UPDATE` here would deadlock against
+     * {@see SavePurchaseReturn::revise()} while protecting nothing that can happen.
+     *
+     * @param  list<int>  $orderItemIds
+     * @return array<int, numeric-string>
+     */
+    public static function completedForOrderItems(array $orderItemIds): array
+    {
+        return self::forOrderItems($orderItemIds, null, [ReturnStatus::Completed]);
     }
 
     /**

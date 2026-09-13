@@ -51,6 +51,21 @@ return [
         'empty' => 'No lines yet. Add one to say what is being ordered.',
     ],
 
+    // The shelf, beside a document that is about to take something off it. Shared
+    // because the question is the same one whichever document asks it: a sales order
+    // issues products, a purchase return sends raw materials back, and both want to
+    // know whether the warehouse can cover the lines. The item column says "Item"
+    // rather than naming either, which is also what the lines editor above calls it.
+    'availability' => [
+        'heading' => 'What this warehouse holds',
+        'hint' => 'A guide, not a reservation — these figures move as colleagues record their own work, so the answer that counts is the one you get on confirming.',
+        'item' => 'Item',
+        'required' => 'Needed',
+        'on_hand' => 'Available',
+        'short' => 'Short',
+        'empty' => 'Nothing on this document points at an item that still exists, so nothing will be taken out.',
+    ],
+
     'totals' => [
         'subtotal' => 'Subtotal',
         'discount' => 'Discount',

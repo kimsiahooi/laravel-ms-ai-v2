@@ -4151,6 +4151,143 @@ Built assets and SSR, 1440 × 900, all three locales, light and dark, 375 / 768 
   orders, since v1 has no `sales_order_id` FK and a return is a standalone stock-in document.
   E-invoice sits on top of sales orders and stays deferred.
 
+## Phase 5 · Orders — purchase returns, and the second thing that takes stock off a shelf ✅
+
+v1's returns were not a thing to port. They were quantity-only stock notes with no parent
+order, no money and no ceiling of any kind: the only check was "was this material ever received
+from this supplier", across every order ever, so 10,000 could go back against a receipt of 1,
+repeatedly. Purchase returns were accidentally bounded by on-hand stock; sales returns were
+unbounded and inflated inventory on demand.
+
+Built in three slices, of which two have landed. **A** generalised `OrderAvailability` so one
+availability answer serves any document that issues stock. **B1** built the return as a document
+with a real ceiling and deliberately moved nothing. **B2** is the transition.
+
+### The ceiling is two different questions
+
+`ReturnedQuantities` answers both, and the difference is the whole design.
+
+- **Raising or editing** a return counts pending **and** completed siblings
+  (`ReturnStatus::consuming()`), because a second claim on goods another claim already covers is
+  not a sensible document to raise. It reads **without a lock**, deliberately: nothing has moved,
+  an editor can correct it, and serialising document creation for a race with no consequence is
+  the wrong trade.
+- **Completing** one counts **only what has actually moved**
+  (`completedForOrderItems()`), under a lock, because that is the irreversible step.
+
+That asymmetry has a visible consequence and it is the intended one: two people can each raise a
+return for the last 8, both save, the first completes, and the second is refused at completion
+with a sentence naming the line. It stays pending and editable.
+
+**A computed aggregate, not a denormalised column.** A `returned_quantity` on
+`purchase_order_items` would make save, complete, cancel, delete, edit-down and restore all
+writers of it, and one missed path is a permanently wrong ceiling with no symptom. Folded with
+`bcadd` rather than `SUM()`, which comes back a string on MySQL and a float elsewhere.
+
+**Soft-deleted returns release their quantity by accident of Eloquent**, and that is load-bearing:
+`whereHas` carries the related model's global scope, so `PurchaseReturnItem::purchaseReturn()`
+must never gain `withTrashed()` for consistency with the two relations either side of it. Both
+files say so.
+
+### The lock order, and the one place the obvious hardening is wrong
+
+`CompletePurchaseReturn` takes, inside one transaction:
+
+    purchase_returns row  →  purchase_orders row  →  [ceiling read]  →  warehouse_stocks rows
+
+The return's own row is the double-press guard. **The parent order's row is the rendezvous**, and
+for a subtler reason than "two returns are two rows". The ceiling's `status = completed` test
+lives inside a `whereHas`, which compiles to a correlated `EXISTS`, and MySQL is explicit that a
+locking read in an outer statement does not lock rows in a nested subquery — so that predicate is
+answered by a consistent read whatever the outer statement asks for. Under REPEATABLE READ a
+consistent read answers from the transaction's read view, and the only way to make that read view
+late enough is to hold, before it is created, a lock every competing completion must also hold.
+**So the invariant is: nothing in this transaction reads without a lock until the order row is
+held**, and step 2 must precede step 3.
+
+**The ceiling read is deliberately not `FOR UPDATE`.** It would protect against nothing reachable
+— the only thing that puts a line into the completed set is a completion, which needs the order
+lock this transaction holds — and it would cost a deadlock. InnoDB auto-created an index on
+`purchase_return_items.purchase_order_item_id` to serve that foreign key, so a locking `whereIn`
+on it next-key-locks rows that `SavePurchaseReturn::revise()` locks through the *other* index
+(`purchase_return_id`). Two indexes, two acquisition orders, and `DB::transaction()` defaults to
+a single attempt, so it would surface as a 500 rather than a retry.
+
+### The check adds up; the ledger does not
+
+Availability is aggregated **per material** — two order lines may name the same one, and a
+per-line reading passes two fives against eight on the shelf. The ledger writes **one movement
+per line**, because it records what the document says: collapsing two lines of five into one row
+of ten would make the ledger disagree with the return somebody is holding. The ceiling, by
+contrast, compares **per line**, which is safe only because `purchase_return_items_line_unique`
+guarantees one row per (return, order line).
+
+### Two races that completion made reachable
+
+While every return was pending, `destroy()` and `update()` could not lose a race — there was no
+other state. Once `complete` shipped, both could: they read the status off the route-bound model,
+outside any lock, and then wrote. Deleting a return that had just completed would leave ledger
+rows naming a document nobody can open **and hand the delivery back quantity that had physically
+left the building**. Fixed by `DeletePurchaseReturn` (an Action, because `check-structure.sh`
+bans `DB::` in a controller) and by locking the revise path inside the transaction
+`SavePurchaseReturn` already opens.
+
+### Decided with the user
+
+1. **A short shelf refuses the completion** — the same answer fulfilment gives. Goods written off
+   before the paperwork caught up have to be adjusted back in first.
+2. **Completed is final.** Only a pending return may be cancelled; a wrong completed one is
+   corrected by recording the opposite movement.
+3. **The warehouse is a picker defaulted to the delivery**, not pinned to it — stock gets
+   transferred between sites after receipt.
+
+`InsufficientStockForOrderException` is reused rather than twinned: its payload is already
+`StockAvailabilityData`, which serves both kinds of document. `ReturnExceedsOrderException` is
+new, because it is a different failure — and it is filed as a **toast, not a field error**, since
+no warehouse can fix it.
+
+### Found by driving it
+
+**Malay called the same thing two different names**, and only this slice could have revealed it.
+`stock-movements.reason.purchase_return` read "Pulangan belian" while the module names itself
+"Pemulangan belian" in all 75 of its own keys. The reason key had never been rendered, because
+nothing had ever written a `purchase_return` movement. Fixed, and `sales_return` with it, before
+slice C hits the same row.
+
+### Verified by driving it
+
+Built assets, SSR on, 1440 × 900, then 375 / 768 / 1024, three locales, light and dark.
+
+- Ledger **10 → 18**, every row accounted for: 2 receipts, 2 transfer legs, 4 purchase returns.
+- Completing a one-line return wrote **exactly one** row, `-2.0000`, reason `purchase_return`,
+  source `purchase_return#2` — the morph-map key, not an FQCN. **Zero FQCNs** in `source_type`.
+- A two-line return of the *same* material: panel showed **one** row needing 10, ledger wrote
+  **two** rows of −5.
+- A warehouse holding nothing → refused under the picker, panel listing the shortfall, ledger
+  unchanged, **and the panel survived the refusal** — which is why the chosen warehouse rides in
+  the query string rather than an optional prop.
+- Two pending returns on the same 8: first completed, second refused with the over-return toast
+  naming the line, still pending and editable, ledger unchanged.
+- Cancelling released the claim: the consuming reading dropped 18 → 10 with no ledger row.
+- Crafted `complete`, `cancel`, `PATCH` and `DELETE` against a **completed** return: all four
+  refused, and the return was still there afterwards.
+- Goods transferred to another site after receipt still completed from the new warehouse; needed
+  10 against exactly 10 available is **not** short (`<`, not `<=`).
+- As a Stock clerk (no `purchase-returns.*`): 403 on complete, cancel and show.
+- Sales-order fulfilment re-driven end to end, because `AvailabilityPanel` moved into
+  `components/data/` and its seven keys moved to a shared `orders.availability.*` namespace.
+- 23 pages checked for `data-server-rendered="true"` and `/build/` assets: all 23. Zero console
+  messages on every page after a clean load.
+
+### Open, carried forward
+
+- Existing workspaces need `php artisan tenants:migrate` — the two `purchase_return*` tables
+  shipped with B1 and no migration was added here.
+- **C — sales returns** is the mirror: stock IN, no availability check, no shortfall panel, the
+  same ceiling against a fulfilled sales order.
+- `PostStockTake` locks level rows per line, **unsorted** — a pre-existing latent deadlock that
+  `StockService::lockLevels()`'s sorting exists to avoid. Not this slice's to fix.
+
 ## Phase 7 · Team — users, roles, and the gate that finally denies something ✅
 
 Three slices, and the point of all three is the denial. Every tenant workspace had exactly one
@@ -4278,7 +4415,7 @@ locales, light and dark, 375 / 768 / 1024. Zero console messages across every mi
 |---|---|---|
 | 3 · Catalog | **categories ✅ · suppliers ✅ · customers ✅ · raw materials ✅ · products ✅** (core · image · BOM) | ✅ |
 | 4 · Stock | **locations ✅ · warehouses ✅ · StockService ✅ · movements ✅ · transfers ✅ · reorder levels ✅ · stock takes ✅** (+ notes column, column preferences, warehouse detail) | ✅ |
-| 5 · Orders | **money foundation ✅ · purchase orders ✅ · catalogue prices ✅ · sales orders ✅ · purchase returns 🚧** (the document; completion next) · sales returns | 🚧 |
+| 5 · Orders | **money foundation ✅ · purchase orders ✅ · catalogue prices ✅ · sales orders ✅ · purchase returns ✅** (document + completion) · sales returns | 🚧 |
 | 6 · Insights | reports, activity log | ⬜ |
 | 7 · Team & settings | **users ✅ · roles/RBAC ✅ · business settings ✅ · document numbering ✅** (the last two pulled forward into phase 5, which needed them), e-invoice | 🚧 |
 | 8 · Cross-cutting | exports, barcode/QR scanning, tenant dashboard, **admin dashboard ✅** (built in phase 1 and listed here as not started until now) | 🚧 |
