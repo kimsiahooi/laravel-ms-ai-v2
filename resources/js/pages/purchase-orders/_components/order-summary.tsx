@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { useDateNames } from '@/hooks/use-date-names';
 import { useTimeZone } from '@/hooks/use-time-zone';
 import { useTranslation } from '@/hooks/use-translation';
 import { formatDateTime } from '@/lib/format';
@@ -22,6 +23,7 @@ type Order = App.Data.PurchaseOrderData;
 export function OrderSummary({ order }: { order: Order }) {
     const { t } = useTranslation();
     const timeZone = useTimeZone();
+    const names = useDateNames();
 
     // A parse for a *display* decision, never for arithmetic — which is why it is here
     // and not in `lib/money.ts`. `1`, `1.0` and `1.000000` are one rate written three
@@ -71,7 +73,7 @@ export function OrderSummary({ order }: { order: Order }) {
                             dateTime={order.received_at}
                             className="tabular-nums"
                         >
-                            {formatDateTime(order.received_at, timeZone)}
+                            {formatDateTime(order.received_at, timeZone, names)}
                         </time>
                     </Row>
                     <Row label="purchase-orders.summary.received_into">

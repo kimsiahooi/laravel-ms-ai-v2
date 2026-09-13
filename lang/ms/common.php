@@ -98,4 +98,35 @@ return [
         'hours_ago' => ':count jam lalu',
         'days_ago' => ':count hari lalu',
     ],
+
+    // Nama bulan dan hari. Lihat nota dalam lang/en/common.php.
+    'month' => [
+        'jan' => 'Jan',
+        'feb' => 'Feb',
+        'mar' => 'Mac',
+        'apr' => 'Apr',
+        'may' => 'Mei',
+        'jun' => 'Jun',
+        'jul' => 'Jul',
+        'aug' => 'Ogo',
+        'sep' => 'Sep',
+        'oct' => 'Okt',
+        'nov' => 'Nov',
+        'dec' => 'Dis',
+    ],
+
+    'weekday' => [
+        'sun' => 'Ahd',
+        'mon' => 'Isn',
+        'tue' => 'Sel',
+        'wed' => 'Rab',
+        'thu' => 'Kha',
+        'fri' => 'Jum',
+        'sat' => 'Sab',
+    ],
+
+    'date' => [
+        'long' => ':day :month :year',
+        'caption' => ':month :year',
+    ],
 ];

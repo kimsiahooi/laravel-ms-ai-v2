@@ -110,4 +110,47 @@ return [
         'hours_ago' => ':count hr ago',
         'days_ago' => ':count day ago|:count days ago',
     ],
+
+    // Month and weekday names, for every date the app prints.
+    //
+    // Here rather than from `Intl`: ICU's names differ between the SSR runtime and the
+    // browser — CLDR 42 changed en-GB's short September from "Sep" to "Sept" — so asking
+    // ICU for a word makes the two renders disagree on the same input, which is a React
+    // #418 carrying no component name. These are ours and cannot drift.
+    //
+    // Word keys rather than numbers: PHP casts a numeric string array key to an int, and
+    // the flattening would then have to care.
+    'month' => [
+        'jan' => 'Jan',
+        'feb' => 'Feb',
+        'mar' => 'Mar',
+        'apr' => 'Apr',
+        'may' => 'May',
+        'jun' => 'Jun',
+        'jul' => 'Jul',
+        'aug' => 'Aug',
+        'sep' => 'Sep',
+        'oct' => 'Oct',
+        'nov' => 'Nov',
+        'dec' => 'Dec',
+    ],
+
+    // Sunday first — the order `Date.getDay()` returns.
+    'weekday' => [
+        'sun' => 'Sun',
+        'mon' => 'Mon',
+        'tue' => 'Tue',
+        'wed' => 'Wed',
+        'thu' => 'Thu',
+        'fri' => 'Fri',
+        'sat' => 'Sat',
+    ],
+
+    // How those pieces are assembled. Patterns rather than concatenation in
+    // `lib/format.ts`, because word order is not universal: English leads with the day,
+    // Chinese with the year. A template keeps that decision here, with the words.
+    'date' => [
+        'long' => ':day :month :year',
+        'caption' => ':month :year',
+    ],
 ];

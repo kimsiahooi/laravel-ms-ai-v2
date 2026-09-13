@@ -1,6 +1,7 @@
 import { ClipboardCheck, ListChecks, Scale } from 'lucide-react';
 import type { ComponentType, ReactNode } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
+import { useDateNames } from '@/hooks/use-date-names';
 import { useTimeZone } from '@/hooks/use-time-zone';
 import { useTranslation } from '@/hooks/use-translation';
 import { formatDateTime } from '@/lib/format';
@@ -127,6 +128,7 @@ function Stat({
 function TakeMeta({ take }: { take: Take }) {
     const { t } = useTranslation();
     const timeZone = useTimeZone();
+    const names = useDateNames();
 
     return (
         <dl className="grid max-w-3xl gap-x-8 gap-y-2 text-sm sm:grid-cols-2">
@@ -136,7 +138,7 @@ function TakeMeta({ take }: { take: Take }) {
             </Row>
             <Row label="stock-takes.column.created_at">
                 <time dateTime={take.created_at} className="tabular-nums">
-                    {formatDateTime(take.created_at, timeZone)}
+                    {formatDateTime(take.created_at, timeZone, names)}
                 </time>
             </Row>
 
@@ -151,7 +153,7 @@ function TakeMeta({ take }: { take: Take }) {
                             dateTime={take.posted_at}
                             className="tabular-nums"
                         >
-                            {formatDateTime(take.posted_at, timeZone)}
+                            {formatDateTime(take.posted_at, timeZone, names)}
                         </time>
                     </Row>
                 </>

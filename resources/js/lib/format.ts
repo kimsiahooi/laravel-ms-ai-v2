@@ -1,3 +1,4 @@
+import type { DateNames } from '@/lib/date-names';
 import type { TranslationKey } from '@/types/lang';
 
 /**
@@ -14,34 +15,18 @@ import type { TranslationKey } from '@/types/lang';
  * clock of a given IANA zone for display — the zone business settings names, so every
  * reader of a *timestamp* sees it on the same clock.
  *
+ * The words a date is spelled with arrive the same way: as a {@see DateNames} argument the
+ * caller resolved from `lang/`. They are not looked up here, because that would mean either
+ * importing React into `lib/` or asking `Intl` for a month name — and ICU's names differ
+ * between the SSR runtime and the browser, which is the hydration mismatch this whole file
+ * is arranged to avoid. Required rather than defaulted to English: a default would render
+ * English silently at any call site somebody forgot, in every locale, and no gate can see
+ * that because these are not `t()`. Required makes it a tsc error instead.
+ *
  * Nothing here converts in the other direction, and nothing here touches a delivery date:
  * that is the one value a person picks, and it is stored and shown exactly as chosen, with
  * no zone anywhere near it. See `PurchaseOrderRequest::expectedInstant()`.
  */
-
-const MONTHS = [
-    'Jan',
-    'Feb',
-    'Mar',
-    'Apr',
-    'May',
-    'Jun',
-    'Jul',
-    'Aug',
-    'Sep',
-    'Oct',
-    'Nov',
-    'Dec',
-];
-
-/**
- * Weekday abbreviations, Sunday first — the order `Date.getDay()` returns.
- *
- * Here for exactly the reason {@see MONTHS} is: a calendar has to head its columns with
- * day names, and asking `Intl` for them hands that text to ICU, whose data differs
- * between the SSR runtime and the browser. These are ours and cannot drift.
- */
-const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 /** A UTC instant broken into the wall-clock fields of some zone. */
 type Zoned = {
@@ -148,15 +133,23 @@ function pad(value: number): string {
     return String(value).padStart(2, '0');
 }
 
-/** ISO-8601 → `6 Sep 2026`, on the wall clock of `timeZone`. */
-export function formatDate(iso: string, timeZone: string): string {
+/** ISO-8601 → `6 Sep 2026`, on the wall clock of `timeZone` and in `names`' language. */
+export function formatDate(
+    iso: string,
+    timeZone: string,
+    names: DateNames,
+): string {
     const parts = zoned(iso, timeZone);
 
     if (parts === null) {
         return '';
     }
 
-    return `${parts.day} ${MONTHS[parts.month - 1]} ${parts.year}`;
+    return names.long(
+        parts.day,
+        names.months[parts.month - 1] ?? '',
+        parts.year,
+    );
 }
 
 /**
@@ -166,7 +159,11 @@ export function formatDate(iso: string, timeZone: string): string {
  * doubt, and "02:35" alone cannot answer "whose 02:35". It is derived from the same
  * conversion rather than stored, so it is right on both sides of a DST boundary.
  */
-export function formatDateTime(iso: string, timeZone: string): string {
+export function formatDateTime(
+    iso: string,
+    timeZone: string,
+    names: DateNames,
+): string {
     const parts = zoned(iso, timeZone);
 
     if (parts === null) {
@@ -175,7 +172,7 @@ export function formatDateTime(iso: string, timeZone: string): string {
 
     const clock = `${pad(parts.hour)}:${pad(parts.minute)}`;
 
-    return `${formatDate(iso, timeZone)}, ${clock} (${offset(iso, parts)})`;
+    return `${formatDate(iso, timeZone, names)}, ${clock} (${offset(iso, parts)})`;
 }
 
 /** `+08:00` — how far `parts` sits from the UTC instant it was derived from. */
@@ -315,26 +312,29 @@ export function formatMoney(
  * Pure string work: nothing is parsed into a number except to index the month table, and
  * a value that is not `Y-m-d` comes back as it went in rather than as `Invalid Date`.
  */
-export function formatDateValue(value: string): string {
+export function formatDateValue(value: string, names: DateNames): string {
     const parts = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
 
     if (parts === null) {
         return value;
     }
 
-    const month = MONTHS[Number(parts[2]) - 1];
+    const month = names.months[Number(parts[2]) - 1];
 
     return month === undefined
         ? value
-        : `${Number(parts[3])} ${month} ${parts[1]}`;
+        : names.long(Number(parts[3]), month, Number(parts[1]));
 }
 
-/** A weekday abbreviation for a `Date`, from the table above rather than from ICU. */
-export function weekdayName(date: Date): string {
-    return WEEKDAYS[date.getDay()] ?? '';
+/** A weekday abbreviation for a `Date`, from `lang/` rather than from ICU. */
+export function weekdayName(date: Date, names: DateNames): string {
+    return names.weekdays[date.getDay()] ?? '';
 }
 
 /** `2026-10` → `Oct 2026`, for a calendar's caption. Same table, same reason. */
-export function formatMonthCaption(date: Date): string {
-    return `${MONTHS[date.getMonth()] ?? ''} ${date.getFullYear()}`;
+export function formatMonthCaption(date: Date, names: DateNames): string {
+    return names.caption(
+        names.months[date.getMonth()] ?? '',
+        date.getFullYear(),
+    );
 }

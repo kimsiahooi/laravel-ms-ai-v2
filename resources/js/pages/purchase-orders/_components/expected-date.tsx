@@ -1,3 +1,4 @@
+import { useDateNames } from '@/hooks/use-date-names';
 import { formatDateValue } from '@/lib/format';
 
 /**
@@ -21,6 +22,7 @@ import { formatDateValue } from '@/lib/format';
  * Neither carries an offset, because the value has none.
  */
 export function ExpectedDate({ date }: { date: string }) {
+    const names = useDateNames();
     const [day, time] = date.split(' ');
 
     return (
@@ -29,8 +31,8 @@ export function ExpectedDate({ date }: { date: string }) {
             dateTime={time === undefined ? day : `${day}T${time}`}
         >
             {time === undefined
-                ? formatDateValue(day)
-                : `${formatDateValue(day)}, ${time}`}
+                ? formatDateValue(day, names)
+                : `${formatDateValue(day, names)}, ${time}`}
         </time>
     );
 }

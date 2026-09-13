@@ -1,6 +1,6 @@
 import { usePage } from '@inertiajs/react';
 import { CalendarIcon } from 'lucide-react';
-import { useId, useState } from 'react';
+import { useId, useMemo, useState } from 'react';
 import { TimeSelect } from '@/components/form/time-select';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,7 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from '@/components/ui/popover';
+import { useDateNames } from '@/hooks/use-date-names';
 import { useTranslation } from '@/hooks/use-translation';
 import { formatDateValue, formatMonthCaption, weekdayName } from '@/lib/format';
 import { cn } from '@/lib/utils';
@@ -60,8 +61,9 @@ type Props = {
  *    midnight. `today` is a server prop, resolved in the workspace's own zone.
  * 2. *Month and weekday names.* react-day-picker formats them through date-fns, whose
  *    locale data is static and therefore safe — but it is a *second* source of those
- *    words, in English, beside the ones `lib/format.ts` already owns. Both are
- *    overridden through `formatters` so every date in this app is spelled by one table.
+ *    words, in English, beside the ones this app owns. Both are overridden through
+ *    `formatters` so every date here is spelled by one table: the one in `lang/`, reached
+ *    through {@see useDateNames}.
  * 3. *Day numbers.* Overridden too, so a locale with its own numerals cannot render
  *    digits the server did not.
  *
@@ -93,6 +95,7 @@ export function DateField({
     withTime,
 }: Props) {
     const { t } = useTranslation();
+    const names = useDateNames();
     const today = usePage().props.today;
     const id = useId();
     const errorId = `${id}-error`;
@@ -107,6 +110,19 @@ export function DateField({
 
     const selected = toDate(date);
     const value = date === '' ? '' : time === '' ? date : `${date} ${time}`;
+
+    // react-day-picker's formatter signatures are fixed, so the translated table reaches
+    // them by closure rather than by argument. Memoised on `names` because DayPicker reads
+    // a fresh object as a prop change and redraws the whole grid on every keystroke
+    // elsewhere in the form.
+    const formatters = useMemo(
+        () => ({
+            formatCaption: (month: Date) => formatMonthCaption(month, names),
+            formatWeekdayName: (day: Date) => weekdayName(day, names),
+            formatDay: (day: Date) => String(day.getDate()),
+        }),
+        [names],
+    );
 
     return (
         <div className="space-y-2">
@@ -164,7 +180,7 @@ export function DateField({
                                 : // The date half only. `formatDateValue` understands
                                   // `Y-m-d` and returns anything else unchanged, so the
                                   // composed value would print as raw `2026-10-15 14:30`.
-                                  formatDateValue(date)}
+                                  formatDateValue(date, names)}
                         </Button>
                     </PopoverTrigger>
 
@@ -192,11 +208,7 @@ export function DateField({
 
                                 setOpen(false);
                             }}
-                            formatters={{
-                                formatCaption: formatMonthCaption,
-                                formatWeekdayName: weekdayName,
-                                formatDay: (date) => String(date.getDate()),
-                            }}
+                            formatters={formatters}
                         />
 
                         {/* An optional date needs a way back to "none". Clearing by

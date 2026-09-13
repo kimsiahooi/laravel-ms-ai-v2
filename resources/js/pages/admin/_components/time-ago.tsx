@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useDateNames } from '@/hooks/use-date-names';
 import { useTimeZone } from '@/hooks/use-time-zone';
 import { useTranslation } from '@/hooks/use-translation';
 import { formatDate, formatDateTime, relativeTime } from '@/lib/format';
@@ -14,6 +15,7 @@ import { formatDate, formatDateTime, relativeTime } from '@/lib/format';
 export function TimeAgo({ iso }: { iso: string | null }) {
     const { tChoice } = useTranslation();
     const timeZone = useTimeZone();
+    const names = useDateNames();
     const [relative, setRelative] = useState<string | null>(null);
 
     useEffect(() => {
@@ -37,8 +39,8 @@ export function TimeAgo({ iso }: { iso: string | null }) {
     }
 
     return (
-        <time dateTime={iso} title={formatDateTime(iso, timeZone)}>
-            {relative ?? formatDate(iso, timeZone)}
+        <time dateTime={iso} title={formatDateTime(iso, timeZone, names)}>
+            {relative ?? formatDate(iso, timeZone, names)}
         </time>
     );
 }

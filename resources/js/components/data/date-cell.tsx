@@ -1,3 +1,4 @@
+import { useDateNames } from '@/hooks/use-date-names';
 import { useTimeZone } from '@/hooks/use-time-zone';
 import { formatDate } from '@/lib/format';
 
@@ -16,10 +17,11 @@ import { formatDate } from '@/lib/format';
  */
 export function DateCell({ iso }: { iso: string }) {
     const timeZone = useTimeZone();
+    const names = useDateNames();
 
     return (
         <time className="text-muted-foreground tabular-nums" dateTime={iso}>
-            {formatDate(iso, timeZone)}
+            {formatDate(iso, timeZone, names)}
         </time>
     );
 }

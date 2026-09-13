@@ -98,4 +98,36 @@ return [
         'hours_ago' => ':count 小时前',
         'days_ago' => ':count 天前',
     ],
+
+    // 月份与星期名称。说明见 lang/en/common.php。
+    'month' => [
+        'jan' => '1月',
+        'feb' => '2月',
+        'mar' => '3月',
+        'apr' => '4月',
+        'may' => '5月',
+        'jun' => '6月',
+        'jul' => '7月',
+        'aug' => '8月',
+        'sep' => '9月',
+        'oct' => '10月',
+        'nov' => '11月',
+        'dec' => '12月',
+    ],
+
+    'weekday' => [
+        'sun' => '日',
+        'mon' => '一',
+        'tue' => '二',
+        'wed' => '三',
+        'thu' => '四',
+        'fri' => '五',
+        'sat' => '六',
+    ],
+
+    // 年在前，日带「日」——:month 已含「月」。
+    'date' => [
+        'long' => ':year年:month:day日',
+        'caption' => ':year年:month',
+    ],
 ];
