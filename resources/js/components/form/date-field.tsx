@@ -57,7 +57,7 @@ type Props = {
  *
  * 1. *Today.* A calendar marks the current day, and `new Date()` in render is the one
  *    thing `scripts/ui-guard.sh` refuses — the two sides can land either side of
- *    midnight. `today` is a server prop, resolved in the reader's own zone.
+ *    midnight. `today` is a server prop, resolved in the workspace's own zone.
  * 2. *Month and weekday names.* react-day-picker formats them through date-fns, whose
  *    locale data is static and therefore safe — but it is a *second* source of those
  *    words, in English, beside the ones `lib/format.ts` already owns. Both are
@@ -73,15 +73,14 @@ type Props = {
  * nest a Radix Select inside a Radix Popover, which this codebase nests inside a Dialog
  * but has never nested inside a Popover. Beside it, the calendar keeps the behaviour
  * people have already learned, and — the part that matters most — **a time is visible
- * without opening anything**, which is what makes a seeded one discoverable. See
- * {@see timeOfDay} on why a reader outside the picker's zone may be shown one.
+ * without opening anything**.
  *
- * **No `Date` here ever meets a time zone, and that is deliberate.** A calendar day is
- * not an instant. `Date` objects are built from local Y/M/D fields and read back the
- * same way, so the value round-trips exactly; going through `toISOString()` would hand
- * back the previous day for every reader east of UTC. The server does the anchoring —
- * see `PurchaseOrderRequest::expectedInstant()` — and it can only do that correctly if
- * what arrives is the day that was actually clicked.
+ * **No `Date` here ever meets a time zone, and nothing downstream does either.** A
+ * calendar day is not an instant. `Date` objects are built from local Y/M/D fields and read
+ * back the same way, so the value round-trips exactly; going through `toISOString()` would
+ * hand back the previous day for every reader east of UTC. The server then stores what
+ * arrives verbatim — see `PurchaseOrderRequest::expectedInstant()` — so the day that was
+ * clicked is the day that is kept, and no timezone setting can move it later.
  */
 export function DateField({
     name,

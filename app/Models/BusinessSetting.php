@@ -31,6 +31,7 @@ use Illuminate\Support\Carbon;
  * @property string $sales_return_prefix
  * @property NumberReset $number_reset
  * @property int $financial_year_start_month
+ * @property string $timezone
  * @property Carbon $created_at
  * @property Carbon $updated_at
  */
@@ -53,6 +54,7 @@ class BusinessSetting extends Model
         'sales_return_prefix',
         'number_reset',
         'financial_year_start_month',
+        'timezone',
     ];
 
     /**

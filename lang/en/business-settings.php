@@ -23,12 +23,21 @@ return [
         'description' => 'The currency the books are kept in, the ones an order may be raised in, and the tax charged on it.',
     ],
 
+    'clock' => [
+        'title' => 'Clock',
+        'description' => 'The time zone this business runs on. It decides which day a financial year turns over on, and which calendar a delivery date is quoted against.',
+    ],
+
     'documents' => [
         'title' => 'Document numbers',
         'description' => 'How purchase orders, sales orders and their returns are numbered.',
     ],
 
     'field' => [
+        'timezone' => 'Time zone',
+        'timezone_search' => 'Search time zones…',
+        'timezone_empty' => 'No time zone matches.',
+        'timezone_hint' => 'Everyone sees timestamps on their own clock. This is the one the business keeps — used when no browser has reported a zone, and for dates that belong to the company calendar rather than to the reader.',
         'base_currency' => 'Base currency',
         'base_currency_placeholder' => 'Choose a currency',
         'base_currency_hint' => 'What the books are kept in. An order may still be raised in another currency and carries its own exchange rate.',

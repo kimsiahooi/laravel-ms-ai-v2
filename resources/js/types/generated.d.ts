@@ -22,6 +22,7 @@ sales_order_prefix: string,
 sales_return_prefix: string,
 number_reset: App.Enums.NumberReset,
 financial_year_start_month: number,
+timezone: string,
 };
 export type CategoryData = {
 id: number,

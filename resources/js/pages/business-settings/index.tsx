@@ -9,6 +9,7 @@ import { usePermissions } from '@/hooks/use-permissions';
 import { useTranslation } from '@/hooks/use-translation';
 import { CurrencyChoices } from '@/pages/business-settings/_components/currency-choices';
 import { DocumentNumberFields } from '@/pages/business-settings/_components/document-number-fields';
+import { TimezoneField } from '@/pages/business-settings/_components/timezone-field';
 import { index } from '@/routes/settings';
 import type { TranslationKey } from '@/types/lang';
 
@@ -43,10 +44,13 @@ const CURRENCY_NAMES: Record<string, TranslationKey> = {
 export default function Business({
     settings,
     currencies,
+    timezones,
 }: {
     settings: App.Data.BusinessSettingsData;
     /** Every code the server will accept — its catalog, not this workspace's choice. */
     currencies: string[];
+    /** Every IANA zone the server will accept. See TimeZones::options(). */
+    timezones: string[];
 }) {
     const { t } = useTranslation();
 
@@ -146,6 +150,27 @@ export default function Business({
                                     settings={settings}
                                     errors={errors}
                                 />
+                            </section>
+
+                            <Separator />
+
+                            <section className="space-y-4">
+                                <Heading
+                                    variant="small"
+                                    title={t('business-settings.clock.title')}
+                                    description={t(
+                                        'business-settings.clock.description',
+                                    )}
+                                />
+
+                                <div className="sm:max-w-sm">
+                                    <TimezoneField
+                                        name="timezone"
+                                        options={timezones}
+                                        defaultValue={settings.timezone}
+                                        error={errors.timezone}
+                                    />
+                                </div>
                             </section>
 
                             {/* Hidden rather than disabled for a reader: a greyed-out

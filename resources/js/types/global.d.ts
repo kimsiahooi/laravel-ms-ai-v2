@@ -19,14 +19,17 @@ declare module '@inertiajs/core' {
             locale: string;
             locales: { code: string; label: string }[];
             /**
-             * The IANA zone the SERVER formatted dates in, reported by the browser
-             * through a cookie. Never call `resolvedOptions()` during a render.
+             * The IANA zone the SERVER formatted dates in: the workspace's own, from
+             * business settings, so every reader sees a date the same way. The browser's
+             * reported zone answers only on /admin, where there is no workspace. Never
+             * call `resolvedOptions()` during a render.
              */
             timezone: string;
             /**
-             * What day it is where the reader is, `Y-m-d`, resolved server-side in
-             * `timezone`. A calendar has to mark today without calling the clock during
-             * render — see `components/form/date-field.tsx`.
+             * Today's date, `Y-m-d`, resolved server-side in `timezone` — so a calendar
+             * marks the business's today rather than whatever day it is where the reader
+             * is. It has to be a prop because reading the clock during render is a
+             * hydration mismatch — see `components/form/date-field.tsx`.
              */
             today: string;
             /**

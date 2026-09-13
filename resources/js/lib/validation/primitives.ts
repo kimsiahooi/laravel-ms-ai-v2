@@ -541,7 +541,7 @@ function checkDecimal(
  *
  * Three shapes and no others: `''`, `2026-10-15`, `2026-10-15 14:30`. They are the wire
  * contract with `PurchaseOrderRequest::expectedInstant()`, which tells them apart by the
- * space, and with {@see formatDateTimeInput}, which composes them.
+ * space, and stores them exactly as sent — nothing converts a promised delivery date.
  *
  * **A calendar day, deliberately not an instant.** The day carries no zone; the server
  * anchors it to the zone the picker was in. Parsing it here as an instant would make it a

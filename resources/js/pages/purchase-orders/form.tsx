@@ -4,13 +4,11 @@ import type { OrderLine } from '@/components/form/order-lines-field';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Spinner } from '@/components/ui/spinner';
-import { useTimeZone } from '@/hooks/use-time-zone';
 import { useTranslation } from '@/hooks/use-translation';
 import { runGate } from '@/lib/validation/gate';
 import { purchaseOrderSchema } from '@/lib/validation/schemas/purchase-order';
 import {
     baseCurrency,
-    expectedDateValue,
     OrderHeaderFields,
 } from '@/pages/purchase-orders/_components/order-header-fields';
 import {
@@ -80,7 +78,6 @@ export default function PurchaseOrderForm({
     taxRate,
 }: Props) {
     const { t } = useTranslation();
-    const timeZone = useTimeZone();
 
     const [currency, setCurrency] = useState(
         order?.currency ?? baseCurrency(currencies),
@@ -94,7 +91,9 @@ export default function PurchaseOrderForm({
             order?.supplier_id == null ? '' : String(order.supplier_id),
         currency,
         exchange_rate: order?.exchange_rate ?? '',
-        expected_date: expectedDateValue(order, timeZone),
+        // Stored verbatim, so the seed is the stored value. Nothing converts a
+        // promised delivery date — see ExpectedDate.
+        expected_date: order?.expected_date ?? '',
         notes: order?.notes ?? '',
         items: toPayloadLines(lines),
     });

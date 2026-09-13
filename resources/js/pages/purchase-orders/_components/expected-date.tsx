@@ -1,43 +1,36 @@
-import { useTimeZone } from '@/hooks/use-time-zone';
-import { formatDate, timeOfDay } from '@/lib/format';
+import { formatDateValue } from '@/lib/format';
 
 /**
- * The delivery date, on the reader's clock — and the time, if one was agreed.
+ * The delivery date, exactly as it was agreed.
  *
- * `expected_date` is an instant, not a bare day: the server anchors what somebody picked
- * to the moment it began **in the zone they picked it from**, and this renders it back on
- * whatever clock the reader is on. For the person who set it — and for everyone else in
- * the same working zone, which is the ordinary case — that is what they chose.
+ * **Nothing here converts anything, and that is the whole design.** A promised delivery is
+ * a date the business wrote down — "the 15th" — not a moment on a clock. The server stores
+ * the picked value verbatim (see `PurchaseOrderRequest::expectedInstant()`) and this renders
+ * it verbatim, so the same order reads as the same day to every colleague, in every
+ * timezone, today and after somebody changes the workspace's timezone in settings.
  *
- * **Whether a time appears is inferred, not stored.** One instant cannot say whether a
- * day or a moment was picked, so midnight is read as "no time given" — see
- * {@see timeOfDay}, which is where that rule and its costs are written down. The one
- * worth knowing here: a reader outside the picker's zone can be shown a time nobody
- * agreed, because midnight there is not midnight here.
+ * That is the rule the settings screen promises: the timezone is a display reference for
+ * *timestamps* — when a receipt happened, when a count was posted — and never touches a
+ * date the business chose. An earlier version rendered this on a zone, which meant the
+ * setting could move a delivery by a day.
  *
- * **A reader far enough west can also see the day before, and that is inherent** rather
- * than a bug to route around: a calendar day held as an instant has to be read on some
- * clock, and reading it on the viewer's is the rule the rest of this app follows. The
- * alternative is a `date` column with no zone at all, which cannot be compared against
- * `received_at` and the other instants the ledger keeps.
+ * The value arrives as `Y-m-d`, or `Y-m-d H:i` when a time was agreed. Splitting on the
+ * space is the whole of telling those apart — no midnight sentinel, no inference.
  *
- * Not `formatDateTime`, which always appends `(+08:00)`: that function exists for a
- * tooltip, where the offset is the whole point of opening it. On a row of a document it
- * is noise.
- *
- * `<time dateTime>` carries the full instant for anything reading the page mechanically,
- * while the text is the readable form.
+ * `<time dateTime>` carries the machine-readable form: a bare date, or a local datetime.
+ * Neither carries an offset, because the value has none.
  */
 export function ExpectedDate({ date }: { date: string }) {
-    const timeZone = useTimeZone();
-    const clock = timeOfDay(date, timeZone);
-    const day = formatDate(date, timeZone);
+    const [day, time] = date.split(' ');
 
     return (
-        <time className="tabular-nums" dateTime={date}>
-            {/* A comma between a date and a clock is punctuation, not a sentence, and
-                reads the same in all three locales. i18n-allow */}
-            {clock === null ? day : `${day}, ${clock}`}
+        <time
+            className="tabular-nums"
+            dateTime={time === undefined ? day : `${day}T${time}`}
+        >
+            {time === undefined
+                ? formatDateValue(day)
+                : `${formatDateValue(day)}, ${time}`}
         </time>
     );
 }

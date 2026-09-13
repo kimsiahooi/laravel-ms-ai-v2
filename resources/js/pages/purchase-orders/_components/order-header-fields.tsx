@@ -2,8 +2,6 @@ import { ComboboxField } from '@/components/form/combobox-field';
 import { DateField } from '@/components/form/date-field';
 import { SelectField, type SelectOption } from '@/components/form/select-field';
 import { TextField } from '@/components/form/text-field';
-import { useTimeZone } from '@/hooks/use-time-zone';
-import { formatDateTimeInput } from '@/lib/format';
 import type { TranslationKey } from '@/types/lang';
 
 type Order = App.Data.PurchaseOrderData;
@@ -62,7 +60,6 @@ export function OrderHeaderFields({
     /** Laravel's bag, or the zod gate's, keyed the way both key it. */
     errors: Record<string, string>;
 }) {
-    const timeZone = useTimeZone();
     const options = currencyOptions(currencies);
     const foreign = currency !== '' && currency !== baseCurrency(currencies);
 
@@ -115,7 +112,7 @@ export function OrderHeaderFields({
                     name="expected_date"
                     label="purchase-orders.field.expected_date"
                     hint="purchase-orders.field.expected_date_hint"
-                    defaultValue={expectedDateValue(order, timeZone)}
+                    defaultValue={order?.expected_date ?? ''}
                     error={errors.expected_date}
                     withTime
                     optional
@@ -152,25 +149,4 @@ function currencyOptions(currencies: string[]): SelectOption[] {
     return currencies
         .filter((code) => code in CURRENCY_NAMES)
         .map((code) => ({ value: code, label: CURRENCY_NAMES[code] }));
-}
-
-/**
- * The stored instant back onto this browser's clock, as the wire shape the field takes.
- *
- * Exported because `form.tsx` seeds `useForm` with the identical value, and the same
- * expression written in two files is the same expression until somebody edits one of
- * them. {@see baseCurrency} above is exported for the same reason.
- *
- * Still needed now the control is a calendar rather than a date input: the column holds
- * an instant, and reading it on any other clock would offer the day before to everyone
- * west of whoever picked it. What decides whether a time comes back with the day — and
- * what that means for a reader in another zone — is {@see formatDateTimeInput}.
- */
-export function expectedDateValue(
-    order: Order | null,
-    timeZone: string,
-): string {
-    return order?.expected_date == null
-        ? ''
-        : formatDateTimeInput(order.expected_date, timeZone);
 }

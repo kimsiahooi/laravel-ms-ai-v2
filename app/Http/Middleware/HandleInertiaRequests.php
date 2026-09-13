@@ -76,6 +76,11 @@ class HandleInertiaRequests extends Middleware
             // The zone the SERVER formatted dates in, for the same reason as `locale`
             // directly above: the client must render the string the server already
             // rendered. Timestamps stay UTC everywhere else — this is display only.
+            //
+            // The workspace's own clock on a tenant page, because that is the calendar
+            // the business reads on and a date should not change meaning with who opened
+            // it. The browser's reported zone answers only on /admin, where there is no
+            // workspace. See TimeZones::resolve().
             'timezone' => TimeZones::resolve($request),
             // What day it is where the reader is, as `Y-m-d`.
             //
@@ -85,8 +90,9 @@ class HandleInertiaRequests extends Middleware
             // refuses outright — the server and the browser can land either side of
             // midnight and the mismatch is a React #418 nothing here would catch.
             //
-            // Resolved in the viewer's own zone, so "today" is their today rather than
-            // UTC's. See resources/js/components/form/date-field.tsx.
+            // Resolved in the same zone everything else on the page renders in — the
+            // workspace's — so a calendar marks the business's today.
+            // See resources/js/components/form/date-field.tsx.
             'today' => fn (): string => CarbonImmutable::now(TimeZones::resolve($request))->format('Y-m-d'),
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
             // Which columns this person looks at, per list — see App\Support\TableColumns.

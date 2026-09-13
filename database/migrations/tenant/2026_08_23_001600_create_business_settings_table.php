@@ -63,6 +63,21 @@ return new class extends Migration
             // its books in another month and its numbering should follow.
             $table->unsignedTinyInteger('financial_year_start_month')->default(1);
 
+            // The workspace's own clock, as an IANA identifier.
+            //
+            // The zone a *reader* sees dates in still comes from their browser — this is
+            // the workspace's, and it decides three things a browser cannot: which day a
+            // financial year turns over on for document numbering, what a picked delivery
+            // date means when no browser reported a zone at all (a console command, a
+            // queued job, a client with cookies blocked), and which calendar an expected
+            // delivery is quoted against, so every reader sees the day that was agreed
+            // rather than the day it happens to be where they are sitting.
+            //
+            // An identifier rather than an offset, because an offset is only correct
+            // until the next daylight-saving change. Defaults to UTC, which is what the
+            // whole system fell back to before this column existed.
+            $table->string('timezone', 64)->default('UTC');
+
             $table->timestamps();
         });
     }

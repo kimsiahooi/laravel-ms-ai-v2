@@ -7,6 +7,8 @@ namespace App\Http\Requests\Tenant;
 use App\Enums\NumberReset;
 use App\Models\BusinessSetting;
 use App\Support\DocumentNumberGenerator;
+use App\Support\TimeZones;
+use Closure;
 use Illuminate\Validation\Rule;
 
 /**
@@ -67,7 +69,34 @@ final class SettingsUpdateRequest extends TenantFormRequest
             'sales_return_prefix' => ['required', 'string', 'max:10', 'regex:/^[A-Za-z0-9-]+$/'],
             'number_reset' => ['required', Rule::enum(NumberReset::class)],
             'financial_year_start_month' => ['required', 'integer', Rule::in(self::MONTHS)],
+            // Checked against the tzdb rather than by length or shape. This value reaches
+            // `Intl.DateTimeFormat` in the SSR process exactly as the browser's cookie
+            // does, and an identifier that runtime does not know throws a RangeError
+            // mid-render — TimeZones::supports() is the same guard, applied to the same
+            // hazard from the other direction.
+            'timezone' => ['required', 'string', $this->timeZoneExists()],
         ];
+    }
+
+    /**
+     * A zone the tzdb knows.
+     *
+     * A closure rather than `Rule::in(...)`, which would put four hundred identifiers
+     * into the rule and again into the failed-validation payload. {@see TimeZones::supports}
+     * is the same check the browser's cookie goes through, and it is the check that
+     * matters: this value reaches `Intl.DateTimeFormat` inside the SSR process, which
+     * throws a RangeError on an identifier it does not know and takes the render down.
+     *
+     * `validation.exists` because that is what this is — the selected value is not one of
+     * the ones there are — and it is already translated in all three locales.
+     */
+    private function timeZoneExists(): Closure
+    {
+        return static function (string $attribute, mixed $value, Closure $fail): void {
+            if (! is_string($value) || ! TimeZones::supports($value)) {
+                $fail('validation.exists')->translate();
+            }
+        };
     }
 
     /**

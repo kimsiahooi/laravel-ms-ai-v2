@@ -84,26 +84,23 @@ return new class extends Migration
             $table->decimal('tax_total', 15, 4)->default(0);
             $table->decimal('total', 15, 4)->default(0);
             $table->text('notes')->nullable();
-            // A timestamp, stored in UTC like every other instant in this schema, and
-            // chosen deliberately over a bare `date`.
+            // The delivery date that was agreed — a date the business wrote down, not a
+            // moment on a clock, and the one column here that is not an instant.
             //
-            // The screen asks for a day, and optionally a time on it — a delivery slot
-            // is a real thing to agree. Whichever is picked is anchored **in the zone the
-            // person picking it was in**, then converted, so they always read back what
-            // they chose.
+            // **Nothing converts it, in either direction.** The screen asks for a day and
+            // optionally a time on it; exactly that is stored, and exactly that is shown.
+            // No timezone is involved at any point, which is what makes "the 15th" still
+            // mean the 15th after somebody changes the workspace's timezone in settings —
+            // that setting is a display reference for timestamps and never decides what
+            // goes into a column.
             //
-            // A day with no time is stored as that day's first instant, and that is also
-            // how the absence is recorded: there is no separate flag, and midnight on the
-            // reader's clock is read back as "no time was given".
+            // A day with no time is stored at midnight, and that is how the absence is
+            // recorded: no separate flag, and midnight means "no time was agreed".
+            // Unambiguous here precisely because there is no zone to shift it.
             //
-            // Two trades, both real and both inherent to holding a calendar day as an
-            // instant. A colleague far enough west sees the day before. And because the
-            // midnight test runs on *their* clock, a day-only order can show them a
-            // delivery time nobody agreed. `timeOfDay()` in resources/js/lib/format.ts is
-            // where both are written down. A `date` column would avoid them by having no
-            // zone at all, at the cost of not being comparable with `received_at` and the
-            // rest of the ledger, which are instants — and it could not hold a time.
-            // One workspace, one working zone, is the case this is built for.
+            // A `timestamp` column rather than `date` so it can hold that optional time.
+            // It is read and written as a wall clock; the UTC that the rest of this
+            // schema stores does not apply to a value that never was an instant.
             $table->timestamp('expected_date')->nullable();
             $table->foreignIdFor(User::class, 'created_by')
                 ->nullable()->constrained('users')->nullOnDelete();

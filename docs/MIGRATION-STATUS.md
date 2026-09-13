@@ -3917,6 +3917,104 @@ dates with no backfill. 375 / 1440, dark, and all three locales.
   on each reader's clock — which would retire the first limitation above. Worth its own
   slice; not attempted here.
 
+## Cross-cutting · A workspace timezone, for display only ✅
+
+Two rules, set by the owner:
+
+1. **Every datetime column stores UTC.** Unchanged, and unchanged *by* this feature.
+2. **The business-settings timezone is a display reference.** It never decides what goes
+   into a column.
+
+### First: a commit was reverted
+
+`9e15ffb` ("pin the MySQL session to UTC") was dropped — `git reset --hard`, safe because it
+had never been pushed. It was a real improvement in one sense and a regression in the sense
+that mattered:
+
+```
+Laravel always writes the UTC string:  2026-09-11 06:04:32
+
+BEFORE 9e15ffb   MySQL read it as +08 → stored epoch 2026-09-10 22:04:32 UTC
+                 a +08 client converted back → 06:04:32   ← the column read as UTC ✓
+AFTER  9e15ffb   MySQL read it as UTC → stored epoch 2026-09-11 06:04:32 UTC
+                 a +08 client converts       → 14:04:32   ← the column read as KL ✗
+```
+
+The pin made MySQL's internal epoch agree with what Laravel believes, and as a side effect
+stopped the database reading as UTC in any client that is not itself pinned. Rule 1 is about
+what you see in the column, so the pin had to go.
+
+**A `TIMESTAMP` column has no timezone of its own.** It stores an epoch and converts on every
+read *and every write*, per connection. That is why "what timezone is this column stored in"
+has no answer — looking is itself a conversion — and why two clients disagree without either
+being wrong.
+
+The 144 rows written while the pin was active were shifted back by the session offset rather
+than wiped: `tenants:seed` does not create a user, so `migrate:fresh` would have locked the
+owner out. The plan had called for a wipe; the gentler path reached the same state.
+
+### The feature
+
+- `business_settings.timezone` (string 64, default `UTC`), folded into the create migration,
+  through `$fillable`, the Data class, `SettingsUpdateRequest` (validated against the tzdb by
+  a closure, not by shape) and the settings screen.
+- `pages/business-settings/_components/timezone-field.tsx` — module-private. Neither shared
+  picker fits: `ComboboxField` is keyed on numeric row ids, and `SelectField` wants a
+  `TranslationKey` per option, of which there would be 419 — none translated, because
+  `Asia/Kuala_Lumpur` is that string in every language.
+- `TimeZones::resolve()` returns **workspace → cookie → UTC**. Every date renders through it,
+  so one setting drives the whole UI. The browser's own zone answers only on `/admin`.
+
+### `expected_date` is not an instant, and that is what makes rule 2 true
+
+A promised delivery is a date the business wrote down, not a moment on a clock. It is stored
+**exactly as picked** and shown exactly as stored — `expectedInstant()` has no timezone
+argument and no `->utc()`, and `ExpectedDate` does no conversion at all.
+
+An earlier attempt anchored the picked day to the workspace zone before storing it. That made
+the setting decide a stored value, and meant changing it later moved every delivery date by a
+day. Both are gone.
+
+Three helpers died with it — `formatDateInput`, `formatDateTimeInput` and `timeOfDay` — along
+with the midnight-sentinel inference, its DST-gap limitation and its cross-zone caveat. The
+"midnight means no time was agreed" rule still holds, and is now unambiguous: there is no zone
+to shift midnight.
+
+`DocumentNumberGenerator::periodFor()` stays on `Carbon::now()` (UTC) for the same reason —
+using the setting there would let it influence a stored document number. The consequence, kept
+deliberately: an order raised between 00:00 and 08:00 in Kuala Lumpur on 1 January takes the
+previous year's sequence.
+
+### Verified
+
+**Rule 1** — with the workspace on `Asia/Kuala_Lumpur`, the raw columns read `06:53:02` and
+`06:52:46` UTC, not `14:53` / `14:52` KL. Setting the timezone touched no column.
+
+**Rule 2** — one row, both halves at once:
+
+```
+workspace = Asia/Kuala_Lumpur   screen shows  11 Sep 2026
+workspace = Pacific/Midway      screen shows  10 Sep 2026   ← display followed the setting
+raw column, both times          2026-09-11 06:53:02         ← never moved
+```
+
+**`expected_date`** — storing `2026-10-15` and `2026-10-15 14:30` gives byte-identical results
+with the workspace on `Asia/Kuala_Lumpur` and on `America/New_York`. The setting does not reach
+the column.
+
+Order form renders server-side with the picker intact; console clean.
+
+#### Open, carried forward
+
+- With no session pin, MySQL's internal epoch for a `TIMESTAMP` sits at the host's offset from
+  the instant Laravel believes it wrote. Nothing in the app notices — reads and writes pass
+  through the same session — and the column reads as UTC, which is the requirement. It would
+  matter only to something that is neither Laravel nor a client on the same host offset.
+- `DATETIME` columns do not convert on read or write (verified). That is the change that would
+  make the stored bytes literally UTC for every client with no conversion anywhere. Not done;
+  recorded so the option is on the table.
+- The previous attempt is archived in `stash@{0}`.
+
 ## Phases 3–8 — Modules ⬜
 
 | Phase | Modules | Status |

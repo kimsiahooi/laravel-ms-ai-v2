@@ -56,12 +56,11 @@ final class PurchaseOrderData extends Data
         public string $total,
         public ?string $notes,
         /**
-         * ISO-8601, like every other instant this DTO sends.
+         * `Y-m-d`, or `Y-m-d H:i` when a delivery time was agreed.
          *
-         * A promised day, and a time on it when one was agreed. The two are not
-         * distinguished by the column: `timeOfDay()` in `resources/js/lib/format.ts`
-         * reads midnight on the reader's clock as "no time given", and that docblock
-         * carries what the inference costs.
+         * Deliberately not an instant. A promised day is a date the business wrote down,
+         * and nothing — not the reader's browser, not the workspace timezone setting —
+         * converts it. That is what keeps it meaning the same day forever.
          */
         public ?string $expected_date,
         /** Who raised it; null for an order created by a console command. */
@@ -115,10 +114,15 @@ final class PurchaseOrderData extends Data
             tax_total: Money::roundTo((string) $order->tax_total, $currency),
             total: Money::roundTo((string) $order->total, $currency),
             notes: $order->notes,
-            // ISO-8601, like every other instant this DTO sends: the column holds a
-            // moment now, and the screen renders it on the reader's clock rather than
-            // receiving a day that has already had a zone baked out of it.
-            expected_date: $order->expected_date?->toIso8601String(),
+            // `Y-m-d` or `Y-m-d H:i` — the wire shape the form sent, unchanged. Not
+            // ISO-8601 like the instants beside it: a promised delivery is a date the
+            // business wrote down rather than a moment, so nothing converts it on the way
+            // out any more than on the way in. See PurchaseOrderRequest::expectedInstant().
+            expected_date: $order->expected_date === null
+                ? null
+                : $order->expected_date->format(
+                    $order->expected_date->format('H:i') === '00:00' ? 'Y-m-d' : 'Y-m-d H:i',
+                ),
             created_by: $order->creator?->name,
             received_by: $order->receiver?->name,
             received_at: $order->received_at?->toIso8601String(),

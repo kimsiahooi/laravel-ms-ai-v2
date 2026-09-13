@@ -12,12 +12,21 @@ return [
         'description' => 'Mata wang yang digunakan untuk pembukuan, mata wang yang boleh digunakan bagi sesuatu pesanan, dan cukai yang dikenakan padanya.',
     ],
 
+    'clock' => [
+        'title' => 'Jam',
+        'description' => 'Zon waktu operasi perniagaan ini. Ia menentukan hari pertukaran tahun kewangan, dan kalendar yang digunakan untuk tarikh penghantaran.',
+    ],
+
     'documents' => [
         'title' => 'Nombor dokumen',
         'description' => 'Bagaimana pesanan belian, pesanan jualan dan pemulangannya dinomborkan.',
     ],
 
     'field' => [
+        'timezone' => 'Zon waktu',
+        'timezone_search' => 'Cari zon waktu…',
+        'timezone_empty' => 'Tiada zon waktu sepadan.',
+        'timezone_hint' => 'Setiap orang melihat cap masa mengikut jam masing-masing. Ini pula jam perniagaan — digunakan apabila tiada pelayar melaporkan zon, dan untuk tarikh yang milik kalendar syarikat dan bukan milik pembaca.',
         'base_currency' => 'Mata wang asas',
         'base_currency_placeholder' => 'Pilih mata wang',
         'base_currency_hint' => 'Mata wang yang digunakan untuk pembukuan. Sesuatu pesanan masih boleh dibuat dalam mata wang lain dan membawa kadar pertukarannya sendiri.',

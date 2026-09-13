@@ -10,6 +10,7 @@ use App\Http\Requests\Tenant\SettingsUpdateRequest;
 use App\Models\BusinessSetting;
 use App\Support\DocumentNumberGenerator;
 use App\Support\TenantPermissions;
+use App\Support\TimeZones;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -41,6 +42,12 @@ final class BusinessSettingsController
             // the list the browser offers cannot drift from the list the request will
             // accept — both are this one method.
             'currencies' => BusinessSetting::defaultCurrencies(),
+            // Every zone the tzdb knows, for the same reason as the currencies above:
+            // the list the browser offers and the list the request accepts are one
+            // source. Backward-compatibility aliases are excluded here even though
+            // TimeZones::supports() tolerates them on the way in — a browser may still
+            // report `Asia/Calcutta`, but nobody should have to pick it from a menu.
+            'timezones' => TimeZones::options(),
         ]);
     }
 
@@ -56,6 +63,11 @@ final class BusinessSettingsController
     public function update(SettingsUpdateRequest $request): RedirectResponse
     {
         BusinessSetting::current()->update($request->validated());
+
+        // The zone is memoised per tenant for the life of the process, so the redirect
+        // that follows this would otherwise render against the value read before the
+        // save — the screen would show the old clock right after changing it.
+        TimeZones::forget();
 
         $this->toast(__('business-settings.toast.saved'));
 

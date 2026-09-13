@@ -12,7 +12,6 @@ use App\Models\RawMaterial;
 use App\Support\Money;
 use App\Support\OrderTotals;
 use App\Support\StockItem;
-use App\Support\TimeZones;
 use Carbon\CarbonImmutable;
 use Closure;
 use Illuminate\Validation\Rule;
@@ -245,34 +244,29 @@ final class PurchaseOrderRequest extends TenantFormRequest
     }
 
     /**
-     * The picked day — and the time on it, if one was picked — as an instant in UTC.
+     * The picked day, and the time on it if one was picked, exactly as chosen.
      *
-     * **Anchored to the zone the person picking it is in**, which is the whole reason this
-     * is not a one-line format call. The form sends a bare `Y-m-d` or `Y-m-d H:i` with no
-     * zone at all; reading that as UTC would store a day that begins at 08:00 local for a
-     * Malaysian buyer, and reading it as the server's zone would depend on where the
-     * server happens to be. Neither reads back as what they chose.
+     * **No timezone is involved, and that is the point.** A promised delivery is a date the
+     * business wrote down, not a moment on a clock: "the 15th" means the 15th, and it
+     * should still mean the 15th tomorrow, next year, and after somebody changes the
+     * workspace's timezone in settings. The only way that holds is for nothing to convert
+     * it — so the form sends `Y-m-d` or `Y-m-d H:i`, and that is what is stored.
      *
-     * {@see TimeZones::resolve()} is the same answer the rest of the app renders on — the
-     * zone the browser reported — so the round trip closes: pick the 15th, store the
-     * instant the 15th began where you are, read the 15th.
+     * This is the rule the settings screen promises: the workspace timezone is a display
+     * reference and never decides what goes into a column. An earlier version anchored the
+     * picked day to that zone before storing it, which made the setting decide the stored
+     * value — and meant changing it later moved every delivery date by a day.
      *
      * **The `!` is load-bearing, and its absence would be invisible.** `createFromFormat`
      * fills anything the format does not name from the clock *right now*, so `'Y-m-d H:i'`
      * would store a 14:30 delivery as `14:30:37.482`. Worse than the stray seconds: a
-     * day-only pick would land a fraction after midnight, and `timeOfDay()` in
-     * `resources/js/lib/format.ts` — which decides whether to show a time by asking
-     * whether the instant *is* midnight — would never fire again, so every order would
-     * sprout a delivery time of `00:00`. `'!'` resets every unnamed field, which is what
-     * makes both branches one mechanism instead of a format call plus a `startOfDay()`.
+     * day-only pick would land a fraction after midnight, and the "midnight means no time
+     * was given" test would never fire again — so every order would sprout a delivery time
+     * of `00:00`. `'!'` resets every unnamed field.
      *
      * Read from the raw input rather than through `$this->date()`: that helper normalises
-     * through the app's own timezone, which is exactly the laundering this method exists
-     * to avoid. `date_format` has already proved the shape.
-     *
-     * A reader in another zone can still see the day before, and — now that a time can be
-     * shown — a time nobody agreed. Both are inherent to holding a calendar day as an
-     * instant, and both are named where they are rendered.
+     * through the app's timezone, which is a conversion this must not do. `date_format` has
+     * already proved the shape is one of the two.
      */
     private function expectedInstant(): ?CarbonImmutable
     {
@@ -282,10 +276,8 @@ final class PurchaseOrderRequest extends TenantFormRequest
             return null;
         }
 
-        $zone = TimeZones::resolve($this);
-
         return str_contains($picked, ' ')
-            ? CarbonImmutable::createFromFormat('!Y-m-d H:i', $picked, $zone)->utc()
-            : CarbonImmutable::createFromFormat('!Y-m-d', $picked, $zone)->utc();
+            ? CarbonImmutable::createFromFormat('!Y-m-d H:i', $picked)
+            : CarbonImmutable::createFromFormat('!Y-m-d', $picked);
     }
 }

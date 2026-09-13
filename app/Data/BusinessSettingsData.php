@@ -39,6 +39,8 @@ final class BusinessSettingsData extends Data
         public string $sales_return_prefix,
         public NumberReset $number_reset,
         public int $financial_year_start_month,
+        /** The workspace's IANA clock — see App\Support\TimeZones::workspace(). */
+        public string $timezone,
     ) {}
 
     public static function fromSettings(BusinessSetting $settings): self
@@ -58,6 +60,7 @@ final class BusinessSettingsData extends Data
             sales_return_prefix: $settings->sales_return_prefix,
             number_reset: $settings->number_reset,
             financial_year_start_month: $settings->financial_year_start_month,
+            timezone: $settings->timezone,
         );
     }
 }

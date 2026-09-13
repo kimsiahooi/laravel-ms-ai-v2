@@ -12,12 +12,21 @@ return [
         'description' => '记账所用的货币、下单可用的货币，以及订单所收的税。',
     ],
 
+    'clock' => [
+        'title' => '时钟',
+        'description' => '本企业使用的时区。它决定财政年度在哪一天切换，以及交货日期以哪个日历为准。',
+    ],
+
     'documents' => [
         'title' => '单据编号',
         'description' => '采购订单、销售订单及其退货如何编号。',
     ],
 
     'field' => [
+        'timezone' => '时区',
+        'timezone_search' => '搜索时区…',
+        'timezone_empty' => '没有匹配的时区。',
+        'timezone_hint' => '每个人按自己的时钟查看时间戳。这里设置的是企业自身的时钟——当浏览器未报告时区时使用，也用于属于公司日历而非读者本地的日期。',
         'base_currency' => '本位币',
         'base_currency_placeholder' => '选择货币',
         'base_currency_hint' => '记账所用的货币。订单仍可用其他货币开立，并自带汇率。',
