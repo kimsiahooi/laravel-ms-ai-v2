@@ -92,6 +92,29 @@ abstract class TenantFormRequest extends FormRequest
     }
 
     /**
+     * The rule a role's name needs: one no other role on this app's guard already answers to.
+     *
+     * Matches the `(name, guard_name)` unique index spatie's migration creates, rather than
+     * being merely stricter than it — there is one guard today, and a rule that quietly
+     * assumed so would start refusing free names the day there were two.
+     *
+     * **Here rather than in `RoleRequest`, for the reason {@see roleKey()} gives at length.**
+     * `bun run check:i18n` strips `Class::method(…)` before reading a rule array, so
+     * `Rule::unique('roles', 'name')` vanishes and the chained `->where('guard_name', 'web')`
+     * is left behind looking like two rules called `guard_name` and `web` with no translated
+     * message. This class declares no `rules()`, so the gate skips the file entirely — which
+     * is what makes it the safe home for a rule that has to be chained.
+     *
+     * @param  int|string|null  $ignore  the role being edited, whose own name is not a clash.
+     *                                   Spatie types a role's key as `int|string`.
+     * @return array<int, mixed>
+     */
+    protected function uniqueRoleName(int|string|null $ignore): array
+    {
+        return [Rule::unique('roles', 'name')->where('guard_name', 'web')->ignore($ignore)];
+    }
+
+    /**
      * The rules a `decimal(15,4)` quantity or money column needs.
      *
      * **`numeric` alone is not enough, and the gap is silent.** MySQL's strict mode

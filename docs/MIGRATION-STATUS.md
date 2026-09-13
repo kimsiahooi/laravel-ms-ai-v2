@@ -4151,6 +4151,127 @@ Built assets and SSR, 1440 × 900, all three locales, light and dark, 375 / 768 
   orders, since v1 has no `sales_order_id` FK and a return is a standalone stock-in document.
   E-invoice sits on top of sales orders and stays deferred.
 
+## Phase 7 · Team — users, roles, and the gate that finally denies something ✅
+
+Three slices, and the point of all three is the denial. Every tenant workspace had exactly one
+login and exactly one role: `admin:create` made the first user, `RolesSeeder` gave it an
+Administrator holding the whole catalog, and there was no way to add a second person or hand
+out a narrower one. The permission apparatus was built, enforced on every route, and could not
+grant anything to anybody.
+
+### What each slice did
+
+**A — the catalog, made translatable.** `TenantPermissions::matrix()` built its labels in PHP
+(`'label' => 'Categories'`, `ACTION_VERB['update'] => 'Edit'`) and glued them together with
+`lcfirst()`. Shipping those to the browser put English on the role editor for every `ms` and
+`zh_Hans` reader, and `check:i18n` cannot see a label that arrives as a prop. The catalog now
+sends **values** — `PermissionScreen` and `PermissionAction`, both `#[TypeScript]` — and the
+browser composes `permissions.screen.{value}`, which is the house pattern in its thirteenth
+place. A screen added without its three translations is a `tsc` error, the only mechanism
+available. Production orders were removed from the catalog in the same slice: **63 permissions
+over 19 screens, 129 route names mapped.** The three orphan `production-orders.*` rows survive
+in workspaces seeded before the removal — the seeder is additive and never revokes — and are
+harmless because no route can ask for them.
+
+Slice A also taught `routeMap()` to map `{screen}.create` and `{screen}.edit` automatically,
+**conditionally on the screen declaring that action**. That is the structural fix for the trap
+that had already cost two security fixes, and it is what made slice C's form pages safe to
+write at all. The condition is load-bearing: unconditional would emit `settings.create`, a
+permission in no role, and any future route by that name would 403 everybody including an
+Administrator.
+
+**B — users.** Add a colleague, edit, deactivate, reactivate; one role each, assigned with
+`syncRoles`. A `must_change_password` column and a `RequirePasswordChange` middleware, because
+a temporary password that never has to change is a permanent one two people know. The lockout
+invariant lives in `User::administrators()` and is enforced in `SaveUser` and `DeactivateUser`
+inside a transaction with the row locked — v1 read `count() <= 1` outside one, so two
+administrators demoting each other at the same moment both passed. **`ProfileDeleteRequest`
+gained a guard, and that one is a bug fix**: until it landed, the sole administrator of any
+workspace could delete their own account from Settings → Profile, and because the `email` unique
+index counts trashed rows they could not sign up again either.
+
+**C — roles.** The screen `matrix()` was written for, and its first consumer.
+
+### Roles — the decisions
+
+**A page, not a dialog**, which is the opposite of every other short form here and is decided by
+the shape rather than the field count: one name and nineteen groups of checkboxes is a grid. The
+list is **not a `DataTable`** — a workspace has a handful of roles, and a search box, a
+pagination bar and a column picker over five rows is furniture around nothing. So there is **no
+`TableKey` case for roles**; both the controller and the page say so, from either end, to stop
+somebody "fixing" the inconsistency.
+
+**No collapsibles at 375px**, which the plan had called for. Collapsing cards on a phone and
+leaving them open on a desktop means an initial state that depends on the viewport — a different
+first render on the server than in the browser, which is the React #418 this project has no test
+suite to catch. Every card renders open at every width, each short enough to read at a glance,
+and the sticky footer carries `n of 63 selected` so a 3,238px page stays navigable.
+
+**A real `<fieldset>` with a `<legend>` per screen**, so "Edit" is announced as "Categories —
+Edit" out of markup rather than out of a string somebody glued together on the server. The
+legend is `sr-only` and the select-all carries the visible name, so the screen is written once;
+the select-all's `aria-label` says what pressing it does, which "Categories" as a checkbox label
+does not.
+
+**The permission cache needs no explicit clearing, and that was verified rather than assumed.**
+Spatie's `Role` uses `RefreshesPermissionCache`, which forgets the registrar's cache on every
+`saved` and `deleted`, and `syncPermissions()` ends in `givePermissionTo()` which forgets it
+again for a `Role` specifically. Adding a call would suggest the writes do not do it. What still
+matters is that the key is tenant-scoped only while tenancy is initialised, so these are
+request-time Actions and never a central-context command.
+
+**There is no "you removed the last role that can manage users" guard, and that is not an
+oversight.** Administrator is locked and `User::administrators()` guarantees at least one active
+holder, so `users.update` and `roles.update` are always held by somebody. The state is
+unreachable; a guard for it would be code that can never run.
+
+**`roles.create` and `roles.update` are the keys to the workspace, inherently.** Somebody who
+can edit roles can write themselves a role holding anything. That is true of every system where
+role editing is itself a permission; the catalog's answer is that only Administrator holds them
+until a workspace deliberately says otherwise. It is stated in `RoleController` rather than left
+to be discovered.
+
+### Found in the browser, fixed
+
+- **A partly-ticked group showed a tick, not a dash.** The vendored `components/ui/checkbox.tsx`
+  accepts `checked="indeterminate"` and then draws `CheckIcon` for it, because its indicator has
+  the icon written inside and props only reach the root — so "one of four" and "four of four"
+  rendered the same glyph, differing only in fill. Fixed by composing
+  `@radix-ui/react-checkbox` directly in `_components/tri-state-checkbox.tsx`, which is the
+  escape hatch `docs/CODING-STANDARDS.md` names for exactly this. Private to the module until a
+  second use; rule of three.
+
+### Verified by driving it
+
+Built assets and SSR (`data-server-rendered="true"`, `/build/` URLs), 1440 × 900, all three
+locales, light and dark, 375 / 768 / 1024. Zero console messages across every migrated module.
+
+- Created "Purchasing" through the UI — group select-all ticked four boxes at once, individual
+  boxes left the group indeterminate, footer tracked `6 of 63`. Stored exactly the six names.
+- Gave it to a colleague, signed in as her: sidebar reduced to **Dashboard, Suppliers, Purchase
+  orders** and nothing else — no Stock group, no Workspace group.
+- As her, every roles route answered **403**, `roles.create` and `roles.edit` included. That is
+  the headline: they are GET form pages, the exact shape that twice shipped readable by anybody
+  with a login, and they are gated because slice A auto-maps them.
+- As her, `POST /roles`, `PATCH /roles/3` and `DELETE /roles/3` crafted by hand: 403, 403, 403.
+- As an administrator: editing, renaming or deleting the Administrator role — 403 on the page
+  and on both writes. A second role named "Administrator" — refused by the unique rule, so no
+  decoy the name-based lock would miss.
+- An empty matrix refused by both layers with the **same sentence** — "Choose at least one thing
+  this role can reach", not "The permissions field is required" — the zod gate before the
+  request left, and a crafted 422 after it.
+- A permission name not in the catalog — 422 on `permissions.1`, nothing written.
+- Deleting a role somebody holds — refused with the count; `roles` and `role_has_permissions`
+  unchanged. Deleting one nobody holds — gone, with a toast.
+
+#### Open, carried forward
+
+- **`usePermissions().isAdmin` is still read by nothing.** It was expected to lock the
+  Administrator role, but that is a fact about the *row*, not about the reader, so `RoleData`
+  answers it with `is_locked`. The shared prop has now outlived two predicted uses.
+- The tenant dashboard is still a placeholder with zero props, and the ⌘K palette is the last
+  Phase 2 gap — `cmdk` is installed and `tenant-nav.ts` is shaped for it.
+
 ## Phases 3–8 — Modules ⬜
 
 | Phase | Modules | Status |
@@ -4159,5 +4280,5 @@ Built assets and SSR, 1440 × 900, all three locales, light and dark, 375 / 768 
 | 4 · Stock | **locations ✅ · warehouses ✅ · StockService ✅ · movements ✅ · transfers ✅ · reorder levels ✅ · stock takes ✅** (+ notes column, column preferences, warehouse detail) | ✅ |
 | 5 · Orders | **money foundation ✅ · purchase orders ✅ · catalogue prices ✅ · sales orders ✅** · purchase returns · sales returns | 🚧 |
 | 6 · Insights | reports, activity log | ⬜ |
-| 7 · Team & settings | users, roles/RBAC, **business settings ✅ · document numbering ✅** (both pulled forward into phase 5, which needed them), e-invoice | 🚧 |
-| 8 · Cross-cutting | exports, barcode/QR scanning, tenant dashboard, admin dashboard | ⬜ |
+| 7 · Team & settings | **users ✅ · roles/RBAC ✅ · business settings ✅ · document numbering ✅** (the last two pulled forward into phase 5, which needed them), e-invoice | 🚧 |
+| 8 · Cross-cutting | exports, barcode/QR scanning, tenant dashboard, **admin dashboard ✅** (built in phase 1 and listed here as not started until now) | 🚧 |

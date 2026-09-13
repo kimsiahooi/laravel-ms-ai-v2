@@ -182,6 +182,55 @@ export function optionalOneOf({
 }
 
 /**
+ * A required, non-empty set of values from a fixed list — `['required', 'array', 'min:1',
+ * 'max:N']` on the field, with `Rule::in(…)` on its `.*`.
+ *
+ * The plural of {@link oneOf}, and the difference is where the failures land. A set has three
+ * ways to be wrong rather than one: nothing chosen, more sent than exist, and a member that is
+ * not on the list. All three are filed against the field itself, because the control is a grid
+ * rather than a row of inputs — there is nowhere to put a message under one checkbox, and
+ * "this one" is not the answer to any of the three anyway.
+ *
+ * **`empty` exists because "is required" is the wrong sentence for a grid.** A reader who has
+ * ticked nothing has not skipped a box, they have not made a choice yet, and the field-name
+ * wording Laravel composes ("The permissions field is required") reads like a missing text
+ * input. The FormRequest overrides that message too, with the same key, so both layers say it
+ * the same way.
+ *
+ * `values` arrives at call time for the reason {@link oneOf} gives: the list is the server's,
+ * sent as a page prop, so the browser cannot end up checking against a stale copy.
+ */
+export function manyOf({
+    values,
+    attribute,
+    max,
+    empty,
+}: {
+    values: readonly string[];
+    /** A `validation.attributes.*` key naming the collection. */
+    attribute: TranslationKey;
+    /** `max:N` — how many may be sent at once. */
+    max: number;
+    /** The message when nothing was chosen. Defaults to the ordinary "is required". */
+    empty?: TranslationKey;
+}) {
+    return z
+        .array(
+            z.string(message('validation.string', attribute)),
+            message('validation.array', attribute),
+        )
+        .min(1, message(empty ?? 'validation.required', attribute))
+        .max(max, message('validation.max.array', attribute, { max }))
+        .refine(
+            (chosen) => chosen.every((value) => values.includes(value)),
+            // `validation.in`, not `validation.enum`: the rule this mirrors is `Rule::in`,
+            // and Laravel picks the message by rule name. The two have identical English
+            // today and would diverge the moment either is reworded.
+            message('validation.in', attribute),
+        );
+}
+
+/**
  * An optional reference to a row the workspace owns — `['nullable', ActiveExists::of(…)]`.
  *
  * The browser cannot answer the question the server is asking. Whether row 7 still

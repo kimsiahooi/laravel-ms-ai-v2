@@ -121,6 +121,8 @@ return [
         'name' => 'name',
         'notes' => 'notes',
         'number_reset' => 'numbering restart',
+        'permissions' => 'permissions',
+        'permissions.*' => 'permission',
         'phone' => 'phone',
         'postcode' => 'postcode',
         'purchase_order_prefix' => 'purchase order prefix',

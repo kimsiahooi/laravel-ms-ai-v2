@@ -96,6 +96,8 @@ return [
         'name' => 'nama',
         'notes' => 'nota',
         'number_reset' => 'mula semula penomboran',
+        'permissions' => 'kebenaran',
+        'permissions.*' => 'kebenaran',
         'phone' => 'telefon',
         'postcode' => 'poskod',
         'purchase_order_prefix' => 'awalan pesanan belian',

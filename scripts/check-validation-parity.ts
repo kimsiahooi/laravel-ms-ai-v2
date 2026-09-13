@@ -64,6 +64,9 @@ const FACTORY_ARGS: Record<string, unknown[]> = {
     // entry predates the schema by months and read `[false]`, which would have called
     // `userSchema(false)` and thrown inside the gate rather than reporting anything.
     UserRequest: [[1], false],
+    // The catalog the editor was sent — see roleSchema. One real name is enough for the
+    // gate, which only reads the schema's field list.
+    RoleRequest: [['categories.view']],
     PurchaseOrderRequest: [['MYR']],
     SalesOrderRequest: [['MYR']],
 };

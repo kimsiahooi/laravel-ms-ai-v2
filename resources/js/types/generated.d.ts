@@ -135,6 +135,14 @@ bom_product_count: number,
 created_at: string,
 creator: string | null,
 };
+export type RoleData = {
+id: number,
+name: string,
+permissions: string[],
+holders: number,
+is_locked: boolean,
+created_at: string,
+};
 export type SalesOrderData = {
 id: number,
 number: string,

@@ -95,6 +95,8 @@ return [
         'name' => '名称',
         'notes' => '备注',
         'number_reset' => '编号重置方式',
+        'permissions' => '权限',
+        'permissions.*' => '权限',
         'phone' => '电话',
         'postcode' => '邮编',
         'purchase_order_prefix' => '采购订单前缀',

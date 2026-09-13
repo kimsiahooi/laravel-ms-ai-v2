@@ -14,6 +14,7 @@ use App\Http\Controllers\Tenant\MediaController;
 use App\Http\Controllers\Tenant\ProductController;
 use App\Http\Controllers\Tenant\PurchaseOrderController;
 use App\Http\Controllers\Tenant\RawMaterialController;
+use App\Http\Controllers\Tenant\RoleController;
 use App\Http\Controllers\Tenant\SalesOrderController;
 use App\Http\Controllers\Tenant\StockLookupController;
 use App\Http\Controllers\Tenant\StockMovementController;
@@ -296,6 +297,28 @@ Route::middleware(['web', InitializeTenancyByPath::class, SetTenantUrlDefault::c
                 Route::delete('{user}', [UserController::class, 'destroy'])->name('destroy');
                 Route::patch('{user}/restore', [UserController::class, 'restore'])
                     ->withTrashed()->name('restore');
+            });
+
+            // What a role reaches. Form *pages* rather than a dialog — nineteen groups of
+            // checkboxes is a grid, and see RoleController on why.
+            //
+            // **Every name here is mapped, and `create`/`edit` are the interesting ones.**
+            // They are auto-mapped by TenantPermissions::routeMap() — `roles.create` to
+            // `roles.create` and `roles.edit` to `roles.update` — which is the only reason
+            // a GET form page is safe to add at all. Before that mapping existed, a route
+            // name the map could not find was open to any signed-in user, and two order
+            // catalogs shipped that way.
+            //
+            // `create` before `{role}/edit` is not an ordering that matters here — one is a
+            // single literal segment and the other is two — but the resource order is the
+            // house shape and worth keeping.
+            Route::prefix('roles')->name('roles.')->group(function (): void {
+                Route::get('/', [RoleController::class, 'index'])->name('index');
+                Route::get('create', [RoleController::class, 'create'])->name('create');
+                Route::post('/', [RoleController::class, 'store'])->name('store');
+                Route::get('{role}/edit', [RoleController::class, 'edit'])->name('edit');
+                Route::patch('{role}', [RoleController::class, 'update'])->name('update');
+                Route::delete('{role}', [RoleController::class, 'destroy'])->name('destroy');
             });
 
             // A read-only lookup the movement dialog makes while somebody is choosing,

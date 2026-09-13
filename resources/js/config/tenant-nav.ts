@@ -9,6 +9,7 @@ import {
     Package,
     Receipt,
     Settings2,
+    ShieldCheck,
     ShoppingCart,
     Tags,
     Truck,
@@ -22,6 +23,7 @@ import { index as locations } from '@/routes/locations';
 import { index as products } from '@/routes/products';
 import { index as purchaseOrders } from '@/routes/purchase-orders';
 import { index as rawMaterials } from '@/routes/raw-materials';
+import { index as roles } from '@/routes/roles';
 import { index as salesOrders } from '@/routes/sales-orders';
 import { index as businessSettings } from '@/routes/settings';
 import { index as stockMovements } from '@/routes/stock-movements';
@@ -173,6 +175,14 @@ export function tenantNavGroups(
                     href: users(),
                     icon: UsersIcon,
                     permission: 'users.view',
+                },
+                {
+                    // Directly under Users, because the two are one question read from
+                    // either end: who is here, and what each of them can reach.
+                    title: 'roles.title',
+                    href: roles(),
+                    icon: ShieldCheck,
+                    permission: 'roles.view',
                 },
                 {
                     title: 'business-settings.title',

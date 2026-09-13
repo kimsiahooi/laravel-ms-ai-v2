@@ -19,6 +19,7 @@ use Illuminate\Support\Carbon;
 use Laravel\Fortify\Contracts\PasskeyUser;
 use Laravel\Fortify\PasskeyAuthenticatable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
+use Spatie\Permission\Models\Role;
 use Spatie\Permission\Traits\HasRoles;
 
 /**
@@ -74,6 +75,25 @@ class User extends Authenticatable implements PasskeyUser
     protected function administrators(Builder $query): void
     {
         $query->role(TenantRoles::ADMIN);
+    }
+
+    /**
+     * Everybody who holds `$role`, deactivated colleagues included.
+     *
+     * **The trashed rows are the point of it.** A deactivated colleague still holds their
+     * role, and reactivating them needs it to still be there — so a role they hold is not a
+     * role anybody may delete. Counting only active people would let the last holder be
+     * deactivated, the role deleted, and the person restored into nothing.
+     *
+     * The one definition of "held", used by the list's count and by the delete guard, so the
+     * number on the card and the number in the refusal are the same number.
+     *
+     * @param  Builder<User>  $query
+     */
+    #[Scope]
+    protected function holdersOf(Builder $query, Role $role): void
+    {
+        $query->withTrashed()->role($role);
     }
 
     /**
