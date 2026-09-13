@@ -95,7 +95,8 @@ Reach for `resources/js/components/ui/` before writing raw HTML.
 - **Keyboard & a11y** — labels bound to inputs, visible `focus-visible` rings, icon buttons
   labelled, and respect reduced-motion. Never use a **positive** `tabIndex`; DOM order is
   the tab order.
-- **SSR safety** — anything derived from `Date`/`window`/timezone is computed post-mount.
+- **SSR safety** — anything derived from `Date`/`window`/timezone arrives as a server prop
+  (`today`, `timezone`, `locale`) or is computed post-mount — never read during render.
   See CLAUDE.md; this is a hard rule because nothing else catches a hydration mismatch.
 - **Honesty** — only show data that actually exists. No invented metrics, no fake charts,
   no actions without a backing endpoint.

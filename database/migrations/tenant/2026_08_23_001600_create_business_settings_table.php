@@ -65,13 +65,17 @@ return new class extends Migration
 
             // The workspace's own clock, as an IANA identifier.
             //
-            // The zone a *reader* sees dates in still comes from their browser — this is
-            // the workspace's, and it decides three things a browser cannot: which day a
-            // financial year turns over on for document numbering, what a picked delivery
-            // date means when no browser reported a zone at all (a console command, a
-            // queued job, a client with cookies blocked), and which calendar an expected
-            // delivery is quoted against, so every reader sees the day that was agreed
-            // rather than the day it happens to be where they are sitting.
+            // Every reader of a tenant page sees timestamps on this clock rather than on
+            // their own: the company's calendar is what an order gets discussed against,
+            // so the buyer at the next desk and a colleague in another country read one
+            // date. A browser-reported zone answers only on /admin, where there is no
+            // workspace to have a clock. See App\Support\TimeZones::resolve().
+            //
+            // **Display only, and that is a hard rule** — it never influences what is
+            // written to any column. Columns hold UTC. A date somebody *chose*, such as an
+            // expected delivery, is stored and shown verbatim, so changing this cannot
+            // move an agreed day; and document numbering turns its financial year over on
+            // UTC rather than on this (see DocumentNumberGenerator::periodFor()).
             //
             // An identifier rather than an offset, because an offset is only correct
             // until the next daylight-saving change. Defaults to UTC, which is what the

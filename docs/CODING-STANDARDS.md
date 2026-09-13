@@ -105,6 +105,33 @@ after a search; light **and** dark; 375 / 768 / 1024 with no horizontal body scr
 three locales. **Read the browser console every time** — a React #418 warning is a hydration
 mismatch.
 
+### The sweep covers every feature, not just the new one
+
+A phase is finished when **the whole app still works**, not when the phase's own screens do.
+So the pass at the end of a phase walks every module already migrated, not only the one just
+built.
+
+That is not belt-and-braces. The defects this catches are the ones that cannot show up on
+the screen being worked on: a shared component gaining a prop, a new key in
+`HandleInertiaRequests::share()`, a changed translation key, a renamed route, a column
+layout, a `lib/format.ts` helper whose signature moved. Each is invisible where it was
+edited and visible three modules away.
+
+**The cheap version is enough for untouched modules:** open the list, open one record,
+read the console. Keep the full create → edit → delete pass for the module the phase
+actually changed. A sweep that is too expensive to run is a sweep that gets skipped.
+
+**Hydration mismatches are checked throughout the sweep, not only on new screens.** A React
+#418 warning is the signal and it names no component, so record which page produced it
+before navigating away — it is much harder to find again than to notice. The causes this
+repo has actually hit: a date, locale or zone read during render instead of arriving as a
+server prop; `Date.now()` or `Math.random()` in render; an unpinned `Intl` call, whose ICU
+data differs between the SSR runtime and the browser; and `bun run build` leaving a stale
+SSR bundle, because only `build:ssr` builds both.
+
+Report the sweep as what was actually visited and what the console said on each — a list of
+modules and their result, not "everything works".
+
 ## Verification — there is no test suite
 
 The gates above catch mechanical errors. Everything behavioural is verified by driving the

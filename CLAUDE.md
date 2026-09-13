@@ -30,7 +30,10 @@ asserted, recorded or run in CI.) The safety net is:
    it is *my* job, not the user's: they review the code, I prove the screens work. Confirm
    the page is actually server-rendered (`data-server-rendered="true"` in view-source)
    before trusting the pass, watch the browser console, and report what was observed.
-   Checklist and the three silent client-fallback causes:
+   **The sweep covers every feature, not only the phase's own screens** — a shared
+   component, a new server prop or a locale key breaks pages nobody touched, and a React
+   #418 hydration warning in the console is what that looks like. Checklist, the sweep, and
+   the four silent client-fallback causes:
    [`docs/CODING-STANDARDS.md`](docs/CODING-STANDARDS.md).
 
 Because nothing runs the UI in CI, **SSR determinism is a hard rule, not a style
@@ -38,12 +41,27 @@ preference**: no `Date.now()`, `Math.random()`, or unpinned `Intl`/`toLocaleStri
 render output. Compute in `useEffect` or pin the locale. A nondeterministic render is a
 React #418 hydration mismatch that nothing but your own eyes will catch.
 
-**Timestamps are stored and sent in UTC and displayed on the viewer's clock.** The zone
-is a server prop — `useTimeZone()`, reported by the browser through a cookie set before
-first paint — never `Intl.DateTimeFormat().resolvedOptions()` during a render, for the
-same reason the locale is never `navigator.language`. `lib/format.ts` asks `Intl` only
-for numbers, with both locale and zone pinned, and composes the text itself: ICU month
+**Timestamps are stored and sent in UTC and displayed on the workspace's clock.** The zone
+is a server prop — `useTimeZone()`, resolved by `App\Support\TimeZones::resolve()` from the
+business-settings row, falling back to a browser-reported cookie on `/admin` where there is
+no workspace, then to UTC. Never `Intl.DateTimeFormat().resolvedOptions()` during a render,
+for the same reason the locale is never `navigator.language`. `lib/format.ts` asks `Intl`
+only for numbers, with both locale and zone pinned, and composes the text itself: ICU month
 names differ between the SSR runtime and the browser.
+
+**That setting is display-only, and the rule is stricter than it sounds.** It never
+influences what is written to a column. Only *instants* — `created_at`, `received_at` — are
+converted, and only for rendering. A date a person **chose**, such as an expected delivery,
+is stored and shown verbatim with no zone anywhere near it (see
+`PurchaseOrderRequest::expectedInstant()`), so changing the workspace clock can never move
+an agreed day.
+
+## Code review is the user's to run
+
+Do **not** invoke a code-review skill, and do not dispatch a reviewer subagent, at phase end
+or anywhere else. The user runs the review themselves, with their own command and on their
+own schedule. Finish the phase, get the gates green, sweep it in the browser, report what
+changed — and stop there.
 
 ## Code standards (enforced)
 
@@ -86,10 +104,20 @@ plural inflection). Details: [`docs/LOCALIZATION.md`](docs/LOCALIZATION.md).
 ## Packages — buy vs build
 
 **Before hand-rolling anything non-trivial, check whether a stable, popular package does
-it.** If one does, propose it (name, what it removes, any risk) and let the user decide —
-never add a dependency silently, and never add one for something the platform already does
-well. The bar and the live catalog of decisions:
-[`docs/PACKAGE-POLICY.md`](docs/PACKAGE-POLICY.md).
+it.** Never add one for something the platform already does well.
+
+**Standing permission (2026-09-13): a package that clears the bar may be installed without
+asking first.** The bar is all five criteria in
+[`docs/PACKAGE-POLICY.md`](docs/PACKAGE-POLICY.md) — stable 1.0+, the ecosystem default,
+maintained, verified against **Laravel 13 / React 19 / Tailwind v4**, removable — plus
+bundle cost for a frontend one. Anything that does not clear all of them is still proposed
+rather than installed, and so is anything that changes the architecture or replaces a
+decision already in the catalog.
+
+**Read the docs through the context7 MCP plugin before adding or upgrading anything** —
+`resolve-library-id`, then `query-docs`. Compatibility is the criterion training data gets
+wrong, because it is exactly the fact that changes after a model ships. Check it, don't
+recall it. Then say in the handover what was installed and why, and add it to the catalog.
 
 ## Architecture
 
@@ -113,4 +141,5 @@ installs it). Run them by hand too:
    · `bun run check:generated-types` (any `app/Data` class touched — then
    `bun run types:generate` and commit the result)
 4. `bun run build` before a release
-5. Drive the change in a browser — light **and** dark, 375 / 768 / 1024
+5. Drive the change in a browser — light **and** dark, 375 / 768 / 1024. At the end of
+   a phase, sweep **every** migrated module, not only the one that changed.

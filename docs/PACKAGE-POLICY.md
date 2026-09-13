@@ -23,16 +23,39 @@ Frontend packages carry one extra test: **bundle cost**. This app is SSR + Inert
 heavy client library shows up in every page load. Prefer one that tree-shakes or lazy-loads
 (v1 loads `@zxing/browser` only when the native barcode API is missing — a good pattern).
 
-## How to propose one
+## Installing one
 
-When a feature would benefit, say so **before** writing the hand-rolled version:
+**Standing permission, granted 2026-09-13:** a package that clears all five criteria above
+may be installed without asking first. Install it, then report it in the handover — what it
+is, what it removes, what it risks — and add it to the catalog below so the next decision
+has the context.
+
+**Verify the docs through the context7 MCP plugin first, every time.**
+`resolve-library-id` to find the library, then `query-docs` for the API about to be used.
+Criterion 4 is the one that goes stale: whether a package supports Laravel 13, React 19 or
+Tailwind v4 is precisely the kind of fact that moved after the model was trained, and it is
+the criterion most likely to be confidently wrong. Check it against the live docs rather
+than recalling it. Doing this also means the code written against the package matches its
+current API instead of a remembered one.
+
+## Still worth asking about
+
+The standing permission covers the routine case. It is not cover for a call the user would
+want to make themselves. Propose rather than install when the package:
+
+- does not clear all five criteria, or fails the bundle-cost test;
+- changes the architecture, or replaces something already decided in the catalog below;
+- brings a heavy runtime, a build-step change, or a native dependency;
+- overlaps something the platform already does well — the table at the end of this document
+  exists because that is the most common wrong reason to add one.
+
+The shape of a proposal, when one is needed:
 
 > "This needs currency-safe money math. `brick/money` is the ecosystem default, actively
 > maintained, Laravel-13 compatible, and replaces ~200 lines of rounding logic we'd
 > otherwise own. Add it, or hand-roll?"
 
-Name the package, why it beats hand-rolling, roughly what it removes, and any risk. Then
-let the user decide. Never silently add a dependency.
+Name the package, why it beats hand-rolling, roughly what it removes, and any risk.
 
 ## Already decided
 

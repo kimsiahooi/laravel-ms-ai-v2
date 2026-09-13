@@ -1851,6 +1851,11 @@ vendored file is untouched. Verified in the accessibility tree, not just the DOM
 
 ### Dates now read on the viewer's clock, and the database still does not care
 
+> **Superseded in part.** Dates now read on the *workspace's* clock — the zone in business
+> settings — not the viewer's; a browser-reported zone survives only on `/admin`. Storage is
+> still UTC, exactly as this entry says. See "Cross-cutting · A workspace timezone, for
+> display only".
+
 Asked whether the date columns followed UTC. They did — `config('app.timezone')` is UTC,
 the columns round-trip the literal PHP writes, the DTOs emit `toIso8601String()`, and
 `formatDate` read `getUTCDate()` on purpose. Correct, and wrong for a person in Malaysia:
@@ -3617,6 +3622,12 @@ the untaxed line being correctly excluded.
 
 ### `expected_date` is an instant, not a bare day
 
+> **Superseded.** `expected_date` is no longer an instant. The picked value is stored and
+> rendered verbatim and nothing converts it, which is what makes "the timezone setting never
+> touches a column" literally true. Kept as the record of why it was an instant first, and
+> of the trade — named below — that turned out to be worth reversing. See "Cross-cutting · A
+> workspace timezone, for display only".
+
 Changed on request after the module was working, and worth recording because it is a
 decision rather than a detail. The column was a `date`; it is a `timestamp` in UTC now,
 like every other moment in this schema.
@@ -3812,6 +3823,12 @@ the Clear button.
 
 ## Phase 5 · Expected delivery gained an optional time ✅
 
+> **Superseded in part.** The optional time itself stands. What changed is the anchoring
+> described below: the picked value is no longer converted to a UTC instant against the
+> workspace zone, so `14:30` is stored as `14:30`, not as `06:30Z`. The midnight-sentinel
+> inference is gone with it — the wire value carries a time or it does not. See
+> "Cross-cutting · A workspace timezone, for display only".
+
 The field asked for a day and threw the time away — one `->startOfDay()` call. It now takes
 a time when one was agreed, and still takes a bare day when one was not.
 
@@ -3912,10 +3929,10 @@ dates with no backfill. 375 / 1440, dark, and all three locales.
   ICU call on every day cell, in vendored read-only code. It has never bitten because
   `PopoverContent` is portal-rendered only when open, so the calendar never reaches SSR
   output. It would bite the moment a calendar is rendered inline.
-- **`TimeZones::FALLBACK` is `UTC`.** A workspace-level zone setting would fix the
-  cookies-blocked case *and* let the midnight rule be evaluated somewhere stable rather than
-  on each reader's clock — which would retire the first limitation above. Worth its own
-  slice; not attempted here.
+- **`TimeZones::FALLBACK` is `UTC` — done, in the section below.** A workspace-level zone
+  now answers ahead of the cookie, which closes the cookies-blocked case. The midnight rule
+  it would have stabilised no longer exists: `expected_date` stopped being an instant, so
+  there is nothing left to infer.
 
 ## Cross-cutting · A workspace timezone, for display only ✅
 
