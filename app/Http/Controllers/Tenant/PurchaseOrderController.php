@@ -31,6 +31,7 @@ use App\Models\Warehouse;
 use App\Support\ActiveExists;
 use App\Support\Decimals;
 use App\Support\OrderTotals;
+use App\Support\ReturnedQuantities;
 use App\Support\StockItem;
 use DomainException;
 use Illuminate\Database\Eloquent\Builder;
@@ -179,6 +180,11 @@ final class PurchaseOrderController
             'warehouses' => $purchaseOrder->status === PurchaseOrderStatus::Pending
                 ? $this->warehouseOptions()
                 : [],
+            // Whether anything on this delivery can still be sent back. On the page rather
+            // than on PurchaseOrderData, which also feeds the twenty-row list — a ceiling
+            // query per row is exactly the shape the returns module exists to undo.
+            // `hasReturnable()` answers false without a query for anything not received.
+            'returnable' => ReturnedQuantities::hasReturnable($purchaseOrder),
         ]);
     }
 

@@ -13,6 +13,7 @@ import {
     ShoppingCart,
     Tags,
     Truck,
+    Undo2,
     Users as UsersIcon,
     Warehouse,
 } from 'lucide-react';
@@ -22,6 +23,7 @@ import { index as customers } from '@/routes/customers';
 import { index as locations } from '@/routes/locations';
 import { index as products } from '@/routes/products';
 import { index as purchaseOrders } from '@/routes/purchase-orders';
+import { index as purchaseReturns } from '@/routes/purchase-returns';
 import { index as rawMaterials } from '@/routes/raw-materials';
 import { index as roles } from '@/routes/roles';
 import { index as salesOrders } from '@/routes/sales-orders';
@@ -139,9 +141,11 @@ export function tenantNavGroups(
             ],
         },
         {
-            // "Orders", plural because the returns are still to come. Purchases sit
-            // above sales deliberately: a workspace buys before it has anything to sell,
-            // and that is the order the two screens are learned in.
+            // Purchases sit above sales deliberately: a workspace buys before it has
+            // anything to sell, and that is the order the two screens are learned in.
+            // Each return sits directly under the document it credits rather than in a
+            // "returns" group of its own — somebody looking for one is thinking about
+            // the delivery it came off, not about returns as a category.
             label: 'tenant.nav.orders',
             items: [
                 {
@@ -149,6 +153,12 @@ export function tenantNavGroups(
                     href: purchaseOrders(),
                     icon: ShoppingCart,
                     permission: 'purchase-orders.view',
+                },
+                {
+                    title: 'purchase-returns.title',
+                    href: purchaseReturns(),
+                    icon: Undo2,
+                    permission: 'purchase-returns.view',
                 },
                 {
                     title: 'sales-orders.title',

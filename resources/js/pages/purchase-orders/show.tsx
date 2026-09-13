@@ -1,5 +1,5 @@
 import { Head, Link, setLayoutProps } from '@inertiajs/react';
-import { Pencil } from 'lucide-react';
+import { Pencil, Undo2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { usePermissions } from '@/hooks/use-permissions';
 import { useTranslation } from '@/hooks/use-translation';
@@ -8,6 +8,7 @@ import { OrderLinesTable } from '@/pages/purchase-orders/_components/order-lines
 import { OrderStatusBadge } from '@/pages/purchase-orders/_components/order-status-badge';
 import { OrderSummary } from '@/pages/purchase-orders/_components/order-summary';
 import { edit, index, show } from '@/routes/purchase-orders';
+import { create as createReturn } from '@/routes/purchase-returns';
 
 type Props = {
     order: App.Data.PurchaseOrderData;
@@ -15,6 +16,13 @@ type Props = {
     items: App.Data.PurchaseOrderItemData[];
     /** Where the delivery may be booked in. Only the footer reads it. */
     warehouses: App.Data.WarehouseOptionData[];
+    /**
+     * Whether any line still has something that could go back.
+     *
+     * The server's answer, because the browser holds no returns data — see the controller
+     * on why it is a page prop rather than a field on the order.
+     */
+    returnable: boolean;
 };
 
 /**
@@ -35,7 +43,12 @@ type Props = {
  * can still be acted on is the first thing to know about it, and it is the answer to why
  * the footer has gone.
  */
-export default function PurchaseOrderShow({ order, items, warehouses }: Props) {
+export default function PurchaseOrderShow({
+    order,
+    items,
+    warehouses,
+    returnable,
+}: Props) {
     const { t } = useTranslation();
     const { can } = usePermissions();
 
@@ -43,6 +56,14 @@ export default function PurchaseOrderShow({ order, items, warehouses }: Props) {
     // an update against a received order is refused there, not merely hidden here.
     const editable =
         order.status === 'pending' && can('purchase-orders.update');
+
+    // Goods can only go back once they have arrived, and only while something is left to
+    // send. `returnable` is the server's answer to the second half — the browser holds no
+    // returns data and could not work it out.
+    const returning =
+        order.status === 'received' &&
+        returnable &&
+        can('purchase-returns.create');
 
     setLayoutProps({
         breadcrumbs: [
@@ -74,6 +95,22 @@ export default function PurchaseOrderShow({ order, items, warehouses }: Props) {
                         <Link href={edit({ purchaseOrder: order.id })}>
                             <Pencil className="size-4" />
                             {t('purchase-orders.action.edit')}
+                        </Link>
+                    </Button>
+                )}
+
+                {/* Where a return actually starts: somebody is looking at the delivery
+                    when they decide something is going back. The query names the order,
+                    which is the only way the return form can be opened. */}
+                {returning && (
+                    <Button variant="outline" asChild>
+                        <Link
+                            href={createReturn(undefined, {
+                                query: { order: order.id },
+                            })}
+                        >
+                            <Undo2 className="size-4" />
+                            {t('purchase-orders.action.return')}
                         </Link>
                     </Button>
                 )}

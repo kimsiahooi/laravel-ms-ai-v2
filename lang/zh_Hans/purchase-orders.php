@@ -30,6 +30,7 @@ return [
         'new' => '新建采购订单',
         'edit' => '编辑订单',
         'receive' => '收货',
+        'return' => '退货',
         'cancel' => '取消订单',
     ],
 

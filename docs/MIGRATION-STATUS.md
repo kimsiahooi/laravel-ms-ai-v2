@@ -4278,7 +4278,7 @@ locales, light and dark, 375 / 768 / 1024. Zero console messages across every mi
 |---|---|---|
 | 3 · Catalog | **categories ✅ · suppliers ✅ · customers ✅ · raw materials ✅ · products ✅** (core · image · BOM) | ✅ |
 | 4 · Stock | **locations ✅ · warehouses ✅ · StockService ✅ · movements ✅ · transfers ✅ · reorder levels ✅ · stock takes ✅** (+ notes column, column preferences, warehouse detail) | ✅ |
-| 5 · Orders | **money foundation ✅ · purchase orders ✅ · catalogue prices ✅ · sales orders ✅** · purchase returns · sales returns | 🚧 |
+| 5 · Orders | **money foundation ✅ · purchase orders ✅ · catalogue prices ✅ · sales orders ✅ · purchase returns 🚧** (the document; completion next) · sales returns | 🚧 |
 | 6 · Insights | reports, activity log | ⬜ |
 | 7 · Team & settings | **users ✅ · roles/RBAC ✅ · business settings ✅ · document numbering ✅** (the last two pulled forward into phase 5, which needed them), e-invoice | 🚧 |
 | 8 · Cross-cutting | exports, barcode/QR scanning, tenant dashboard, **admin dashboard ✅** (built in phase 1 and listed here as not started until now) | 🚧 |

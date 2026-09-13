@@ -42,6 +42,7 @@ return [
         'new' => 'New purchase order',
         'edit' => 'Edit order',
         'receive' => 'Receive',
+        'return' => 'Return items',
         'cancel' => 'Cancel order',
     ],
 

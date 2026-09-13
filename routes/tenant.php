@@ -13,6 +13,7 @@ use App\Http\Controllers\Tenant\LocationController;
 use App\Http\Controllers\Tenant\MediaController;
 use App\Http\Controllers\Tenant\ProductController;
 use App\Http\Controllers\Tenant\PurchaseOrderController;
+use App\Http\Controllers\Tenant\PurchaseReturnController;
 use App\Http\Controllers\Tenant\RawMaterialController;
 use App\Http\Controllers\Tenant\RoleController;
 use App\Http\Controllers\Tenant\SalesOrderController;
@@ -251,6 +252,29 @@ Route::middleware(['web', InitializeTenancyByPath::class, SetTenantUrlDefault::c
                 Route::post('{purchaseOrder}/receive', [PurchaseOrderController::class, 'receive'])->name('receive');
                 Route::post('{purchaseOrder}/cancel', [PurchaseOrderController::class, 'cancel'])->name('cancel');
                 Route::delete('{purchaseOrder}', [PurchaseOrderController::class, 'destroy'])->name('destroy');
+            });
+
+            // Goods going back to a supplier. Form pages for the reason the block above
+            // gives — a header and a grid — and `create` before `{purchaseReturn}` for
+            // the same 404 reason.
+            //
+            // **Every name here is auto-mapped, and none of them needed an override.**
+            // `PermissionScreen::PurchaseReturns` takes the default four actions, so
+            // routeMap() emits index/store/update/destroy/show plus create and edit. The
+            // `purchase-returns.complete` and `.cancel` entries already sitting in
+            // ROUTE_OVERRIDES name routes that do not exist yet — they arrive with the
+            // completion slice, and until then the map simply never consults them.
+            //
+            // There is no `receive`-shaped transition here yet and deliberately so:
+            // nothing in this slice writes a stock movement.
+            Route::prefix('purchase-returns')->name('purchase-returns.')->group(function (): void {
+                Route::get('/', [PurchaseReturnController::class, 'index'])->name('index');
+                Route::get('create', [PurchaseReturnController::class, 'create'])->name('create');
+                Route::post('/', [PurchaseReturnController::class, 'store'])->name('store');
+                Route::get('{purchaseReturn}', [PurchaseReturnController::class, 'show'])->name('show');
+                Route::get('{purchaseReturn}/edit', [PurchaseReturnController::class, 'edit'])->name('edit');
+                Route::patch('{purchaseReturn}', [PurchaseReturnController::class, 'update'])->name('update');
+                Route::delete('{purchaseReturn}', [PurchaseReturnController::class, 'destroy'])->name('destroy');
             });
 
             // Sales orders — the mirror of the block above, and the same rules apply to

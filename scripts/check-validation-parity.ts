@@ -67,6 +67,11 @@ const FACTORY_ARGS: Record<string, unknown[]> = {
     // The catalog the editor was sent — see roleSchema. One real name is enough for the
     // gate, which only reads the schema's field list.
     RoleRequest: [['categories.view']],
+    // The order being credited, and what each of its lines may still send back — see
+    // purchaseReturnSchema. One real pair is enough; the gate only reads field names, but
+    // the arguments still have to BUILD, which is what the stale `UserRequest: [false]`
+    // entry did not.
+    PurchaseReturnRequest: [1, { '1': '10' }],
     PurchaseOrderRequest: [['MYR']],
     SalesOrderRequest: [['MYR']],
 };
