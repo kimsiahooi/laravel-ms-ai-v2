@@ -132,6 +132,27 @@ SSR bundle, because only `build:ssr` builds both.
 Report the sweep as what was actually visited and what the console said on each — a list of
 modules and their result, not "everything works".
 
+### Narrate it — somebody is watching it happen
+
+The user watches the browser while it is being driven. So write a short line before each
+meaningful action — and then **keep going. Do not stop and wait for confirmation.** They will
+interrupt if they see something wrong; pausing at every checkpoint turns a twelve-module sweep
+into a dozen round trips and wastes the thing that makes watching useful.
+
+Two things belong in that line, because they are exactly what a person watching cannot get
+from the screen on their own:
+
+- **What to look for.** *"Opening the calendar in `zh_Hans` — the weekday headers should read
+  日 一 二 三 四 五 六 and the caption `2026年9月`."* Someone who knows what a pass looks like can
+  catch a wrong result that the driver has already called correct. That is the single most
+  valuable thing a second pair of eyes does here, and it only works if they are told the
+  expected answer *before* the screen shows one.
+- **Why the step is in the sweep at all** — which defect it would catch. That is what lets
+  them say a check is pointless, or that a more important one is missing.
+
+Fill in the `element` description on every Playwright call for the same reason: it is what
+gets named as the action happens.
+
 ## Verification — there is no test suite
 
 The gates above catch mechanical errors. Everything behavioural is verified by driving the

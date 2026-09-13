@@ -12,6 +12,18 @@ Progress: [`docs/MIGRATION-STATUS.md`](docs/MIGRATION-STATUS.md).
 Finish the work, get the gates green, and **leave the changes in the working tree**.
 The user reviews the diff, then asks for a commit. Staging is fine; committing is not.
 
+## Ask when you are not sure
+
+If a decision is genuinely open — two defensible approaches, an ambiguous requirement, a
+trade-off the user has a stake in — **ask, with options and a recommendation.** Use
+`AskUserQuestion`, name the trade-off inside each option rather than only the label, and mark
+the one you would pick "(Recommended)". **This holds in plan mode and in auto mode too**:
+neither is a reason to guess and carry on.
+
+It is not licence to ask about everything. A conventional default, something the codebase
+already settles, or a detail the user has no stake in is yours to decide — make the call, say
+you made it, and keep going. The bar is whether a different answer would change the work.
+
 ## There is no test suite — this is deliberate
 
 No Pest, no Vitest, no PHPUnit, and **no Playwright test suite**. Do **not** add one, and
@@ -32,9 +44,10 @@ asserted, recorded or run in CI.) The safety net is:
    before trusting the pass, watch the browser console, and report what was observed.
    **The sweep covers every feature, not only the phase's own screens** — a shared
    component, a new server prop or a locale key breaks pages nobody touched, and a React
-   #418 hydration warning in the console is what that looks like. Checklist, the sweep, and
-   the four silent client-fallback causes:
-   [`docs/CODING-STANDARDS.md`](docs/CODING-STANDARDS.md).
+   #418 hydration warning in the console is what that looks like. **The user watches the
+   browser live, so narrate each action as it happens and keep moving — do not stop and
+   wait.** Checklist, the sweep, how to narrate it, and the four silent client-fallback
+   causes: [`docs/CODING-STANDARDS.md`](docs/CODING-STANDARDS.md).
 
 Because nothing runs the UI in CI, **SSR determinism is a hard rule, not a style
 preference**: no `Date.now()`, `Math.random()`, or unpinned `Intl`/`toLocaleString` in
