@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Models\Product;
 use App\Models\PurchaseOrder;
 use App\Models\RawMaterial;
+use App\Models\SalesOrder;
 use App\Models\StockTake;
 use App\Models\StockTransfer;
 use App\Support\ReservedSlugs;
@@ -76,6 +77,7 @@ class AppServiceProvider extends ServiceProvider
             // `stock_movements`. Same reasoning as the two above, and the same table:
             // these strings are written into rows nobody is allowed to rewrite.
             'purchase_order' => PurchaseOrder::class,
+            'sales_order' => SalesOrder::class,
             'stock_take' => StockTake::class,
             'stock_transfer' => StockTransfer::class,
         ]);

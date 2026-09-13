@@ -13,6 +13,25 @@ type Props = {
     order: App.Data.SalesOrderData;
     /** Every line, unpaginated — see {@see OrderLinesTable} on why. */
     items: App.Data.SalesOrderItemData[];
+    /** Where the goods may be shipped from. Empty once the order has ended. */
+    warehouses: App.Data.WarehouseOptionData[];
+    /**
+     * The warehouse `?warehouse_id` named, as a string id, or `''` for none.
+     *
+     * It is what `availability` was computed against, so the picker is seeded from it —
+     * otherwise a page loaded straight from that URL shows a panel about a building the
+     * control above it does not name.
+     */
+    chosenWarehouse: string;
+    /**
+     * What the chosen warehouse holds against what this order needs, or null until one has
+     * been chosen — which is what a first visit looks like.
+     *
+     * Driven by `?warehouse_id` rather than shipped with the page, and refreshed by a partial
+     * reload when the picker changes. {@see OrderActions} owns that round trip;
+     * `SalesOrderController::show()` says why the query string rather than an optional prop.
+     */
+    availability: App.Data.StockAvailabilityData[] | null;
 };
 
 /**
@@ -28,11 +47,21 @@ type Props = {
  * rule has one home. What is left is a record: what was sold, what it came to, and — for a
  * fulfilled order — who shipped it and from which building.
  *
+ * **The decision that can only be taken once is fulfilment**, and everything it needs is in
+ * the footer: where to ship from, what that building holds, and the confirmation. The page
+ * hands the two props straight through; the footer owns the choice and the round trip.
+ *
  * **The status sits beside the number rather than in the summary.** Whether this order can
  * still be acted on is the first thing to know about it, and it is the answer to why the
  * footer has gone.
  */
-export default function SalesOrderShow({ order, items }: Props) {
+export default function SalesOrderShow({
+    order,
+    items,
+    warehouses,
+    chosenWarehouse,
+    availability,
+}: Props) {
     const { t } = useTranslation();
     const { can } = usePermissions();
 
@@ -79,7 +108,12 @@ export default function SalesOrderShow({ order, items }: Props) {
 
             <OrderLinesTable order={order} items={items} />
 
-            <OrderActions order={order} />
+            <OrderActions
+                order={order}
+                warehouses={warehouses}
+                chosenWarehouse={chosenWarehouse}
+                availability={availability}
+            />
         </>
     );
 }

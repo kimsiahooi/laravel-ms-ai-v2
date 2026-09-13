@@ -900,7 +900,7 @@ wrapper rather than an edit — deliberately left.
 
 ## Phase 2 — remaining ⬜
 
-## Phase 3 — Catalog 🚧
+## Phase 3 — Catalog ✅
 
 | Module | Status | Notes |
 |---|---|---|
@@ -2432,7 +2432,7 @@ part of the control, not a paragraph that happens to sit near it.
   unpinned `Intl` in render output is the exact hydration hazard CLAUDE.md forbids.
   The count plus the checkmarks in the list carry it.
 
-## Phase 4 — Stock 🚧
+## Phase 4 — Stock ✅
 
 ### Sites — the first stock table, and no quantities on it
 
@@ -4032,13 +4032,132 @@ Order form renders server-side with the picker intact; console clean.
   recorded so the option is on the table.
 - The previous attempt is archived in `stash@{0}`.
 
+## Phase 5 · Orders — sales orders, and the despatch that writes stock ✅
+
+The mirror of purchase orders, and the first document in the app whose ending can **fail on
+the goods rather than on the form**. Shipped in three slices: the date localization the new
+screens needed (its own entry above), the document, and fulfilment.
+
+### The document
+
+A transposition of the purchase-order template, and near enough line for line. What is worth
+recording is the four places it deliberately differs.
+
+- **`unit_price` is free money.** `OrderTotals::forOrder()` already reads `unit_price`, which
+  is what a sales line is called, so `OpenSalesOrder` hands its lines straight over.
+  `OpenPurchaseOrder` needs a whole private `moneyLines()` to rename `unit_cost` first.
+- **The picker is `Product` only**, not `BuildsStockPickers::itemOptions()`, which merges
+  products *and* raw materials. Letting one through would have made "sell your own inputs"
+  one crafted payload away against a column that only points at products.
+  `SalesOrderRequest::productExists()` re-checks it on the way back in.
+- **No `product_snapshot` JSON blob.** v1 carried the product's name, sku and unit written at
+  order time; it went stale in the wrong direction, could not be joined, and sat beside a
+  nullable FK meaning something subtly different. The identity is read through the product on
+  a relation that includes archived rows.
+- **`total` stays out of `SORTABLE`.** Orders are denominated in their own currency, so
+  sorting the column would rank 900 MYR above 500 USD and present it as an answer.
+
+`CURRENCY_NAMES` was promoted to `resources/js/config/currencies.ts` on its third copy, and
+`ExpectedDate` to `components/data/`, both exactly as their own docblocks had predicted.
+
+**The security fix the plan predicted, confirmed.** `TenantPermissions::ROUTE_OVERRIDES`
+carried `sales-orders.fulfill`, `.cancel` and `.e-invoice` but not `.create` or `.edit` —
+and `routeMap()` auto-maps only index/store/show/update/destroy, so both form pages were in
+no map at all. `AuthorizeTenantRoute` treats an unmapped route as **open to any signed-in
+user**, and both pages render the whole customer and product catalogue. Both names added. No
+re-seed was needed and that was verified rather than assumed: `SCREENS` already declared
+`sales-orders` with view/create/update/delete, so the rows exist in every tenant database.
+
+### Fulfilment — the only genuinely new problem
+
+**All or nothing.** A shortfall on any line ships nothing, leaves the order pending and names
+what was short. There is no `fulfilled_quantity` column anywhere, so a partial is not a state
+the document can express — the mirror of `ReceivePurchaseOrder`'s *"a half-received order is
+worse than an unreceived one"*.
+
+**Quantities are added up per product, and that is the case a careless implementation gets
+wrong.** There is no unique index on (order, product) — two lines of the same product at two
+prices is an ordinary quotation — so two lines of four against seven on the shelf must be
+refused, and a per-line check passes both of them. `App\Support\OrderAvailability` is the
+single place that addition happens, and **the screen's panel and the Action both go through
+it**, so a green row and a refusal cannot disagree about the same shelf.
+
+**Every level row is locked up front, in one canonical order.** New
+`StockService::lockLevels()` takes the (warehouse, item) locks ordered by morph class and
+then by id, which is the discipline `transfer()` already documents for its two warehouses —
+two despatches out of the same building overlapping on two products would otherwise each hold
+the row the other needs. It **returns the levels from the locking read**, and that is not a
+convenience: under MySQL's REPEATABLE READ a plain `SELECT` afterwards answers from the
+snapshot the order's own lines already established, so a caller that locked and then asked
+`onHandFor()` could be told a number a committed transaction had already moved.
+`ReceivePurchaseOrder` locks one row per line in line order and is the latent version of that
+deadlock; it should adopt this.
+
+`StockService::negate()` became public rather than being reinvented in the Action —
+`'-'.$quantity` produces `'--5'` for an already-signed quantity, which bcmath rejects.
+
+**The availability panel never disables the button.** Its figures are read without a lock and
+are stale on arrival; showing three must not stop somebody shipping four that a colleague's
+delivery has just made possible. The rule `OnHandLine` states for a quantity box, on a
+document.
+
+**`availability` is keyed off `?warehouse_id`, not `Inertia::optional()`** — and the reason is
+the failed despatch. The picker refreshes the panel with a partial reload, which is exactly
+what an optional prop is for; but a shortfall comes back as a `ValidationException`, which
+redirects and re-renders the page in full, and a full render excludes an optional prop by
+definition. The panel would have gone blank at the moment somebody needs to read it.
+
+### Found in the browser, fixed
+
+- **A page loaded straight at `?warehouse_id=2` drew the panel while the picker still read
+  "Choose a warehouse" and Fulfil sat disabled** — figures about a building nothing named,
+  reachable by a refresh, a shared link, or the redirect after a refusal. The server now sends
+  the warehouse it resolved and the picker is seeded from it.
+- **"All 1 lines are taken out of…"** on a single-line order. The confirmation now goes through
+  `tChoice`; a `count === 1 ? a : b` at the call site would have been wrong in two of the three
+  languages we ship. **The purchase-order dialog has the identical bug** in
+  `purchase-orders.dialog.receive.description` and was left alone rather than widening the
+  slice.
+
+### Verified by driving it
+
+Built assets and SSR, 1440 × 900, all three locales, light and dark, 375 / 768 / 1024.
+
+- One-line order fulfilled → **exactly one** ledger row, `-3.0000`,
+  `reason=sales_fulfillment`, `source=sales_order:2` (the morph-map key, not a class name),
+  on-hand 10 → 7.
+- Two lines of the **same** product, 4 + 4 against 7 → refused; `stock_movements` unchanged,
+  order still pending. The panel had already collapsed them into one row reading "Needed 8".
+- Two lines, two products → **exactly two** ledger rows, one per line rather than one per
+  product, levels 7 → 3 and 8 → 5.
+- A warehouse holding nothing → refused, with the product and both numbers in the message.
+- Two short products → the plural branch, in en, ms and zh_Hans.
+- Ledger rows read "Sales order #3" and link back to the document.
+- Zero console messages across every migrated module.
+
+#### Open, carried forward
+
+- **The shared item-picker placeholder still reads "Choose a product or material"** on both
+  order screens, where a sales order offers only products and a purchase order only materials.
+  One shared key, wrong on both.
+- **`purchase-orders.dialog.receive.description` needs the same `tChoice` fix** as the sales
+  side just got.
+- **A refusal message survives a locale change.** `OrderActions` holds the failed
+  `warehouse_id` message in local state, so switching language leaves the old sentence in the
+  old language until the next request. The same shape on the purchase side.
+- **Switching a line's product does not clear a price the previous product prefilled.**
+  Slice B behaviour, noticed here; harmless to stock, wrong on the invoice.
+- Purchase returns next, then sales returns — which turn out **not** to be blocked by sales
+  orders, since v1 has no `sales_order_id` FK and a return is a standalone stock-in document.
+  E-invoice sits on top of sales orders and stays deferred.
+
 ## Phases 3–8 — Modules ⬜
 
 | Phase | Modules | Status |
 |---|---|---|
 | 3 · Catalog | **categories ✅ · suppliers ✅ · customers ✅ · raw materials ✅ · products ✅** (core · image · BOM) | ✅ |
 | 4 · Stock | **locations ✅ · warehouses ✅ · StockService ✅ · movements ✅ · transfers ✅ · reorder levels ✅ · stock takes ✅** (+ notes column, column preferences, warehouse detail) | ✅ |
-| 5 · Orders | **money foundation ✅ · purchase orders ✅ · catalogue prices ✅** · sales orders · purchase returns · sales returns | 🚧 |
+| 5 · Orders | **money foundation ✅ · purchase orders ✅ · catalogue prices ✅ · sales orders ✅** · purchase returns · sales returns | 🚧 |
 | 6 · Insights | reports, activity log | ⬜ |
 | 7 · Team & settings | users, roles/RBAC, **business settings ✅ · document numbering ✅** (both pulled forward into phase 5, which needed them), e-invoice | 🚧 |
 | 8 · Cross-cutting | exports, barcode/QR scanning, tenant dashboard, admin dashboard | ⬜ |

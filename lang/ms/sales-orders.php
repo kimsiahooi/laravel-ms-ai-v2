@@ -29,6 +29,7 @@ return [
     'action' => [
         'new' => 'Pesanan jualan baharu',
         'edit' => 'Edit pesanan',
+        'fulfil' => 'Penuhi',
         'cancel' => 'Batalkan pesanan',
     ],
 
@@ -94,7 +95,34 @@ return [
         'notes' => 'Nota',
     ],
 
+    'fulfil' => [
+        'heading' => 'Pemenuhan',
+        'description' => 'Menghantar pesanan mengeluarkan setiap baris dari satu gudang dan menutupnya. Pilih dari mana barang itu sebenarnya keluar.',
+        'warehouse' => 'Hantar dari',
+        'warehouse_placeholder' => 'Pilih gudang',
+        'warehouse_search' => 'Cari gudang…',
+        'warehouse_empty' => 'Tiada gudang sepadan.',
+        'no_warehouses' => 'Belum ada tempat untuk menghantar pesanan ini.',
+        'no_warehouses_action' => 'Sediakan gudang',
+    ],
+
+    'availability' => [
+        'heading' => 'Apa yang ada di gudang ini',
+        'hint' => 'Panduan sahaja, bukan tempahan — angka ini berubah apabila rakan sekerja merekod kerja mereka sendiri, jadi jawapan yang muktamad ialah yang anda dapat semasa mengesahkan.',
+        'item' => 'Produk',
+        'required' => 'Diperlukan',
+        'on_hand' => 'Ada',
+        'short' => 'Tidak cukup',
+        'empty' => 'Tiada apa-apa dalam pesanan ini merujuk kepada produk yang masih wujud, jadi tiada apa akan dikeluarkan.',
+    ],
+
     'dialog' => [
+        'fulfil' => [
+            'title' => 'Penuhi pesanan ini?',
+            'description' => '{1}Satu baris dikeluarkan dari :warehouse dan pesanan ditutup. Stok bergerak sebaik anda mengesahkan, dan ini tidak boleh dibatalkan.|[2,*]Kesemua :count baris dikeluarkan dari :warehouse dan pesanan ditutup. Stok bergerak sebaik anda mengesahkan, dan ini tidak boleh dibatalkan.',
+            'submit' => 'Penuhi pesanan',
+            'submitting' => 'Memenuhi…',
+        ],
         'cancel' => [
             'title' => 'Batalkan pesanan ini?',
             'description' => 'Pesanan ditutup dan tiada stok dipindahkan. Pesanan yang dibatalkan tidak boleh dibuka semula atau dihantar kemudian.',
@@ -122,6 +150,7 @@ return [
     'toast' => [
         'created' => 'Pesanan jualan diambil.',
         'updated' => 'Pesanan jualan dikemas kini.',
+        'fulfilled' => 'Pesanan dipenuhi dan stok dikemas kini.',
         'cancelled' => 'Pesanan jualan dibatalkan.',
         'deleted' => 'Pesanan jualan dipadam.',
     ],
@@ -129,5 +158,7 @@ return [
     'error' => [
         'not_pending' => 'Pesanan ini sudah dipenuhi atau dibatalkan.',
         'fulfilled_locked' => 'Pesanan yang telah dipenuhi tidak boleh diubah atau dipadam.',
+        'short' => '{1}Stok tidak mencukupi: gudang ini ada :available :item sedangkan pesanan memerlukan :required.|[2,*]:count produk tidak mempunyai stok yang mencukupi di gudang ini. Panel di bawah menunjukkan yang mana satu.',
+        'short_raced' => 'Seseorang memindahkan stok ini semasa pesanan sedang dihantar. Tiada apa dikeluarkan — semak angkanya dan cuba lagi.',
     ],
 ];

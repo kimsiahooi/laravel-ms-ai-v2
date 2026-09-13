@@ -4,13 +4,18 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Tenant;
 
+use App\Actions\FulfillSalesOrder;
 use App\Actions\OpenSalesOrder;
 use App\Data\OptionData;
 use App\Data\SalesOrderData;
 use App\Data\SalesOrderItemData;
+use App\Data\StockAvailabilityData;
 use App\Data\StockItemOptionData;
 use App\Data\StockTakeData;
+use App\Data\WarehouseOptionData;
 use App\Enums\SalesOrderStatus;
+use App\Exceptions\InsufficientStockException;
+use App\Exceptions\InsufficientStockForOrderException;
 use App\Http\Controllers\Concerns\BuildsStockPickers;
 use App\Http\Controllers\Concerns\ReadsQueryValues;
 use App\Http\Controllers\Concerns\RendersResourceIndex;
@@ -24,13 +29,19 @@ use App\Models\Product;
 use App\Models\SalesOrder;
 use App\Models\SalesOrderItem;
 use App\Models\User;
+use App\Models\Warehouse;
+use App\Services\StockService;
+use App\Support\ActiveExists;
 use App\Support\Decimals;
+use App\Support\OrderAvailability;
 use App\Support\OrderTotals;
 use App\Support\StockItem;
+use DomainException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -46,11 +57,11 @@ use Inertia\Response;
  * the document, its lines and the totals {@see OrderTotals} decides. This controller resolves
  * what the screen named, hands it over, and turns a refusal into a message a person can read.
  *
- * **Fulfilment is not here yet.** Issuing stock is the one genuinely new problem in this
- * module — it can fail because the goods are not there, which receiving never can — and it
- * ships as its own slice with its own lock, its own shortfall reporting and its own stock
- * verification. Until then an order can be raised, amended, read, cancelled and deleted,
- * which is a complete and useful document on its own.
+ * **Fulfilment is the one thing here that can fail on the goods rather than on the form**,
+ * which receiving never can, and it shows in three places: the availability panel on the
+ * detail page, the shortfall message a refusal turns into, and {@see FulfillSalesOrder}'s lock.
+ * The panel and the Action reach their answer through the same {@see OrderAvailability}, so a
+ * green row and a refusal cannot disagree about the same shelf.
  *
  * **A lifecycle refusal is branded feedback, never a bare 422.** Editing an order that has
  * shipped is an ordinary thing to arrive at from a stale tab, so it leaves as an error toast.
@@ -154,14 +165,49 @@ final class SalesOrderController
         return to_route('sales-orders.show', $order);
     }
 
-    /** The order as a document: its header and its priced lines. */
-    public function show(SalesOrder $salesOrder): Response
+    /**
+     * The order as a document: its header, its priced lines, and — while it is still pending —
+     * somewhere to ship it from and what that building holds.
+     *
+     * The warehouse picker is empty rather than absent once the order is closed, so the prop's
+     * shape is one thing on the client instead of two. A fulfilled order has nothing left to
+     * ship; where the goods went travels on the order itself.
+     *
+     * **`availability` is driven by `?warehouse_id`, not by `Inertia::optional()`**, and the
+     * difference is the failed despatch. The screen refreshes the panel with a partial reload
+     * — `only: ['availability']` — which is what an optional prop is for, and on that path the
+     * two are identical. But a shortfall comes back as a `ValidationException`, which
+     * redirects to this page and re-renders it in full, and a full render excludes an optional
+     * prop by definition: the panel would go blank at the exact moment somebody needs to read
+     * it. Keying off the query string instead means the partial reload leaves the answer in
+     * the URL, and every later render of that URL — the redirect, a refresh, a shared link —
+     * can work it out again.
+     *
+     * Null when no warehouse has been chosen, which is also what a first visit looks like. The
+     * work is not done until somebody asks a question it answers.
+     */
+    public function show(Request $request, SalesOrder $salesOrder, StockService $stock): Response
     {
         $this->loadHeader($salesOrder);
 
+        $lines = self::orderLines($salesOrder);
+
+        $pending = $salesOrder->status === SalesOrderStatus::Pending;
+        $warehouses = $pending ? $this->warehouseOptions() : [];
+        $warehouse = $pending ? $this->chosenWarehouse($request, $warehouses) : null;
+
         return Inertia::render('sales-orders/show', [
             'order' => SalesOrderData::fromSalesOrder($salesOrder),
-            'items' => self::lineData($salesOrder),
+            'items' => self::lineData($salesOrder, $lines),
+            'warehouses' => $warehouses,
+            // The picker is seeded from this rather than starting empty. Without it a page
+            // loaded *with* `?warehouse_id=2` — a refresh, a shared link, the redirect after a
+            // refused despatch — draws a panel of figures about a warehouse the control above
+            // it does not name, and leaves Fulfil disabled with no way to see why.
+            'chosenWarehouse' => $warehouse === null ? '' : (string) $warehouse->id,
+            'availability' => $warehouse === null
+                ? null
+                : self::availability($lines, $warehouse, $stock),
         ]);
     }
 
@@ -184,7 +230,7 @@ final class SalesOrderController
 
         return Inertia::render('sales-orders/form', [
             'order' => SalesOrderData::fromSalesOrder($salesOrder),
-            'items' => self::lineData($salesOrder),
+            'items' => self::lineData($salesOrder, self::orderLines($salesOrder)),
             ...$this->formPickers(),
         ]);
     }
@@ -216,6 +262,65 @@ final class SalesOrderController
         $this->toast(__('sales-orders.toast.updated'));
 
         return to_route('sales-orders.show', $salesOrder);
+    }
+
+    /**
+     * Ship it: one movement per line out of the warehouse somebody names.
+     *
+     * The status is checked twice, and the two checks are not the same check. The one here
+     * answers the ordinary case — a stale tab, a second press after a colleague — and deserves
+     * a plain sentence. {@see FulfillSalesOrder} re-reads it under a lock, which is the only
+     * place the true race can be settled, and a refusal from there arrives as a
+     * {@see DomainException} and gets the same words.
+     *
+     * The warehouse is validated here rather than in a FormRequest of its own: it is one field
+     * on a confirmation card, not a form anybody fills in — the same call
+     * {@see PurchaseOrderController::receive()} makes, and a request class would make
+     * `bun run check:validation` demand a zod schema for a single field. `integer` is doing
+     * real work beside `exists`: without it `warehouse_id[]=7` validates and then applies to
+     * row 1.
+     *
+     * **No zod gate anywhere in this module refuses a line for being short**, deliberately. A
+     * sales order is a commitment to sell, routinely taken before the goods exist, and the
+     * order carries no warehouse until this moment — so a save-time check would make a
+     * backorder impossible to record. The shelf is only consulted here.
+     */
+    public function fulfill(
+        Request $request,
+        SalesOrder $salesOrder,
+        FulfillSalesOrder $fulfill,
+    ): RedirectResponse {
+        if ($salesOrder->status !== SalesOrderStatus::Pending) {
+            return $this->refuse(__('sales-orders.error.not_pending'));
+        }
+
+        $request->validate(['warehouse_id' => ['required', 'integer', ActiveExists::of('warehouses')]]);
+
+        $warehouse = Warehouse::query()->findOrFail($request->integer('warehouse_id'));
+
+        try {
+            $fulfill->handle($salesOrder, $warehouse, self::signedInUser($request));
+        } catch (InsufficientStockForOrderException $e) {
+            // On `warehouse_id`, because that is the one control the card has — and because
+            // changing it is the action that might make the message go away. The panel beside
+            // it lists every short product; this names the shortfall a one-product order has,
+            // and counts them when there is more than one.
+            throw ValidationException::withMessages([
+                'warehouse_id' => self::shortfallMessage($e->shortfalls),
+            ]);
+        } catch (InsufficientStockException) {
+            // Unreachable: every level row is held under `FOR UPDATE` from before the check —
+            // see the Action. Caught because the service declares it, and a lock path reasoned
+            // about rather than proven should not surface as a 500. Nothing was written; the
+            // transaction unwound.
+            return $this->refuse(__('sales-orders.error.short_raced'));
+        } catch (DomainException) {
+            return $this->refuse(__('sales-orders.error.not_pending'));
+        }
+
+        $this->toast(__('sales-orders.toast.fulfilled'));
+
+        return back();
     }
 
     /**
@@ -316,15 +421,28 @@ final class SalesOrderController
      * The lines, oldest first — the order they were entered in, which is the order the person
      * who entered them arranged.
      *
+     * `product` is eager-loaded here rather than by each reader, because every reader needs it:
+     * the line's own name comes off it, and so does the availability panel's. Loading it once
+     * is also what lets {@see show()} answer both questions from a single query.
+     *
+     * @return Collection<int, SalesOrderItem>
+     */
+    private static function orderLines(SalesOrder $order): Collection
+    {
+        return $order->items()->with('product')->orderBy('id')->get();
+    }
+
+    /**
+     * Those lines as the two screens read them.
+     *
      * The currency travels with each line because a line has none of its own; see
      * {@see SalesOrderItemData} on what it is for.
      *
+     * @param  Collection<int, SalesOrderItem>  $lines  from {@see orderLines()}
      * @return list<SalesOrderItemData>
      */
-    private static function lineData(SalesOrder $order): array
+    private static function lineData(SalesOrder $order, Collection $lines): array
     {
-        $lines = $order->items()->with('product')->orderBy('id')->get();
-
         return array_values(
             $lines->map(
                 static fn (SalesOrderItem $line): SalesOrderItemData => SalesOrderItemData::fromSalesOrderItem(
@@ -333,6 +451,80 @@ final class SalesOrderController
                 ),
             )->all(),
         );
+    }
+
+    /**
+     * What one warehouse holds against what the order needs, one row per product.
+     *
+     * Through {@see OrderAvailability} rather than assembled here, and that is the whole point
+     * of the class: {@see FulfillSalesOrder} decides the same question a second later and goes
+     * through the same two calls, so the panel cannot show a row the Action then refuses for
+     * arithmetic it did differently. Only the levels differ — unlocked here, because this is a
+     * screen, and under `FOR UPDATE` there, because that is a guarantee.
+     *
+     * **Nothing about it is a reservation.** Two people can read the same eight and both go on
+     * to ship five. That is why the number never disables the button; see the panel.
+     *
+     * @param  Collection<int, SalesOrderItem>  $lines
+     * @return list<StockAvailabilityData>
+     */
+    private static function availability(Collection $lines, Warehouse $warehouse, StockService $stock): array
+    {
+        $required = OrderAvailability::required($lines);
+
+        return OrderAvailability::rows(
+            $required,
+            $stock->onHandFor($warehouse, OrderAvailability::products($required)),
+        );
+    }
+
+    /**
+     * The warehouse the screen is asking about, or null for none.
+     *
+     * Checked against the list this page was given rather than against the table, the same
+     * treatment the customer filter gets: a stale link naming a warehouse since closed asks a
+     * question about a building that is no longer offered, and answering it would be worse
+     * than not. A value that is not on the list is simply no choice at all.
+     *
+     * @param  list<WarehouseOptionData>  $warehouses
+     */
+    private function chosenWarehouse(Request $request, array $warehouses): ?Warehouse
+    {
+        $requested = (int) $this->queryValue($request, 'warehouse_id');
+
+        $offered = array_map(
+            static fn (WarehouseOptionData $warehouse): int => $warehouse->id,
+            $warehouses,
+        );
+
+        return in_array($requested, $offered, true)
+            ? Warehouse::query()->find($requested)
+            : null;
+    }
+
+    /**
+     * A shortfall, in this app's own voice and in the reader's language.
+     *
+     * **Built with `trans_choice`, never by joining names together.** `implode(', ', $names)`
+     * would pick a separator on the server for a sentence it cannot see, in a language it had
+     * to guess — and the word order around a list differs across en, ms and zh_Hans. So one
+     * product gets a sentence naming it and its two numbers, and more than one gets a count
+     * plus a pointer at the panel, which lists them in rows that need no separator at all.
+     *
+     * @param  non-empty-list<StockAvailabilityData>  $shortfalls
+     */
+    private static function shortfallMessage(array $shortfalls): string
+    {
+        $first = $shortfalls[0];
+
+        return trans_choice('sales-orders.error.short', count($shortfalls), [
+            'item' => $first->name,
+            // Already trimmed by the DTO — `8` rather than `8.0000`, for the reason
+            // {@see Decimals} gives. Quoted here so the two halves of the sentence agree
+            // with the two numbers in the row it is about.
+            'available' => $first->on_hand,
+            'required' => $first->required,
+        ]);
     }
 
     /**

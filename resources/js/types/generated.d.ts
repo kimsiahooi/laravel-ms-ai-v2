@@ -162,6 +162,15 @@ discount_value: string,
 taxable: boolean,
 line_total: string,
 };
+export type StockAvailabilityData = {
+item: string,
+name: string,
+sku: string,
+unit: App.Enums.Unit,
+required: string,
+on_hand: string,
+short: boolean,
+};
 export type StockItemOptionData = {
 value: string,
 name: string,
@@ -276,7 +285,7 @@ export type Country = 'MY' | 'SG';
 export type Dimension = 'mass' | 'volume' | 'length' | 'count';
 export type DiscountType = 'none' | 'percent' | 'amount';
 export type DocumentType = 'purchase_order' | 'purchase_return' | 'sales_order' | 'sales_return';
-export type MovementSource = 'purchase_order' | 'stock_take' | 'stock_transfer';
+export type MovementSource = 'purchase_order' | 'sales_order' | 'stock_take' | 'stock_transfer';
 export type NumberReset = 'yearly' | 'never';
 export type PurchaseOrderStatus = 'pending' | 'received' | 'cancelled';
 export type SalesOrderStatus = 'pending' | 'fulfilled' | 'cancelled';

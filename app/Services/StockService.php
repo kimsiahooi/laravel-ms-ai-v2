@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Actions\FulfillSalesOrder;
 use App\Enums\StockMovementReason;
 use App\Exceptions\InsufficientStockException;
 use App\Models\StockMovement;
 use App\Models\User;
 use App\Models\Warehouse;
 use App\Models\WarehouseStock;
+use App\Support\StockItem;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -181,6 +183,128 @@ final class StockService
     }
 
     /**
+     * What is on hand for several items in one warehouse, for display only.
+     *
+     * The plural of {@see onHand()} and stale in exactly the same way, so everything that
+     * class says applies here: it takes no lock, nothing may act on the answer, and a screen
+     * showing a number is never the thing that decides. One query rather than one per item,
+     * because the caller is a document with as many lines as a delivery has.
+     *
+     * Keyed by {@see StockItem::key()} — `product:5` — which is the string the pickers, the
+     * ledger and the order lines already agree on, so a caller holding a model can look its
+     * own row up without knowing how the morph columns are spelled. Items this warehouse has
+     * never held are absent; a caller reads a missing key as zero, and {@see zero()} is the
+     * shape to read it as.
+     *
+     * @param  list<Model>  $stockables
+     * @return array<string, numeric-string>
+     */
+    public function onHandFor(Warehouse $warehouse, array $stockables): array
+    {
+        if ($stockables === []) {
+            return [];
+        }
+
+        $levels = [];
+
+        // Grouped by morph class, because `stockable_id` alone is ambiguous across the two
+        // catalogue tables: product 5 and raw material 5 are different things with the same
+        // id, and one `whereIn` over both would read either's level as the other's.
+        foreach ($this->byMorphClass($stockables) as $type => $ids) {
+            $rows = WarehouseStock::query()
+                ->where('warehouse_id', $warehouse->id)
+                ->where('stockable_type', $type)
+                ->whereIn('stockable_id', $ids)
+                ->pluck('quantity', 'stockable_id');
+
+            foreach ($rows as $id => $quantity) {
+                $levels[StockItem::key($type, (int) $id)] = $this->decimal((string) $quantity);
+            }
+        }
+
+        return $levels;
+    }
+
+    /**
+     * Lock this warehouse's level row for every item at once, and hand back what each holds.
+     *
+     * For a caller about to write several movements in one transaction — issuing a sales
+     * order, today. It exists so that all the locks are taken **before** anything is decided,
+     * which is what makes an all-or-nothing check honest: a shortfall found on line nine
+     * cannot be raced by somebody else taking line one's stock in between.
+     *
+     * **The locks are taken in one canonical order**, by morph class and then by id, for
+     * exactly the reason {@see transfer()} orders its two by warehouse id: two despatches out
+     * of the same building that overlap on two products would otherwise each hold the row the
+     * other needs. `ReceivePurchaseOrder` locks one row per line in line order and is the
+     * latent version of that deadlock; it should adopt this.
+     *
+     * **The levels come back from the locking read itself, and that is not a convenience.**
+     * Under MySQL's REPEATABLE READ a plain `SELECT` after this would answer from the
+     * transaction's snapshot — established by whatever read came first, typically the order's
+     * own lines — while the locking read sees the latest committed row. A caller that locked
+     * here and then asked {@see onHandFor()} could be told a number that a committed
+     * transaction had already moved, which is the one thing the lock was taken to prevent.
+     *
+     * Must run inside a transaction; a lock released at the end of its own statement is not
+     * a lock.
+     *
+     * @param  list<Model>  $stockables
+     * @return array<string, numeric-string> keyed by {@see StockItem::key()}, as
+     *                                       {@see onHandFor()} keys it — items this
+     *                                       warehouse has never held are absent
+     */
+    public function lockLevels(Warehouse $warehouse, array $stockables): array
+    {
+        $levels = [];
+
+        foreach ($this->byMorphClass($stockables) as $type => $ids) {
+            sort($ids);
+
+            foreach ($ids as $id) {
+                $stock = WarehouseStock::query()
+                    ->where('warehouse_id', $warehouse->id)
+                    ->where('stockable_type', $type)
+                    ->where('stockable_id', $id)
+                    ->lockForUpdate()
+                    ->first();
+
+                // Absent rather than zero, so the shape matches onHandFor() and a caller has
+                // one rule to read both by. The row is still gap-locked — see lockRow().
+                if ($stock !== null) {
+                    $levels[StockItem::key($type, $id)] = $this->decimal((string) $stock->quantity);
+                }
+            }
+        }
+
+        return $levels;
+    }
+
+    /**
+     * The ids to look up, grouped by the morph key they are stored under and ordered by
+     * class name, so two callers asking about the same set walk it the same way.
+     *
+     * @param  list<Model>  $stockables
+     * @return array<string, list<int>>
+     */
+    private function byMorphClass(array $stockables): array
+    {
+        $grouped = [];
+
+        foreach ($stockables as $stockable) {
+            $grouped[$stockable->getMorphClass()][] = (int) $stockable->getKey();
+        }
+
+        foreach ($grouped as $type => $ids) {
+            $grouped[$type] = array_values(array_unique($ids));
+        }
+
+        ksort($grouped);
+
+        return $grouped;
+    }
+
+    /**
      * Lock the on-hand row, add the delta, refuse a negative result, and persist.
      *
      * Must run inside a transaction; every caller here opens one.
@@ -249,9 +373,14 @@ final class StockService
      * `'-'.$quantity` would produce `'--5'` for a quantity that already carried a sign,
      * which bcmath rejects. Subtracting from zero cannot.
      *
+     * Public because {@see FulfillSalesOrder} issues goods and has to hand
+     * `record()` a negative delta. An Action reinventing this is exactly how the `'--5'`
+     * gets written for the first time, and the failure would be a `ValueError` naming a
+     * bcmath argument rather than the order it came from.
+     *
      * @return numeric-string
      */
-    private function negate(string $quantity): string
+    public function negate(string $quantity): string
     {
         return bcsub('0', $this->decimal($quantity), self::SCALE);
     }

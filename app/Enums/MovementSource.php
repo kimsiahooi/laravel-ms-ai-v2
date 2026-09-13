@@ -11,9 +11,9 @@ use Spatie\TypeScriptTransformer\Attributes\TypeScript;
  *
  * These are the morph-map keys stored in `stock_movements.source_type`, named here so the
  * browser gets a union rather than a bare string and so adding a case is a decision
- * somebody makes rather than a value that turns up. Phase 5 brings the rest — purchase
- * receipts, sales fulfilments, production orders — and each will add a case here, which
- * is a compile error on the screen until it says how it should be rendered.
+ * somebody makes rather than a value that turns up. Phase 5 brings the rest — production
+ * orders, returns — and each will add a case here, which is a compile error on the screen
+ * until it says how it should be rendered.
  *
  * Not every source has a screen to open. A stock take does; a transfer does not, because
  * transfers are a list and have no detail page. The screen decides that, not this enum —
@@ -28,6 +28,9 @@ enum MovementSource: string
 {
     /** A receipt against a purchase order. Has a screen: the order itself. */
     case PurchaseOrder = 'purchase_order';
+
+    /** A despatch against a sales order. Has a screen, for the same reason. */
+    case SalesOrder = 'sales_order';
 
     case StockTake = 'stock_take';
     case StockTransfer = 'stock_transfer';

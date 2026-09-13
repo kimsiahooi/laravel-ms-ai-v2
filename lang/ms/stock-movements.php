@@ -123,5 +123,6 @@ return [
         'stock_take' => 'Pengiraan stok #:id',
         'stock_transfer' => 'Pemindahan #:id',
         'purchase_order' => 'Pesanan belian #:id',
+        'sales_order' => 'Pesanan jualan #:id',
     ],
 ];

@@ -29,6 +29,7 @@ return [
     'action' => [
         'new' => '新建销售订单',
         'edit' => '编辑订单',
+        'fulfil' => '发货',
         'cancel' => '取消订单',
     ],
 
@@ -94,7 +95,34 @@ return [
         'notes' => '备注',
     ],
 
+    'fulfil' => [
+        'heading' => '发货',
+        'description' => '发货会把订单的每一行从某一个仓库中扣除，并关闭订单。请选择货品实际是从哪里发出的。',
+        'warehouse' => '发货仓库',
+        'warehouse_placeholder' => '选择仓库',
+        'warehouse_search' => '搜索仓库…',
+        'warehouse_empty' => '没有匹配的仓库。',
+        'no_warehouses' => '目前还没有可以发货的仓库。',
+        'no_warehouses_action' => '设置仓库',
+    ],
+
+    'availability' => [
+        'heading' => '该仓库的库存',
+        'hint' => '仅供参考，并非预留——同事记录各自的操作时这些数字会变动，最终以确认发货时的结果为准。',
+        'item' => '产品',
+        'required' => '需要',
+        'on_hand' => '可用',
+        'short' => '不足',
+        'empty' => '该订单没有任何一行指向仍然存在的产品，因此不会扣减任何库存。',
+    ],
+
     'dialog' => [
+        'fulfil' => [
+            'title' => '确认为此订单发货？',
+            'description' => '{1}该行将从 :warehouse 扣除，订单随即关闭。确认后库存立即变动，且无法撤销。|[2,*]全部 :count 行都会从 :warehouse 扣除，订单随即关闭。确认后库存立即变动，且无法撤销。',
+            'submit' => '确认发货',
+            'submitting' => '发货中…',
+        ],
         'cancel' => [
             'title' => '取消此订单？',
             'description' => '订单将关闭，不会移动任何库存。已取消的订单无法重新打开，也不能再发货。',
@@ -122,6 +150,7 @@ return [
     'toast' => [
         'created' => '销售订单已创建。',
         'updated' => '销售订单已更新。',
+        'fulfilled' => '订单已发货，库存已更新。',
         'cancelled' => '销售订单已取消。',
         'deleted' => '销售订单已删除。',
     ],
@@ -129,5 +158,7 @@ return [
     'error' => [
         'not_pending' => '该订单已发货或已取消。',
         'fulfilled_locked' => '已发货的订单不能修改或删除。',
+        'short' => '{1}库存不足：该仓库只有 :available 个:item，而订单需要 :required 个。|[2,*]该仓库有 :count 种产品库存不足，下方面板已标出。',
+        'short_raced' => '发货过程中有人移动了这批库存。没有扣减任何库存——请核对数字后重试。',
     ],
 ];

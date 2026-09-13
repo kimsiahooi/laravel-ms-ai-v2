@@ -41,6 +41,7 @@ return [
     'action' => [
         'new' => 'New sales order',
         'edit' => 'Edit order',
+        'fulfil' => 'Fulfil',
         'cancel' => 'Cancel order',
     ],
 
@@ -108,7 +109,37 @@ return [
         'notes' => 'Notes',
     ],
 
+    'fulfil' => [
+        'heading' => 'Fulfilling',
+        'description' => 'Shipping the order takes every line out of one warehouse and closes it. Choose where the goods actually left from.',
+        'warehouse' => 'Ship from',
+        'warehouse_placeholder' => 'Choose a warehouse',
+        'warehouse_search' => 'Search warehouses…',
+        'warehouse_empty' => 'No warehouses match.',
+        'no_warehouses' => 'There is nowhere to ship this from yet.',
+        'no_warehouses_action' => 'Set up a warehouse',
+    ],
+
+    // The panel under the warehouse picker. One row per product, not per line: an order may
+    // carry the same product twice, and what can be shipped depends on the two added together.
+    'availability' => [
+        'heading' => 'What this warehouse holds',
+        'hint' => 'A guide, not a reservation — these figures move as colleagues record their own work, so the answer that counts is the one you get on confirming.',
+        'item' => 'Product',
+        'required' => 'Needed',
+        'on_hand' => 'Available',
+        'short' => 'Short',
+        'empty' => 'Nothing on this order points at a product that still exists, so nothing will be taken out.',
+    ],
+
     'dialog' => [
+        'fulfil' => [
+            'title' => 'Fulfil this order?',
+            // Plural, because "All 1 lines" is what a single-line order reads as otherwise.
+            'description' => '{1}One line is taken out of :warehouse and the order is closed. Stock moves as soon as you confirm, and this cannot be undone.|[2,*]All :count lines are taken out of :warehouse and the order is closed. Stock moves as soon as you confirm, and this cannot be undone.',
+            'submit' => 'Fulfil order',
+            'submitting' => 'Fulfilling…',
+        ],
         'cancel' => [
             'title' => 'Cancel this order?',
             'description' => 'The order is closed and no stock is moved. You cannot reopen a cancelled order, or ship against it later.',
@@ -136,6 +167,7 @@ return [
     'toast' => [
         'created' => 'Sales order taken.',
         'updated' => 'Sales order updated.',
+        'fulfilled' => 'Order fulfilled and stock updated.',
         'cancelled' => 'Sales order cancelled.',
         'deleted' => 'Sales order deleted.',
     ],
@@ -143,5 +175,11 @@ return [
     'error' => [
         'not_pending' => 'This order has already been fulfilled or cancelled.',
         'fulfilled_locked' => 'A fulfilled order cannot be changed or deleted.',
+        // Plural by count rather than by joining names, because a list separator and the word
+        // order around it differ across the three locales. The panel lists them in rows.
+        'short' => '{1}Not enough stock: this warehouse holds :available of :item and the order needs :required.|[2,*]:count products do not have enough stock in this warehouse. The panel below shows which.',
+        // The lost race, which the lock makes unreachable — see the controller. Nothing was
+        // written, so trying again is the whole of the advice.
+        'short_raced' => 'Somebody moved this stock while the order was shipping. Nothing was taken out — check the figures and try again.',
     ],
 ];

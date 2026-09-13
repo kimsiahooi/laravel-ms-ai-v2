@@ -252,9 +252,6 @@ Route::middleware(['web', InitializeTenancyByPath::class, SetTenantUrlDefault::c
             // that is the name the model binding resolves from; and every name mapped in
             // TenantPermissions, `create` and `edit` by explicit override because
             // AuthorizeTenantRoute treats an unmapped route as open to anyone signed in.
-            //
-            // There is no `fulfil` route yet. Issuing stock is the one step here that can
-            // fail because the goods are not there, and it ships as its own slice.
             Route::prefix('sales-orders')->name('sales-orders.')->group(function (): void {
                 Route::get('/', [SalesOrderController::class, 'index'])->name('index');
                 Route::get('create', [SalesOrderController::class, 'create'])->name('create');
@@ -267,6 +264,12 @@ Route::middleware(['web', InitializeTenancyByPath::class, SetTenantUrlDefault::c
                 // columns are untouchable from here.
                 Route::patch('{salesOrder}', [SalesOrderController::class, 'update'])->name('update');
 
+                // The two transitions, both out of pending and both terminal. `fulfill`
+                // with two Ls, which is the spelling TenantPermissions::ROUTE_OVERRIDES was
+                // written with and the one the `fulfilled_*` columns use — a route named
+                // `fulfil` here would find no entry in that map and be open to anyone with
+                // a login.
+                Route::post('{salesOrder}/fulfill', [SalesOrderController::class, 'fulfill'])->name('fulfill');
                 Route::post('{salesOrder}/cancel', [SalesOrderController::class, 'cancel'])->name('cancel');
                 Route::delete('{salesOrder}', [SalesOrderController::class, 'destroy'])->name('destroy');
             });
