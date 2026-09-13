@@ -132,26 +132,93 @@ SSR bundle, because only `build:ssr` builds both.
 Report the sweep as what was actually visited and what the console said on each — a list of
 modules and their result, not "everything works".
 
-### Narrate it — somebody is watching it happen
+### Narrate it **on the screen** — somebody is watching the browser, not the transcript
 
-The user watches the browser while it is being driven. So write a short line before each
-meaningful action — and then **keep going. Do not stop and wait for confirmation.** They will
-interrupt if they see something wrong; pausing at every checkpoint turns a twelve-module sweep
-into a dozen round trips and wastes the thing that makes watching useful.
+The user watches the browser while it is being driven. So the narration goes **into the page
+they are looking at**, as an injected overlay — not only into the chat, which they are not
+reading at the time. Narrating in the transcript alone was the first attempt and it was the
+wrong surface.
 
-Two things belong in that line, because they are exactly what a person watching cannot get
-from the screen on their own:
+Then **keep going. Do not stop and wait for confirmation.** They will interrupt if they see
+something wrong; pausing at every checkpoint turns a twelve-module sweep into a dozen round
+trips and wastes the thing that makes watching useful.
 
-- **What to look for.** *"Opening the calendar in `zh_Hans` — the weekday headers should read
+**Install the overlay once per page load** (a full navigation wipes it — re-run after each
+`browser_navigate`), then call `window.__qc(kind, title, detail)` before each step:
+
+```js
+// Injected into the live page at runtime ONLY. Never add this to the app's own code.
+const KINDS = {
+  action: ['#1447E6', 'DOING'],     // what is about to happen
+  check:  ['#B45309', 'LOOK FOR'],  // what a pass looks like, BEFORE the screen answers
+  pass:   ['#15803D', 'PASS'],      // what was actually observed
+  bug:    ['#B91C1C', 'BUG'],       // what is wrong, named on the screen showing it
+  note:   ['#475569', 'NOTE'],      // anything else worth pointing at
+};
+
+window.__qc = (kind, title, detail) => {
+  const [colour, tag] = KINDS[kind] ?? KINDS.note;
+  let box = document.getElementById('claude-qc-overlay');
+
+  if (!box) {
+    box = document.createElement('div');
+    box.id = 'claude-qc-overlay';
+    box.style.cssText = [
+      'position:fixed', 'top:0', 'left:0', 'right:0', 'z-index:2147483647',
+      'font:13px/1.45 ui-sans-serif,system-ui,sans-serif',
+      'padding:10px 14px', 'color:#fff', 'display:flex', 'gap:10px',
+      'align-items:flex-start', 'box-shadow:0 2px 10px rgba(0,0,0,.25)',
+      'pointer-events:none',
+    ].join(';');
+    document.body.appendChild(box);
+    document.documentElement.style.scrollPaddingTop = '52px';
+  }
+
+  box.style.background = colour;
+  box.innerHTML = '';
+
+  const badge = document.createElement('strong');
+  badge.textContent = tag;
+  badge.style.cssText =
+    'flex:none;font-size:10px;letter-spacing:.08em;background:rgba(255,255,255,.22);' +
+    'padding:3px 7px;border-radius:3px;margin-top:1px';
+
+  const body = document.createElement('div');
+  const head = document.createElement('div');
+  head.textContent = title;
+  head.style.fontWeight = '600';
+  body.appendChild(head);
+
+  if (detail) {
+    const sub = document.createElement('div');
+    sub.textContent = detail;
+    sub.style.cssText = 'opacity:.92;margin-top:2px';
+    body.appendChild(sub);
+  }
+
+  box.append(badge, body);
+  return `${tag}: ${title}`;
+};
+```
+
+`pointer-events:none` so the bar can never intercept a click meant for the app, and a top bar
+rather than a bottom one because debugbar already owns the bottom edge.
+
+**What goes in it**, and these are exactly what a watcher cannot get from the screen alone:
+
+- **`check` — what to look for, before the screen answers.** *"The weekday headers should read
   日 一 二 三 四 五 六 and the caption `2026年9月`."* Someone who knows what a pass looks like can
-  catch a wrong result that the driver has already called correct. That is the single most
-  valuable thing a second pair of eyes does here, and it only works if they are told the
-  expected answer *before* the screen shows one.
-- **Why the step is in the sweep at all** — which defect it would catch. That is what lets
-  them say a check is pointless, or that a more important one is missing.
+  catch a wrong result the driver has already called correct. That is the most valuable thing a
+  second pair of eyes does here, and it only works if the expected answer arrives **first**.
+- **`action` — what is about to happen, and why it is in the sweep** — which defect it would
+  catch. That is what lets them say a check is pointless, or that a more important one is
+  missing.
+- **`bug` — say it on the screen that shows it.** A defect named three messages later in a
+  transcript is a defect they have to go looking for.
+- **`pass` — what was actually observed**, not "works".
 
-Fill in the `element` description on every Playwright call for the same reason: it is what
-gets named as the action happens.
+Fill in the `element` description on every Playwright call too: it is what gets named as the
+action happens.
 
 ## Verification — there is no test suite
 

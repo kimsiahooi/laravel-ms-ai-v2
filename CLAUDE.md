@@ -45,9 +45,10 @@ asserted, recorded or run in CI.) The safety net is:
    **The sweep covers every feature, not only the phase's own screens** — a shared
    component, a new server prop or a locale key breaks pages nobody touched, and a React
    #418 hydration warning in the console is what that looks like. **The user watches the
-   browser live, so narrate each action as it happens and keep moving — do not stop and
-   wait.** Checklist, the sweep, how to narrate it, and the four silent client-fallback
-   causes: [`docs/CODING-STANDARDS.md`](docs/CODING-STANDARDS.md).
+   browser, so narrate each step as an overlay injected into the page itself — not in the
+   chat, which they are not reading at the time — and keep moving without waiting.**
+   Checklist, the sweep, the `window.__qc` overlay helper to paste in, and the four silent
+   client-fallback causes: [`docs/CODING-STANDARDS.md`](docs/CODING-STANDARDS.md).
 
 Because nothing runs the UI in CI, **SSR determinism is a hard rule, not a style
 preference**: no `Date.now()`, `Math.random()`, or unpinned `Intl`/`toLocaleString` in
