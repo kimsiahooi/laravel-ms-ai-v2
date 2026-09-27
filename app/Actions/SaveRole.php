@@ -8,6 +8,7 @@ use App\Http\Controllers\Tenant\RoleController;
 use App\Http\Requests\Tenant\RoleRequest;
 use App\Support\TenantPermissions;
 use App\Support\TenantRoles;
+use App\Tenancy\DatabaseCacheBootstrapper;
 use App\Tenancy\PermissionCacheTenancyBootstrapper;
 use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Role;
@@ -30,9 +31,9 @@ use Spatie\Permission\Traits\RefreshesPermissionCache;
  * `app(PermissionRegistrar::class)->forgetCachedPermissions()` belongs here — adding one would
  * suggest the writes do not do it, which is the thing a future reader would then have to
  * check. What still matters is that the registrar points at this workspace's cache — its own
- * database, under a tenant-suffixed key — only while tenancy is initialised
- * ({@see PermissionCacheTenancyBootstrapper}), so this is a request-time Action and never a
- * central-context command. Because that cache shares the tenant connection, those forgets
+ * database ({@see DatabaseCacheBootstrapper}), under a tenant-suffixed key
+ * ({@see PermissionCacheTenancyBootstrapper}) — only while tenancy is initialised, so this is
+ * a request-time Action and never a central-context command. Because that cache shares the tenant connection, those forgets
  * happen inside the transaction below: a rollback puts the cached catalog back along with
  * the rows it describes.
  *

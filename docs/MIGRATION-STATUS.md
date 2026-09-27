@@ -80,7 +80,7 @@ using it is the likely answer.
 | Central / tenant migration split | ✅ | Central: users, cache, jobs, tenants. Tenant: users, sessions, cache, passkeys, 2FA, permissions. |
 | `Tenant` + `CentralUser` + tenant `User` | ✅ | Two `users` tables in different databases; `CentralConnection` pins the admin one. |
 | Guards `web` (tenant) / `central` (admin) | ✅ | |
-| Bootstrappers | ✅ | Permission-cache and Fortify-home. |
+| Bootstrappers | ✅ | Database cache (stancl v4 backport, replaces the tag-based cache bootstrapper), permission-cache key, Fortify-home. |
 | Fortify on the tenant guard | ✅ | All auth routes at `/{tenant}/…` via `fortify.prefix`. 2FA, passkeys, reset, verification. |
 | spatie/laravel-permission | ✅ | Tables migrate per tenant; the cache lives in the tenant's own `cache` table, under a tenant-suffixed key. |
 | Tenant URL defaults | ✅ | `SetTenantUrlDefault` → Wayfinder emits `{tenant}` as OPTIONAL in TS helpers. |
@@ -133,6 +133,9 @@ The row is deleted with model events suppressed, never by `forceDelete()`: force
 fires `TenantDeleted`, whose `DeleteDatabase` job drops the database unconditionally, which
 is exactly wrong when the reason we are rolling back is that the database already belonged
 to someone else.
+
+Every rollback now starts by putting the request back in the caller's tenancy context —
+see the sixth bug below.
 
 Both paths verified against a live MySQL server: a pre-existing `tenant_collide` (with a
 table in it) survived a failed provision untouched and left no row behind, and a provision
@@ -191,9 +194,19 @@ stancl instantiates every bootstrapper before running any, so `PermissionCacheTe
 built it while the default was still `central`.
 
 The fix is the packages' own documented pattern: spatie's `initializeCache()` for a tenant
-switch, and the mechanism of stancl v4's `DatabaseCacheBootstrapper` — point the `database`
-store's `connection`/`lock_connection` at `tenant`, purge it, restore both on revert. The key
-suffix stays for a future shared driver. A side effect worth having: the cache now shares
+switch, and stancl v4's `DatabaseCacheBootstrapper` — point the `database` store's
+`connection`/`lock_connection` at `tenant` and restore both on revert. The key suffix stays for
+a future shared driver.
+
+**Correction, same day.** The first version of this fix *purged* the store from the cache
+manager after changing its config, and described that as v4's mechanism. It is not: v4
+re-points the store object that was already built, in place (`setConnection()`), and never
+purges. The difference mattered — the purge gave spatie a new store but left every other
+service that took the store at boot on central, which is how the fifth bug below survived
+the first fix. The in-place re-point now lives in `App\Tenancy\DatabaseCacheBootstrapper`;
+`PermissionCacheTenancyBootstrapper` is back to the key suffix plus `initializeCache()`.
+
+A side effect worth having: the cache now shares
 the tenant connection, so a role save's forgets roll back with the transaction. Because
 `optimize:clear` cannot reach workspace databases, the deploy now runs
 `tenants:run permission:cache-reset` after migrating.
@@ -208,8 +221,65 @@ queries and both databases at each step:
 - The central row's expiration never moved.
 - Every module's list page passed in light and dark: 200, server-rendered, no console errors.
 
-**A service that captures a database connection must be re-initialised after the tenant
-connection exists — injecting it into a bootstrapper is not enough.**
+**A service that captures a database connection must be re-pointed after the tenant
+connection exists — injecting it into a bootstrapper is not enough, and rebuilding it strands
+everything else that captured the same object.**
+
+### The fifth bug worth remembering — rate limits were shared by every workspace
+
+Laravel's `RateLimiter` takes the `database` cache store once, at boot, before any workspace
+is known — so every throttle counter lived in the central `cache` table, under keys that name
+no workspace: Fortify's `login` is `email|ip`, `two-factor` is the user id, `throttle:6,1` on
+the password change is `sha1(user id)`, and the verification limit likewise. Every
+workspace's first administrator is user #1, and the same accountant can sign in to two
+workspaces with one email. Reproduced with a throwaway `qc-two` whose administrator shares
+`demo`'s email: five wrong passwords at `/demo/login`, and the *correct* password at
+`/qc-two/login` was refused with 429.
+
+The fix moves the counters rather than rekeying them. The rate limiter, spatie's registrar
+and Fortify's two-factor replay guard all hold ONE store object — the one the cache manager
+built at boot — so `App\Tenancy\DatabaseCacheBootstrapper` (stancl v4's, backported) re-points
+that object at the tenant connection in place, and back on revert. That also let stancl's
+tag-based `CacheTenancyBootstrapper` go, as v4's docs advise for a `database` store: with it,
+every `Cache::get()` inside a workspace threw, because the database store cannot tag. The
+workspace `cache` tables were widened to Laravel's BIGINT `expiration` at the same time,
+since `Cache::forever()` would overflow an INT from 2028.
+
+Verified after the fix, in Chrome via Playwright:
+- The same five wrong passwords lock `/demo` (the 6th is 429), and `/qc-two/login` with the
+  right password signs in (302).
+- `demo`'s counters sit in `tenant_demo.cache`, `qc-two`'s single hit sits in
+  `tenant_qc-two.cache`, and the central table holds none. The console's own `/admin` sign-in
+  throttle still counts in central.
+- In tinker, the limiter, the registrar and the `Cache` repository are one object, which
+  follows `central → tenant_demo → tenant_qc-two → central`. A `Cache::put()` in `demo` is
+  invisible from `qc-two`.
+
+**Scope the store, not the keys — and re-point it in place, because the services that use it
+took it at boot.**
+
+### The sixth bug worth remembering — a failed provision stayed inside the dropped workspace
+
+`ProvisionTenant` switches into the new workspace twice: `Tenant::create()` fires stancl's
+pipeline, whose migrate step is `tenants:migrate` (`runForMultiple()`), and then `$tenant->run()`
+seeds it and creates the administrator. In stancl v3 neither switches back when the work
+throws — the switch-back is a plain line after the callback. So a failure left the rest of
+the request inside a workspace whose database the rollback had just dropped: default
+connection `tenant`, `Cache::get()` throwing, spatie's key suffixed. Reproduced both ways by
+forcing a failure while migrating and while seeding.
+
+Two fixes, both upstream's: `Tenant::run()` is v4's `Tenancy::run()` backported — the switch
+back in a `finally` — and `ProvisionTenant::rollBack()` starts by restoring the caller's
+context, the same switch-back, which covers the migrate step too (v4 moved `tenants:migrate`
+onto `run()`; v3's loop has no `finally`).
+
+Verified by forcing the same two failures again. Both times the request ends back in central:
+tenancy off, default connection `central`, the tenant connection closed, the cache on
+central, the unsuffixed key, and `Cache::get()` working. The row and database were rolled
+back. A normal provision through the console afterwards (`qc-three`) seeded, signed in and
+served its products page.
+
+**Every switch into a workspace needs its switch-back in a `finally`.**
 
 ### A route action can never receive `$tenant`
 

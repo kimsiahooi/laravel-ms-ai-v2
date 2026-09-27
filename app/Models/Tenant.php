@@ -6,6 +6,8 @@ namespace App\Models;
 
 use App\Models\Concerns\Searchable;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Foundation\Bus\PendingDispatch;
+use Stancl\Tenancy\Contracts\Tenant as TenantContract;
 use Stancl\Tenancy\Contracts\TenantWithDatabase;
 use Stancl\Tenancy\Database\Concerns\HasDatabase;
 use Stancl\Tenancy\Database\Models\Tenant as BaseTenant;
@@ -75,6 +77,43 @@ class Tenant extends BaseTenant implements TenantWithDatabase
     public function shouldGenerateId(): bool
     {
         return false;
+    }
+
+    /**
+     * Runs the callback inside this workspace and ALWAYS switches back afterwards —
+     * including when the callback throws.
+     *
+     * stancl v3's version (the TenantRun trait) switches back only on success: a throw
+     * skips its trailing tenancy()->end(), and the rest of the request runs inside this
+     * workspace — its database, its cache, its permission key. ProvisionTenant then rolls
+     * the workspace back while still inside it. This is v4's Tenancy::run() backported
+     * as-is (try/finally, and a returned PendingDispatch dropped before the switch-back so
+     * it cannot dispatch from its destructor without the tenant stamped on it). Delete it
+     * on upgrading to v4, which ships exactly this.
+     *
+     * `callable`, not v4's `Closure`: narrowing the parameter would break v3's contract.
+     * Like v4, it does not cover runForMultiple() or central(); nothing here calls those
+     * mid-request.
+     */
+    public function run(callable $callback): mixed
+    {
+        $original = tenancy()->tenant;
+        $result = null;
+
+        try {
+            tenancy()->initialize($this);
+            $result = $callback($this);
+        } finally {
+            if ($result instanceof PendingDispatch) {
+                $result = null;
+            }
+
+            $original instanceof TenantContract
+                ? tenancy()->initialize($original)
+                : tenancy()->end();
+        }
+
+        return $result;
     }
 
     /**

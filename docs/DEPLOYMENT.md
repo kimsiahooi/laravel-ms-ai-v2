@@ -27,7 +27,8 @@ and both are called out where they matter.
 | Cron | **none** — see *Deferred* |
 
 Sessions, cache and queues are all MySQL. There is no Redis. A workspace's sessions and its
-role/permission cache live in that workspace's own database, not the central one.
+entire cache — the role/permission catalog, sign-in and other rate-limit counters, anything
+cached — live in that workspace's own database, not the central one.
 
 ---
 
@@ -268,8 +269,8 @@ build time — the SSR bundle is self-contained.
 `php artisan tenants:migrate --force` (every workspace), then
 `php artisan tenants:run permission:cache-reset`. Nothing extra to do.
 
-That last step is there because each workspace caches its role/permission catalog in its own
-database, which `optimize:clear` cannot reach. Without it, a migration that renames or moves a
+That last step is there because each workspace caches everything — its role/permission
+catalog included — in its own database, which `optimize:clear` cannot reach. Without it, a migration that renames or moves a
 permission would be checked against the old catalog for up to 24 hours.
 
 **After adding a permission** to `App\Support\TenantPermissions`, existing workspaces also
@@ -322,6 +323,17 @@ php artisan tenants:run permission:cache-reset --tenants=<slug>
 
 A bare `php artisan permission:cache-reset` or `cache:clear` only touches the central
 database and changes nothing a workspace reads.
+
+**Someone is refused with "too many attempts" (429) signing in to one workspace.** Sign-in,
+two-factor and password-change limits are counted per workspace and expire after a minute —
+a lock-out in one workspace does not reach any other. To lift it at once, clear that
+workspace's cache:
+
+```bash
+php artisan tenants:run cache:clear --tenants=<slug>
+```
+
+That also drops the workspace's cached permission catalog, which the next request rebuilds.
 
 **`ERROR 1410: You are not allowed to create a user with GRANT`.** The user in your
 `GRANT … TO 'x'@'host'` does not exist, and MySQL 8 will not create one for you. Almost

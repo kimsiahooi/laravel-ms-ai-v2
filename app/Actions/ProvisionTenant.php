@@ -11,6 +11,7 @@ use App\Support\TenantRoles;
 use Database\Seeders\TenantDatabaseSeeder;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
+use Stancl\Tenancy\Contracts\Tenant as TenantContract;
 use Stancl\Tenancy\Exceptions\TenantDatabaseAlreadyExistsException;
 use Throwable;
 
@@ -20,10 +21,15 @@ use Throwable;
  * first Administrator.
  *
  * Provisioning touches four things that can each fail independently, so the whole
- * of it is written to leave nothing behind when it does — see rollBack().
+ * of it is written to leave nothing behind when it does — see rollBack(). That
+ * includes the tenancy context: a failure puts the request back in whatever context
+ * called this (normally central) BEFORE anything is rolled back.
  */
 final class ProvisionTenant
 {
+    /** The workspace the caller was in when handle() started — null for central. */
+    private ?TenantContract $caller = null;
+
     public function handle(
         string $name,
         string $slug,
@@ -40,6 +46,9 @@ final class ProvisionTenant
                 'slug' => __('console.validation.slug_reserved_action', ['slug' => $slug]),
             ]);
         }
+
+        $caller = tenancy()->tenant;
+        $this->caller = $caller instanceof TenantContract ? $caller : null;
 
         try {
             // Central connection. The insert happens FIRST, then the `created` event
@@ -60,8 +69,9 @@ final class ProvisionTenant
         }
 
         try {
-            // run() points the default connection at the tenant DB, runs the closure,
-            // then reverts.
+            // run() switches the whole context into the new workspace (database, cache,
+            // permission key), runs the closure, and switches back in a `finally` — so
+            // also when the closure throws. See Tenant::run(); v3's own run() did not.
             $tenant->run(function () use ($adminName, $adminEmail, $adminPassword): void {
                 // Baseline data first: the permission catalog and the Administrator
                 // role have to exist before the role can be assigned below.
@@ -98,9 +108,22 @@ final class ProvisionTenant
      *
      * Failures here are logged and swallowed: a rollback that throws would replace the
      * real cause with a second, less useful exception.
+     *
+     * It starts by putting the caller's tenancy context back. The migrate step inside
+     * Tenant::create() is stancl v3's `tenants:migrate`, whose runForMultiple() loop has
+     * no `finally`: a failed migration leaves the request INSIDE the workspace this is
+     * about to drop, and everything after it — this rollback, the error response, the
+     * cache and rate limiter that follow the workspace — would run against a database
+     * that no longer exists. This is the same switch-back v4's Tenancy::run() does in its
+     * `finally` (v4 also moved `tenants:migrate` onto run()). After a seeding failure
+     * Tenant::run() has already switched back, so it changes nothing there.
      */
     private function rollBack(string $slug, bool $dropDatabase): void
     {
+        $this->caller instanceof TenantContract
+            ? tenancy()->initialize($this->caller)
+            : tenancy()->end();
+
         $tenant = Tenant::withTrashed()->find($slug);
 
         if ($tenant === null) {
