@@ -31,7 +31,7 @@ use RuntimeException;
  * is unreadable on a twelve-line document without the name beside it.
  *
  * Raised only by {@see CompletePurchaseReturn}, from numbers
- * {@see ReturnedQuantities::completedForOrderItems()} built under the parent order's lock — so
+ * {@see ReturnedQuantities::completedForPurchaseOrderItems()} built under the parent order's lock — so
  * unlike the ceiling on the form, these are the numbers as of the instant nothing else could
  * change them.
  */

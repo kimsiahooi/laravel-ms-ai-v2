@@ -128,7 +128,7 @@ final class PurchaseReturnRequest extends TenantFormRequest
             }
 
             $ids = array_values(array_unique(array_column($rows, 'purchase_order_item_id')));
-            $returned = ReturnedQuantities::forOrderItems($ids, $this->editing()?->id);
+            $returned = ReturnedQuantities::forPurchaseOrderItems($ids, $this->editing()?->id);
             $ordered = PurchaseOrderItem::query()->whereKey($ids)->get(['id', 'quantity'])->keyBy('id');
 
             foreach ($rows as $index => $row) {

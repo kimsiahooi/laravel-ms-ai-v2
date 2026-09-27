@@ -72,6 +72,8 @@ const FACTORY_ARGS: Record<string, unknown[]> = {
     // the arguments still have to BUILD, which is what the stale `UserRequest: [false]`
     // entry did not.
     PurchaseReturnRequest: [1, { '1': '10' }],
+    // The order it credits, and one line's ceiling — see salesReturnSchema.
+    SalesReturnRequest: [1, { '1': '10' }],
     PurchaseOrderRequest: [['MYR']],
     SalesOrderRequest: [['MYR']],
 };

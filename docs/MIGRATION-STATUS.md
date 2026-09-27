@@ -4288,6 +4288,93 @@ Built assets, SSR on, 1440 × 900, then 375 / 768 / 1024, three locales, light a
 - `PostStockTake` locks level rows per line, **unsorted** — a pre-existing latent deadlock that
   `StockService::lockLevels()`'s sorting exists to avoid. Not this slice's to fix.
 
+## Phase 5 · Orders — sales returns, and the mirror finished ✅
+
+The third slice of the returns module, and the one that closes phase 5. v1's sales return was
+the worse of its two: a purchase return was accidentally bounded by on-hand stock, but a sales
+return had **no check of any kind** — it was an unbounded stock-in, so anybody could add
+inventory on demand by declaring a return and no report would notice. Naming the despatch makes
+`fulfilled − already returned` answerable.
+
+### What it shares, and why each thing moved
+
+Building the mirror is where you find out which parts of the original were actually about
+purchase returns and which were about returns. Four things moved:
+
+- **`ReturnedQuantities` now answers for both directions.** The arithmetic, the zero floor and
+  the numeric guard are identical whichever way goods travel; only the pair of tables differs.
+  `forOrderItems()` became `forPurchaseOrderItems()` and gained a sales twin, because with two
+  folds in one class the old name was actively misleading. The `bcadd` fold and the `whereHas`
+  status clause are each written once.
+- **The row-to-payload pairing moved to `lib/returns.ts`.** *Only rows carrying a quantity are
+  posted, so the payload index is not the row index* — the one real trap on these screens, where
+  the input's `name`, the key Laravel files a failure under, and the key `focusFirstInvalid`
+  resolves all have to be one string. Generic over an `idOf` accessor, so neither module's field
+  names appear in it. Left in one module it was the thing most likely to be fixed in one copy.
+- **`ReturnStatusBadge` was promoted** to `components/feedback/` on its second consumer. Its
+  exhaustive `Record` over `ReturnStatus` is the point of it: left in one module, a fourth status
+  would have been a compile error on one screen and a silent grey badge on three others.
+- **`ReturnableLineData` became `ReturnablePurchaseLineData`**, so the pair reads as a pair
+  rather than one generic-looking class and one obviously specific one.
+
+What deliberately did **not** move: the grid components. Their columns say "Delivered" against
+"Despatched" and "Unit cost" against "Unit price", and those are the words that make each screen
+correct — sharing them would have meant a dozen `TranslationKey` props to say the same thing.
+
+### Where the two genuinely differ
+
+**Completing a sales return cannot run short.** It is an addition, so there is no availability
+check, no shortfall exception and no panel under the picker — and, following from that, **no
+`?warehouse_id` in the URL either.** The purchase side needs the query string because its panel
+is refreshed by a partial reload and has to survive a full re-render after a shortfall; with
+nothing to fetch and nothing to survive, this picker is plain local state and choosing one is not
+a round trip.
+
+**What can still refuse it is the ceiling**, and the lock design is identical:
+`sales_returns` row → `sales_orders` row → ceiling read → level rows, with the parent order as
+the rendezvous for the read-view reason set out in the purchase-returns section, and the ceiling
+read deliberately *not* `FOR UPDATE`. The level rows are still locked up front even though
+nothing can fail — the deadlock-avoidance call `ReceivePurchaseOrder` already makes.
+
+The same two races that completion made reachable are closed the same way: `DeleteSalesReturn`
+as an Action, and a `lockForUpdate` on `SaveSalesReturn`'s revise path.
+
+### Found by reading, before the browser
+
+**The "New sales return" button filtered sales orders by `status=received`** — a status they do
+not have — so it and the empty state's action would both have led to a list with nothing on it.
+A mechanical consequence of mirroring: the two modules have two status vocabularies, and the
+wrong one filters to nothing rather than erroring. The types could not catch it; a query string
+is a string.
+
+### Verified by driving it
+
+Built assets, SSR on, 1440 × 900, then 375 / 768 / 1024, three locales, light and dark.
+
+- **Ledger 18 → 22**, and the two directions are legible in it: `purchase_return` rows are
+  negative, `sales_return` rows positive, **zero FQCNs** in `source_type`.
+- SO-2026-0005 carried "Return items" and **no Edit** — editable only while pending, returnable
+  only once shipped, and the two can never overlap.
+- A two-line return of the *same* product wrote **two** rows of +1, and desk on hand went 1 → 3.
+- The race, mirrored: two returns each claiming the same 4 desks, first completed, second refused
+  with a toast naming the line — still pending, still editable, ledger unchanged.
+- Cancelling released the claim: the consuming reading dropped 8 → 4 with no ledger row.
+- Crafted `complete`, `cancel`, `PATCH`, `DELETE` against a **completed** return and a `store`
+  carrying another order's line: all five refused, nothing written, the return still there.
+- A line fully returned disappeared from the next return's form; the ledger's source cell links
+  to the return and reads correctly in all three locales.
+- Purchase returns re-driven end to end afterwards, because four shared pieces moved under them.
+- 27 pages checked for `data-server-rendered="true"` and `/build/` assets: all 27. Zero console
+  messages after a clean load.
+
+### Open, carried forward
+
+- Existing workspaces need `php artisan tenants:migrate` — two new tables.
+- E-invoice still sits on top of sales orders and is still deferred — it is tracked under
+  phase 7, not here, and phase 5 closes without it.
+- `PostStockTake` locks level rows per line, **unsorted** — a pre-existing latent deadlock that
+  `StockService::lockLevels()`'s sorting exists to avoid. Still not fixed.
+
 ## Phase 7 · Team — users, roles, and the gate that finally denies something ✅
 
 Three slices, and the point of all three is the denial. Every tenant workspace had exactly one
@@ -4415,7 +4502,7 @@ locales, light and dark, 375 / 768 / 1024. Zero console messages across every mi
 |---|---|---|
 | 3 · Catalog | **categories ✅ · suppliers ✅ · customers ✅ · raw materials ✅ · products ✅** (core · image · BOM) | ✅ |
 | 4 · Stock | **locations ✅ · warehouses ✅ · StockService ✅ · movements ✅ · transfers ✅ · reorder levels ✅ · stock takes ✅** (+ notes column, column preferences, warehouse detail) | ✅ |
-| 5 · Orders | **money foundation ✅ · purchase orders ✅ · catalogue prices ✅ · sales orders ✅ · purchase returns ✅** (document + completion) · sales returns | 🚧 |
+| 5 · Orders | **money foundation ✅ · purchase orders ✅ · catalogue prices ✅ · sales orders ✅ · purchase returns ✅ · sales returns ✅** | ✅ |
 | 6 · Insights | reports, activity log | ⬜ |
 | 7 · Team & settings | **users ✅ · roles/RBAC ✅ · business settings ✅ · document numbering ✅** (the last two pulled forward into phase 5, which needed them), e-invoice | 🚧 |
 | 8 · Cross-cutting | exports, barcode/QR scanning, tenant dashboard, **admin dashboard ✅** (built in phase 1 and listed here as not started until now) | 🚧 |

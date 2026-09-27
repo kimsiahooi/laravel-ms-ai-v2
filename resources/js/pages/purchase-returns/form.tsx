@@ -34,7 +34,7 @@ type Props = {
      * `returned` and `remaining` on each already exclude this return, so the ceiling shown
      * beside a box is the ceiling the server will enforce against it.
      */
-    lines: App.Data.ReturnableLineData[];
+    lines: App.Data.ReturnablePurchaseLineData[];
 };
 
 /**

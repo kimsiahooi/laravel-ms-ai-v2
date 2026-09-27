@@ -8,6 +8,7 @@ import {
     MapPin,
     Package,
     Receipt,
+    Redo2,
     Settings2,
     ShieldCheck,
     ShoppingCart,
@@ -27,6 +28,7 @@ import { index as purchaseReturns } from '@/routes/purchase-returns';
 import { index as rawMaterials } from '@/routes/raw-materials';
 import { index as roles } from '@/routes/roles';
 import { index as salesOrders } from '@/routes/sales-orders';
+import { index as salesReturns } from '@/routes/sales-returns';
 import { index as businessSettings } from '@/routes/settings';
 import { index as stockMovements } from '@/routes/stock-movements';
 import { index as stockTakes } from '@/routes/stock-takes';
@@ -145,7 +147,8 @@ export function tenantNavGroups(
             // anything to sell, and that is the order the two screens are learned in.
             // Each return sits directly under the document it credits rather than in a
             // "returns" group of its own — somebody looking for one is thinking about
-            // the delivery it came off, not about returns as a category.
+            // the delivery or despatch it came off, not about returns as a category.
+            // Four entries now, in two pairs, and the pairing is the point.
             label: 'tenant.nav.orders',
             items: [
                 {
@@ -165,6 +168,12 @@ export function tenantNavGroups(
                     href: salesOrders(),
                     icon: Receipt,
                     permission: 'sales-orders.view',
+                },
+                {
+                    title: 'sales-returns.title',
+                    href: salesReturns(),
+                    icon: Redo2,
+                    permission: 'sales-returns.view',
                 },
             ],
         },

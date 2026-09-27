@@ -24,10 +24,14 @@ const TONE: Record<App.Enums.ReturnStatus, string> = {
 };
 
 /**
- * What state a return is in, on the list and at the top of the return itself.
+ * What state a return is in, on either module's list and at the top of the return itself.
  *
- * Shared by both screens rather than written twice, so the list where somebody learns the
- * three words and the document where they act on them cannot spell them differently.
+ * **Promoted out of purchase returns' `_components/` when sales returns became its second
+ * consumer** — the rule of three's "second, if the logic is non-trivial". The non-trivial part
+ * is the exhaustive `Record` above: left in one module, a fourth status would have been a
+ * compile error on one screen and a silent grey badge on three others, which is the opposite of
+ * what that `Record` is for. It reads {@see App.Enums.ReturnStatus} and the shared
+ * `returns.status.*` namespace, so neither copy of the word could have differed anyway.
  */
 export function ReturnStatusBadge({
     status,

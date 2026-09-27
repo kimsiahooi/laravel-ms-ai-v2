@@ -30,6 +30,7 @@ return [
         'new' => 'Pesanan jualan baharu',
         'edit' => 'Edit pesanan',
         'fulfil' => 'Penuhi',
+        'return' => 'Pulangkan item',
         'cancel' => 'Batalkan pesanan',
     ],
 

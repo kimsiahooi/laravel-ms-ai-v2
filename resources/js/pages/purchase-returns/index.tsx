@@ -7,6 +7,7 @@ import { FilterPanel } from '@/components/data/filter-panel';
 import { SelectFilter } from '@/components/data/select-filter';
 import { columnsFor } from '@/components/data/table';
 import { EmptyState } from '@/components/feedback/empty-state';
+import { ReturnStatusBadge } from '@/components/feedback/return-status-badge';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/hooks/use-translation';
 import { NewReturnButton } from '@/pages/purchase-returns/_components/new-return-button';
@@ -17,7 +18,6 @@ import {
     ReasonCell,
     SupplierCell,
 } from '@/pages/purchase-returns/_components/return-cells';
-import { ReturnStatusBadge } from '@/pages/purchase-returns/_components/return-status-badge';
 import { index as purchaseOrders } from '@/routes/purchase-orders';
 import { index } from '@/routes/purchase-returns';
 import type { Paginated, ResourceFilters } from '@/types';

@@ -11,67 +11,43 @@ import {
 } from '@/components/ui/table';
 import { useTranslation } from '@/hooks/use-translation';
 import type { MoneyLine } from '@/lib/money';
+import {
+    fillAllQuantities as fillAll,
+    returnRows as pairRows,
+    type ReturnRow as Row,
+    typedRows,
+} from '@/lib/returns';
 import { ReturnableLineRow } from '@/pages/purchase-returns/_components/returnable-line-row';
 
-type Line = App.Data.ReturnableLineData;
+type Line = App.Data.ReturnablePurchaseLineData;
 
 /** One delivered line, with where it sits in the payload once it carries a quantity. */
-export type ReturnRow = {
-    line: Line;
-    typed: string;
-    index: number | null;
-};
+export type ReturnRow = Row<Line>;
+
+/** Which field on a delivered line the form posts and keys its inputs by. */
+const idOf = (line: Line): number => line.purchase_order_item_id;
 
 /**
  * Every delivered line, paired with where it will sit in the request.
  *
- * **Only rows carrying a quantity are posted, so the payload index is not the row index**, and
- * this is the one place that arithmetic happens. The same list then names the inputs, resolves
- * the error keys and builds the request — so what the input is called, what the server files a
- * failure under and what `focusFirstInvalid` looks up are one string rather than three that
- * have to agree.
- *
- * Here rather than on the page because a row is this component's idea; the page only needs the
- * result.
+ * **The pairing itself lives in `lib/returns.ts`**, shared with sales returns, because the
+ * payload-index-is-not-the-row-index arithmetic is the one piece of this screen that must not
+ * drift between the two modules. What stays here is the only part that is this module's: which
+ * field identifies a line.
  */
 export function returnRows(
     lines: Line[],
     quantities: Readonly<Record<string, string>>,
 ): ReturnRow[] {
-    let position = 0;
-
-    return lines.map((line) => {
-        const typed = (
-            quantities[String(line.purchase_order_item_id)] ?? ''
-        ).trim();
-
-        return { line, typed, index: typed === '' ? null : position++ };
-    });
+    return pairRows(lines, quantities, idOf);
 }
 
-/**
- * Every line that still has something left, filled to its maximum.
- *
- * **Rows with nothing remaining are left alone.** `remaining` already excludes this return, so
- * a row reading zero can only be one this return holds in full — overwriting it with zero would
- * delete somebody's work and then be refused for being zero.
- *
- * Here rather than on the page because "how much may this row hold" is the rule this file
- * already owns.
- */
+/** {@see fillAll} bound to this module's line — rows with nothing left are skipped. */
 export function fillAllQuantities(
     lines: Line[],
     quantities: Readonly<Record<string, string>>,
 ): Record<string, string> {
-    const next = { ...quantities };
-
-    for (const line of lines) {
-        if (line.remaining !== '0') {
-            next[String(line.purchase_order_item_id)] = line.remaining;
-        }
-    }
-
-    return next;
+    return fillAll(lines, quantities, idOf);
 }
 
 /**
@@ -83,12 +59,10 @@ export function fillAllQuantities(
 export function payloadItems(
     rows: ReturnRow[],
 ): { purchase_order_item_id: string; quantity: string }[] {
-    return rows
-        .filter((row) => row.index !== null)
-        .map((row) => ({
-            purchase_order_item_id: String(row.line.purchase_order_item_id),
-            quantity: row.typed,
-        }));
+    return typedRows(rows).map((row) => ({
+        purchase_order_item_id: String(idOf(row.line)),
+        quantity: row.typed,
+    }));
 }
 
 /**
@@ -126,15 +100,13 @@ export function ReturnableLinesCard({
     const { t } = useTranslation();
 
     // Only the rows that carry a quantity contribute — a half-typed box is not a credit.
-    const moneyLines: MoneyLine[] = rows
-        .filter((row) => row.index !== null)
-        .map((row) => ({
-            quantity: row.typed,
-            unitPrice: row.line.unit_cost,
-            discountType: row.line.discount_type,
-            discountValue: row.line.discount_value,
-            taxable: row.line.taxable,
-        }));
+    const moneyLines: MoneyLine[] = typedRows(rows).map((row) => ({
+        quantity: row.typed,
+        unitPrice: row.line.unit_cost,
+        discountType: row.line.discount_type,
+        discountValue: row.line.discount_value,
+        taxable: row.line.taxable,
+    }));
 
     return (
         <Card>

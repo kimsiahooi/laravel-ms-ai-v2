@@ -7,6 +7,7 @@ use App\Models\PurchaseOrder;
 use App\Models\PurchaseReturn;
 use App\Models\RawMaterial;
 use App\Models\SalesOrder;
+use App\Models\SalesReturn;
 use App\Models\StockTake;
 use App\Models\StockTransfer;
 use App\Support\ReservedSlugs;
@@ -80,6 +81,7 @@ class AppServiceProvider extends ServiceProvider
             'purchase_order' => PurchaseOrder::class,
             'purchase_return' => PurchaseReturn::class,
             'sales_order' => SalesOrder::class,
+            'sales_return' => SalesReturn::class,
             'stock_take' => StockTake::class,
             'stock_transfer' => StockTransfer::class,
         ]);

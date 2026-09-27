@@ -125,5 +125,6 @@ return [
         'purchase_order' => 'Pesanan belian #:id',
         'purchase_return' => 'Pemulangan belian #:id',
         'sales_order' => 'Pesanan jualan #:id',
+        'sales_return' => 'Pemulangan jualan #:id',
     ],
 ];

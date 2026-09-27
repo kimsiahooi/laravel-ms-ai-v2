@@ -36,9 +36,13 @@ use Spatie\TypeScriptTransformer\Attributes\TypeScript;
  *
  * `name`, `sku` and `unit` are null in exactly one case: the material was hard-deleted out of
  * the catalogue. The line still says what was paid, the way {@see PurchaseOrderItemData} does.
+ *
+ * Named for its side of the trade rather than generically: {@see ReturnableSalesLineData} is the
+ * same idea over `sales_order_items`, and the two differ in the two fields the form actually
+ * posts and reads — which line id, and whether the money is a cost or a price.
  */
 #[TypeScript]
-final class ReturnableLineData extends Data
+final class ReturnablePurchaseLineData extends Data
 {
     public function __construct(
         /** The delivered line this row would credit — what the form posts back. */
@@ -61,7 +65,7 @@ final class ReturnableLineData extends Data
     ) {}
 
     /**
-     * @param  string  $returned  from {@see ReturnedQuantities::forOrderItems()}, already
+     * @param  string  $returned  from {@see ReturnedQuantities::forPurchaseOrderItems()}, already
      *                            excluding the return being edited
      * @param  string  $quantity  what this return holds for the line, or `''`
      */

@@ -1,9 +1,9 @@
 import { Head, setLayoutProps } from '@inertiajs/react';
+import { ReturnStatusBadge } from '@/components/feedback/return-status-badge';
 import { useTranslation } from '@/hooks/use-translation';
 import { CompletionCard } from '@/pages/purchase-returns/_components/completion-card';
 import { ReturnActions } from '@/pages/purchase-returns/_components/return-actions';
 import { ReturnLinesTable } from '@/pages/purchase-returns/_components/return-lines-table';
-import { ReturnStatusBadge } from '@/pages/purchase-returns/_components/return-status-badge';
 import { ReturnSummary } from '@/pages/purchase-returns/_components/return-summary';
 import { index, show } from '@/routes/purchase-returns';
 

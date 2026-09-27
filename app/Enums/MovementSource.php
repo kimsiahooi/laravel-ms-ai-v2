@@ -41,6 +41,10 @@ enum MovementSource: string
      */
     case PurchaseReturn = 'purchase_return';
 
+    /** Goods a customer sent back, at the moment the return was completed. Same rule: the
+     * source is the return, not the despatch it credits. */
+    case SalesReturn = 'sales_return';
+
     case StockTake = 'stock_take';
     case StockTransfer = 'stock_transfer';
 }

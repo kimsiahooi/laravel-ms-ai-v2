@@ -37,7 +37,7 @@ use Illuminate\Support\Facades\DB;
  * too, because a second claim on goods another claim already covers is not a sensible document to
  * raise. Here the question is only "can this be done right now", so a pending sibling counts for
  * nothing — it has taken nothing off a shelf. See
- * {@see ReturnedQuantities::completedForOrderItems()}.
+ * {@see ReturnedQuantities::completedForPurchaseOrderItems()}.
  *
  * ## The lock order, and why every step of it is where it is
  *
@@ -200,7 +200,7 @@ final class CompletePurchaseReturn
             $lines->map(static fn (PurchaseReturnItem $line): int => $line->purchase_order_item_id)->all(),
         ));
 
-        $completed = ReturnedQuantities::completedForOrderItems($ids);
+        $completed = ReturnedQuantities::completedForPurchaseOrderItems($ids);
 
         $exceeded = [];
 

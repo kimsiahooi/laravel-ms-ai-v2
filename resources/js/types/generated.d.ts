@@ -171,7 +171,7 @@ bom_product_count: number,
 created_at: string,
 creator: string | null,
 };
-export type ReturnableLineData = {
+export type ReturnablePurchaseLineData = {
 purchase_order_item_id: number,
 name: string | null,
 sku: string | null,
@@ -181,6 +181,20 @@ returned: string,
 remaining: string,
 quantity: string,
 unit_cost: string,
+discount_type: App.Enums.DiscountType,
+discount_value: string,
+taxable: boolean,
+};
+export type ReturnableSalesLineData = {
+sales_order_item_id: number,
+name: string | null,
+sku: string | null,
+unit: App.Enums.Unit | null,
+sold: string,
+returned: string,
+remaining: string,
+quantity: string,
+unit_price: string,
 discount_type: App.Enums.DiscountType,
 discount_value: string,
 taxable: boolean,
@@ -221,6 +235,42 @@ item: string,
 name: string | null,
 sku: string | null,
 unit: App.Enums.Unit | null,
+quantity: string,
+unit_price: string,
+discount_type: App.Enums.DiscountType,
+discount_value: string,
+taxable: boolean,
+line_total: string,
+};
+export type SalesReturnData = {
+id: number,
+number: string,
+sales_order_id: number,
+sales_order_number: string,
+customer: string | null,
+status: App.Enums.ReturnStatus,
+reason: App.Enums.ReturnReason,
+currency: string,
+exchange_rate: string,
+tax_rate: string,
+subtotal: string,
+discount_total: string,
+tax_total: string,
+total: string,
+notes: string | null,
+created_by: string | null,
+completed_by: string | null,
+completed_at: string | null,
+completed_warehouse: string | null,
+line_count: number,
+created_at: string,
+};
+export type SalesReturnItemData = {
+id: number,
+name: string | null,
+sku: string | null,
+unit: App.Enums.Unit | null,
+sold: string,
 quantity: string,
 unit_price: string,
 discount_type: App.Enums.DiscountType,
@@ -363,7 +413,7 @@ export type Country = 'MY' | 'SG';
 export type Dimension = 'mass' | 'volume' | 'length' | 'count';
 export type DiscountType = 'none' | 'percent' | 'amount';
 export type DocumentType = 'purchase_order' | 'purchase_return' | 'sales_order' | 'sales_return';
-export type MovementSource = 'purchase_order' | 'sales_order' | 'purchase_return' | 'stock_take' | 'stock_transfer';
+export type MovementSource = 'purchase_order' | 'sales_order' | 'purchase_return' | 'sales_return' | 'stock_take' | 'stock_transfer';
 export type NumberReset = 'yearly' | 'never';
 export type PermissionAction = 'view' | 'create' | 'update' | 'delete';
 export type PermissionScreen = 'categories' | 'suppliers' | 'customers' | 'raw-materials' | 'products' | 'locations' | 'warehouses' | 'stock-movements' | 'stock-transfers' | 'stock-takes' | 'purchase-orders' | 'purchase-returns' | 'sales-orders' | 'sales-returns' | 'reports' | 'activity' | 'users' | 'roles' | 'settings';
@@ -374,7 +424,7 @@ export type SalesOrderStatus = 'pending' | 'fulfilled' | 'cancelled';
 export type StockItemType = 'product' | 'raw_material';
 export type StockMovementReason = 'adjustment' | 'stock_take' | 'transfer_in' | 'transfer_out' | 'purchase_receipt' | 'purchase_return' | 'sales_fulfillment' | 'sales_return' | 'production_consume' | 'production_output';
 export type StockTakeStatus = 'draft' | 'posted' | 'cancelled';
-export type TableKey = 'admin-tenants' | 'admin-tenants-trashed' | 'categories' | 'customers' | 'locations' | 'products' | 'purchase-orders' | 'purchase-returns' | 'raw-materials' | 'sales-orders' | 'stock-movements' | 'stock-takes' | 'stock-transfers' | 'suppliers' | 'users' | 'warehouse-items' | 'warehouses';
+export type TableKey = 'admin-tenants' | 'admin-tenants-trashed' | 'categories' | 'customers' | 'locations' | 'products' | 'purchase-orders' | 'purchase-returns' | 'raw-materials' | 'sales-orders' | 'sales-returns' | 'stock-movements' | 'stock-takes' | 'stock-transfers' | 'suppliers' | 'users' | 'warehouse-items' | 'warehouses';
 export type Unit = 'g' | 'kg' | 't' | 'ml' | 'l' | 'mm' | 'cm' | 'm' | 'pcs' | 'box' | 'roll' | 'sheet' | 'pair' | 'set';
 }
 }

@@ -17,6 +17,7 @@ use App\Http\Controllers\Tenant\PurchaseReturnController;
 use App\Http\Controllers\Tenant\RawMaterialController;
 use App\Http\Controllers\Tenant\RoleController;
 use App\Http\Controllers\Tenant\SalesOrderController;
+use App\Http\Controllers\Tenant\SalesReturnController;
 use App\Http\Controllers\Tenant\StockLookupController;
 use App\Http\Controllers\Tenant\StockMovementController;
 use App\Http\Controllers\Tenant\StockTakeController;
@@ -309,6 +310,34 @@ Route::middleware(['web', InitializeTenancyByPath::class, SetTenantUrlDefault::c
                 Route::post('{salesOrder}/fulfill', [SalesOrderController::class, 'fulfill'])->name('fulfill');
                 Route::post('{salesOrder}/cancel', [SalesOrderController::class, 'cancel'])->name('cancel');
                 Route::delete('{salesOrder}', [SalesOrderController::class, 'destroy'])->name('destroy');
+            });
+
+            // Goods a customer sent back. The mirror of the purchase-returns block above, and
+            // every rule there applies: `create` before `{salesReturn}` or /create 404s looking
+            // for a return of that number; `{salesReturn}` rather than `{sales_return}` because
+            // that is the name the model binding resolves from.
+            //
+            // The CRUD names are auto-mapped — `PermissionScreen::SalesReturns` takes the
+            // default four actions — and the two transitions have sat in ROUTE_OVERRIDES since
+            // the permission catalog was written, both mapping to `sales-returns.update`.
+            //
+            // `complete` is this module's `fulfill`, pointing the other way: the one route that
+            // writes a stock movement, and the only one here that can add to a shelf. `cancel`
+            // writes none, but it is not inert either — a cancelled return drops out of
+            // `ReturnStatus::consuming()`, so it hands the despatch back the quantity it was
+            // holding.
+            Route::prefix('sales-returns')->name('sales-returns.')->group(function (): void {
+                Route::get('/', [SalesReturnController::class, 'index'])->name('index');
+                Route::get('create', [SalesReturnController::class, 'create'])->name('create');
+                Route::post('/', [SalesReturnController::class, 'store'])->name('store');
+                Route::get('{salesReturn}', [SalesReturnController::class, 'show'])->name('show');
+                Route::get('{salesReturn}/edit', [SalesReturnController::class, 'edit'])->name('edit');
+                Route::patch('{salesReturn}', [SalesReturnController::class, 'update'])->name('update');
+
+                // The two transitions, both out of pending and both terminal.
+                Route::post('{salesReturn}/complete', [SalesReturnController::class, 'complete'])->name('complete');
+                Route::post('{salesReturn}/cancel', [SalesReturnController::class, 'cancel'])->name('cancel');
+                Route::delete('{salesReturn}', [SalesReturnController::class, 'destroy'])->name('destroy');
             });
 
             // Who may sign in, and what each of them can reach.

@@ -126,5 +126,6 @@ return [
         'purchase_order' => 'Purchase order #:id',
         'purchase_return' => 'Purchase return #:id',
         'sales_order' => 'Sales order #:id',
+        'sales_return' => 'Sales return #:id',
     ],
 ];

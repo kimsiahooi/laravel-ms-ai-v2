@@ -1,5 +1,5 @@
 import { Head, Link, setLayoutProps } from '@inertiajs/react';
-import { Pencil } from 'lucide-react';
+import { Pencil, Redo2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { usePermissions } from '@/hooks/use-permissions';
 import { useTranslation } from '@/hooks/use-translation';
@@ -8,6 +8,7 @@ import { OrderLinesTable } from '@/pages/sales-orders/_components/order-lines-ta
 import { OrderStatusBadge } from '@/pages/sales-orders/_components/order-status-badge';
 import { OrderSummary } from '@/pages/sales-orders/_components/order-summary';
 import { edit, index, show } from '@/routes/sales-orders';
+import { create as createReturn } from '@/routes/sales-returns';
 
 type Props = {
     order: App.Data.SalesOrderData;
@@ -32,6 +33,14 @@ type Props = {
      * `SalesOrderController::show()` says why the query string rather than an optional prop.
      */
     availability: App.Data.StockAvailabilityData[] | null;
+    /**
+     * Whether anything on this despatch can still come back.
+     *
+     * A page prop rather than a field on {@see App.Data.SalesOrderData}, which also feeds the
+     * twenty-row list — a ceiling query per row is the v1 shape the returns module exists to
+     * undo. False without a query for anything not fulfilled.
+     */
+    returnable: boolean;
 };
 
 /**
@@ -61,6 +70,7 @@ export default function SalesOrderShow({
     warehouses,
     chosenWarehouse,
     availability,
+    returnable,
 }: Props) {
     const { t } = useTranslation();
     const { can } = usePermissions();
@@ -68,6 +78,13 @@ export default function SalesOrderShow({
     // Editable for exactly as long as it is unresolved. The server draws the same line — an
     // update against a fulfilled order is refused there, not merely hidden here.
     const editable = order.status === 'pending' && can('sales-orders.update');
+
+    // The other direction, and the two are mutually exclusive by construction: an order is
+    // editable only while pending, and returnable only once it has shipped.
+    const returning =
+        order.status === 'fulfilled' &&
+        returnable &&
+        can('sales-returns.create');
 
     setLayoutProps({
         breadcrumbs: [
@@ -99,6 +116,22 @@ export default function SalesOrderShow({
                         <Link href={edit({ salesOrder: order.id })}>
                             <Pencil className="size-4" />
                             {t('sales-orders.action.edit')}
+                        </Link>
+                    </Button>
+                )}
+
+                {returning && (
+                    <Button variant="outline" asChild>
+                        {/* The order id rides in the query string rather than the path: the
+                            return form is reached from here and nowhere else, so `create`
+                            requires it and refuses without it. */}
+                        <Link
+                            href={createReturn(undefined, {
+                                query: { order: order.id },
+                            })}
+                        >
+                            <Redo2 className="size-4" />
+                            {t('sales-orders.action.return')}
                         </Link>
                     </Button>
                 )}

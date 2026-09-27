@@ -42,6 +42,7 @@ return [
         'new' => 'New sales order',
         'edit' => 'Edit order',
         'fulfil' => 'Fulfil',
+        'return' => 'Return items',
         'cancel' => 'Cancel order',
     ],
 

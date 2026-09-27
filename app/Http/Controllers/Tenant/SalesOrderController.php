@@ -35,6 +35,7 @@ use App\Support\ActiveExists;
 use App\Support\Decimals;
 use App\Support\OrderAvailability;
 use App\Support\OrderTotals;
+use App\Support\ReturnedQuantities;
 use App\Support\StockItem;
 use DomainException;
 use Illuminate\Database\Eloquent\Builder;
@@ -208,6 +209,10 @@ final class SalesOrderController
             'availability' => $warehouse === null
                 ? null
                 : self::availability($lines, $warehouse, $stock),
+            // On the page rather than on SalesOrderData, which also feeds the twenty-row list
+            // where a ceiling query per row would be the v1 shape the returns module exists to
+            // undo. `hasReturnable()` answers false without a query for anything not fulfilled.
+            'returnable' => ReturnedQuantities::hasReturnable($salesOrder),
         ]);
     }
 

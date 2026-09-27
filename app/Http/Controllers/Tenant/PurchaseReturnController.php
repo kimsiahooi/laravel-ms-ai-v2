@@ -10,7 +10,7 @@ use App\Actions\SavePurchaseReturn;
 use App\Data\PurchaseOrderData;
 use App\Data\PurchaseReturnData;
 use App\Data\PurchaseReturnItemData;
-use App\Data\ReturnableLineData;
+use App\Data\ReturnablePurchaseLineData;
 use App\Data\StockAvailabilityData;
 use App\Data\WarehouseOptionData;
 use App\Enums\PurchaseOrderStatus;
@@ -375,13 +375,13 @@ final class PurchaseReturnController
      * it.** The second half is not theoretical: a line that other returns have since finished
      * off must still render, or editing this return would silently drop it on save.
      *
-     * @return list<ReturnableLineData>
+     * @return list<ReturnablePurchaseLineData>
      */
     private static function returnableLines(PurchaseOrder $order, ?PurchaseReturn $return): array
     {
         $lines = $order->items;
         $ids = array_values($lines->map(static fn (PurchaseOrderItem $line): int => $line->id)->all());
-        $returned = ReturnedQuantities::forOrderItems($ids, $return?->id);
+        $returned = ReturnedQuantities::forPurchaseOrderItems($ids, $return?->id);
 
         $held = [];
 
@@ -402,7 +402,7 @@ final class PurchaseReturnController
                 continue;
             }
 
-            $rows[] = ReturnableLineData::fromOrderItem($line, $already, $quantity);
+            $rows[] = ReturnablePurchaseLineData::fromOrderItem($line, $already, $quantity);
         }
 
         return $rows;

@@ -125,5 +125,6 @@ return [
         'purchase_order' => '采购订单 #:id',
         'purchase_return' => '采购退货单 #:id',
         'sales_order' => '销售订单 #:id',
+        'sales_return' => '销售退货单 #:id',
     ],
 ];

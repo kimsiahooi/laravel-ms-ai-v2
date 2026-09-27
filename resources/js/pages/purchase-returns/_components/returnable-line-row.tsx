@@ -4,7 +4,7 @@ import { useTranslation } from '@/hooks/use-translation';
 import { formatMoney } from '@/lib/format';
 import { orderTotals } from '@/lib/money';
 
-type Line = App.Data.ReturnableLineData;
+type Line = App.Data.ReturnablePurchaseLineData;
 
 /**
  * One delivered line, and how much of it is going back.
