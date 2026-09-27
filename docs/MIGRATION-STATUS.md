@@ -82,7 +82,7 @@ using it is the likely answer.
 | Guards `web` (tenant) / `central` (admin) | ✅ | |
 | Bootstrappers | ✅ | Permission-cache and Fortify-home. |
 | Fortify on the tenant guard | ✅ | All auth routes at `/{tenant}/…` via `fortify.prefix`. 2FA, passkeys, reset, verification. |
-| spatie/laravel-permission | ✅ | Tables migrate per tenant; cache key scoped per tenant. |
+| spatie/laravel-permission | ✅ | Tables migrate per tenant; the cache lives in the tenant's own `cache` table, under a tenant-suffixed key. |
 | Tenant URL defaults | ✅ | `SetTenantUrlDefault` → Wayfinder emits `{tenant}` as OPTIONAL in TS helpers. |
 | Permissions catalog + `AuthorizeTenantRoute` | ✅ | 66 permissions over 20 screens; 103 route names mapped. `usePermissions()` + `auth.permissions` / `auth.is_admin`. |
 | `ProvisionTenant` + seeders | ✅ | Rolls back cleanly on either failure window — see below. |
@@ -175,6 +175,41 @@ so no one has to clear cookies by hand.
 
 Verified with a legacy cookie deliberately planted in the jar: workspace sign-in sticks,
 console archive returns 302, and the console plus two workspaces stay signed in at once.
+
+### The fourth bug worth remembering — the permission cache was in the central database
+
+Found much later (2026-09-27), from a debugbar query on the products page:
+`select * from cache where key in ('…spatie.permission.cache.tenant.demo')`. The key was
+tenant-scoped, but the row was in `laravel_ms_ai_v2_central.cache`; `tenant_demo.cache` was
+empty. No leak — the key suffix kept workspaces apart — but every workspace's catalog lived
+in the landlord database, and the docblocks said otherwise.
+
+Same class as the session bug above. spatie's `PermissionRegistrar` resolves its cache store
+once, and a `database` store keeps whichever connection was the default when it was built.
+stancl instantiates every bootstrapper before running any, so `PermissionCacheTenancyBootstrapper`
+— which injected the registrar and only swapped its key, exactly as stancl's v3 docs show —
+built it while the default was still `central`.
+
+The fix is the packages' own documented pattern: spatie's `initializeCache()` for a tenant
+switch, and the mechanism of stancl v4's `DatabaseCacheBootstrapper` — point the `database`
+store's `connection`/`lock_connection` at `tenant`, purge it, restore both on revert. The key
+suffix stays for a future shared driver. A side effect worth having: the cache now shares
+the tenant connection, so a role save's forgets roll back with the transaction. Because
+`optimize:clear` cannot reach workspace databases, the deploy now runs
+`tenants:run permission:cache-reset` after migrating.
+
+Verified in a real browser (Chrome driven by Playwright, SSR on), reading debugbar's recorded
+queries and both databases at each step:
+- A miss rebuilt the catalog with every `cache` statement on `tenant_demo`, and a reload was a hit.
+- Creating, granting, revoking and deleting a role each ran their cache statements on
+  `tenant_demo`.
+- A second user holding that role got 200 → 403 → 200 → 403 as the grant changed, with no stale
+  catalog.
+- The central row's expiration never moved.
+- Every module's list page passed in light and dark: 200, server-rendered, no console errors.
+
+**A service that captures a database connection must be re-initialised after the tenant
+connection exists — injecting it into a bootstrapper is not enough.**
 
 ### A route action can never receive `$tenant`
 
@@ -4441,8 +4476,10 @@ does not.
 Spatie's `Role` uses `RefreshesPermissionCache`, which forgets the registrar's cache on every
 `saved` and `deleted`, and `syncPermissions()` ends in `givePermissionTo()` which forgets it
 again for a `Role` specifically. Adding a call would suggest the writes do not do it. What still
-matters is that the key is tenant-scoped only while tenancy is initialised, so these are
-request-time Actions and never a central-context command.
+matters is that the registrar points at the workspace's own cache — its database, a
+tenant-suffixed key — only while tenancy is initialised, so these are request-time Actions and
+never a central-context command. (Since the fourth Phase 1 bug was fixed, those forgets also
+run inside the Action's transaction and roll back with it.)
 
 **There is no "you removed the last role that can manage users" guard, and that is not an
 oversight.** Administrator is locked and `User::administrators()` guarantees at least one active

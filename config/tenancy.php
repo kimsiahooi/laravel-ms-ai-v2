@@ -43,6 +43,8 @@ return [
         // run before StartSession — a bootstrapper here runs too late for some
         // package-registered routes. See that class for the full reasoning.
         CacheTenancyBootstrapper::class,
+        // Must stay below DatabaseTenancyBootstrapper: it points spatie's cache at the
+        // `tenant` connection, which only exists once that one has run. It throws if not.
         PermissionCacheTenancyBootstrapper::class,
         FortifyTenancyBootstrapper::class,
         FilesystemTenancyBootstrapper::class,
@@ -103,13 +105,16 @@ return [
     /**
      * Cache tenancy config. Used by CacheTenancyBootstrapper.
      *
-     * This works for all Cache facade calls, cache() helper
-     * calls and direct calls to injected cache stores.
+     * That bootstrapper scopes the cache by TAG: inside a workspace it swaps the `cache`
+     * binding for a manager that wraps every magic call (`Cache::get()`, `cache()->put()`,
+     * `cache('key')`) in `->tags([tag_base.tenant_id])`. The `database` store cannot tag,
+     * so with CACHE_STORE=database those calls THROW inside a workspace ("This cache store
+     * does not support tagging"). Nothing in the app makes one today; if something needs
+     * the cache there, use `Cache::store()` — a real method, untagged, and on the tenant's
+     * own connection because DatabaseTenancyBootstrapper has switched the default.
      *
-     * Each key in cache will have a tag applied on it. This tag is used to
-     * scope the cache both when writing to it and when reading from it.
-     *
-     * You can clear cache selectively by specifying the tag.
+     * spatie/laravel-permission's cache does not go through any of this. It is placed in
+     * the tenant database by App\Tenancy\PermissionCacheTenancyBootstrapper.
      */
     'cache' => [
         'tag_base' => 'tenant', // This tag_base, followed by the tenant_id, will form a tag that will be applied on each cache call.

@@ -88,10 +88,15 @@ main() {
     # (Laravel blocks prod migrations otherwise).
     php artisan migrate --force
 
-    echo "▶ [7/12] Migrating every workspace database…"
+    echo "▶ [7/12] Migrating every workspace database, then resetting its permission cache…"
     # One migration run per tenant database. New workspaces are migrated when they are
     # provisioned; this is what carries a schema change to the ones that already exist.
     php artisan tenants:migrate --force
+    # Each workspace caches its role/permission catalog in its OWN database, which step 5's
+    # optimize:clear never reaches — without this, a renamed or reworked permission would be
+    # served from the old catalog for up to 24h. After the migrations, so the next rebuild
+    # reads migrated rows. See App\Tenancy\PermissionCacheTenancyBootstrapper.
+    php artisan tenants:run permission:cache-reset
 
     echo "▶ [8/12] Ensuring the public storage symlink exists…"
     # `|| true`: storage:link exits non-zero when the symlink already exists, so this

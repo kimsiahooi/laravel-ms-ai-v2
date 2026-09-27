@@ -29,9 +29,12 @@ use Spatie\Permission\Traits\RefreshesPermissionCache;
  * forgets it again for a `Role` specifically. So no explicit
  * `app(PermissionRegistrar::class)->forgetCachedPermissions()` belongs here — adding one would
  * suggest the writes do not do it, which is the thing a future reader would then have to
- * check. What still matters is that the cache key is tenant-scoped only while tenancy is
- * initialised ({@see PermissionCacheTenancyBootstrapper}), so this is a
- * request-time Action and never a central-context command.
+ * check. What still matters is that the registrar points at this workspace's cache — its own
+ * database, under a tenant-suffixed key — only while tenancy is initialised
+ * ({@see PermissionCacheTenancyBootstrapper}), so this is a request-time Action and never a
+ * central-context command. Because that cache shares the tenant connection, those forgets
+ * happen inside the transaction below: a rollback puts the cached catalog back along with
+ * the rows it describes.
  *
  * **Nothing here guards the built-in Administrator.** That role is refused at the door with a
  * 403 by {@see RoleController}, because being untouchable is a

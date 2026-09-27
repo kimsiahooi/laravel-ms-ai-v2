@@ -26,7 +26,8 @@ and both are called out where they matter.
 | Queue worker | **none** — see *Deferred* |
 | Cron | **none** — see *Deferred* |
 
-Sessions, cache and queues are all MySQL. There is no Redis.
+Sessions, cache and queues are all MySQL. There is no Redis. A workspace's sessions and its
+role/permission cache live in that workspace's own database, not the central one.
 
 ---
 
@@ -264,7 +265,12 @@ build time — the SSR bundle is self-contained.
 ## After a schema change
 
 `bun run deploy` runs both `php artisan migrate --force` (central) and
-`php artisan tenants:migrate --force` (every workspace). Nothing extra to do.
+`php artisan tenants:migrate --force` (every workspace), then
+`php artisan tenants:run permission:cache-reset`. Nothing extra to do.
+
+That last step is there because each workspace caches its role/permission catalog in its own
+database, which `optimize:clear` cannot reach. Without it, a migration that renames or moves a
+permission would be checked against the old catalog for up to 24 hours.
 
 **After adding a permission** to `App\Support\TenantPermissions`, existing workspaces also
 need the seeder, which is not part of the deploy:
@@ -306,6 +312,16 @@ boot Laravel. Quote the value — `KEY="two words"` — or remove the spaces. `d
 checks for this before it installs anything, so it should not reach composer again.
 
 **Creating a workspace fails.** The MySQL user cannot `CREATE DATABASE` — section 3.
+
+**A role or permission change is not taking effect.** Clear that workspace's permission
+cache — it lives in the workspace's database, so it needs the tenant-aware form:
+
+```bash
+php artisan tenants:run permission:cache-reset --tenants=<slug>
+```
+
+A bare `php artisan permission:cache-reset` or `cache:clear` only touches the central
+database and changes nothing a workspace reads.
 
 **`ERROR 1410: You are not allowed to create a user with GRANT`.** The user in your
 `GRANT … TO 'x'@'host'` does not exist, and MySQL 8 will not create one for you. Almost

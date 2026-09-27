@@ -7,9 +7,11 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Per-tenant cache. With the `database` store this alone isolates cached values;
- * PermissionCacheTenancyBootstrapper additionally scopes spatie/laravel-permission's
- * fixed cache key so a switch to redis/memcached cannot leak roles across tenants.
+ * Per-tenant cache. It holds this workspace's spatie/laravel-permission catalog, which
+ * App\Tenancy\PermissionCacheTenancyBootstrapper points here — left alone, spatie keeps
+ * the store it built before tenancy started, and that is the central one. The bootstrapper
+ * also suffixes the key with the tenant id, so a switch to redis/memcached (one shared
+ * store, no tenant database to point at) cannot leak roles across tenants.
  */
 return new class extends Migration
 {
